@@ -5,11 +5,18 @@ import express from "express";
 import mongoose from "mongoose";
 import errHandler from "#root/middleware/errHandler";
 import authRoute from "#root/routes/auth";
+import credentials from "#root/middleware/credentials";
 
 // create an instance of an Express application
 const app = express();
 // set the port number for the server to listen on
 const PORT = 3100;
+
+//Handle options credentials check
+app.use(credentials);
+
+//build-in middleware to handle urlencoded data
+app.use(express.urlencoded({ extended: true }));
 
 // Enable Cross-Origin Resource Sharing
 app.use(cors());

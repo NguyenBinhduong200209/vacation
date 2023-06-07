@@ -37,11 +37,13 @@ const usersController = {
 
       //Return result
       return res.status(200).json({
-        username: foundUser.username,
-        accessToken,
-        refreshToken,
+        msg: {
+          username: foundUser.username,
+          accessToken,
+          refreshToken,
+        },
       });
-    } else return res.status(400).json("No username or email");
+    } else _throw(400, "no username or email");
   }),
 
   logOut: asyncWrapper(async (req, res) => {
@@ -124,7 +126,7 @@ const usersController = {
     await foundUser.save();
 
     //Send to front
-    return res.status(200).json(`user ${foundUser.username} update successfully`);
+    return res.status(200).json({ msg: `user ${foundUser.username} update successfully` });
   }),
 };
 
