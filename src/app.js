@@ -4,20 +4,21 @@ import cors from "cors";
 import express from "express";
 import mongoose from "mongoose";
 import errHandler from "#root/middleware/errHandler";
-import dbConnect from "#root/config/dbConnect";
+import authRoute from "#root/routes/auth";
 
-// Set up Express server
-const app = express(); // create an instance of an Express application
-const PORT = 3100; // set the port number for the server to listen on
-
-await dbConnect();
+// create an instance of an Express application
+const app = express();
+// set the port number for the server to listen on
+const PORT = 3100;
 
 // Enable Cross-Origin Resource Sharing
 app.use(cors());
 
-app.use(express.json()); // parse JSON request bodies
+// Parse JSON request bodies
+app.use(express.json());
 
 // use router for handling requests
+app.use("/auth", authRoute);
 
 // use middleware for handling errors
 app.use(errHandler);

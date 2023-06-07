@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 import validator from "validator";
-import _throw from "#root/utils/throw.js";
+import _throw from "#root/utils/_throw";
 
 const userSchema = new mongoose.Schema({
-  firstName: {
+  firstname: {
     type: String,
     trim: true,
     required: "Firstname required",
@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
       !validator.isAlpha(value, "vi-VN", { ignore: " -" }) && _throw(400, "Invalid firstname");
     },
   },
-  lastName: {
+  lastname: {
     type: String,
     trim: true,
     required: "Lastname required",
@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema({
       !validator.isAlpha(value, "vi-VN", { ignore: " -" }) && _throw(400, "Invalid lastname");
     },
   },
-  userName: {
+  username: {
     type: String,
     trim: true,
     required: "Username required",
@@ -62,6 +62,22 @@ const userSchema = new mongoose.Schema({
     validate: (value) => {
       !validator.isStrongPassword(value) && _throw(400, "Password is weak");
     },
+  },
+  accessToken: {
+    type: String,
+  },
+  refreshToken: {
+    type: String,
+  },
+  createdAt: {
+    type: Date,
+    default: new Date(),
+  },
+  lastActiveAt: {
+    type: Date,
+  },
+  lastUpdateAt: {
+    type: Date,
   },
 });
 

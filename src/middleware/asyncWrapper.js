@@ -1,4 +1,4 @@
-import dbConnect from "config/dbConnect.js";
+import dbConnect from "#root/config/dbConnect";
 import mongoose from "mongoose";
 
 const asyncWrapper = (fn) => {
