@@ -1,6 +1,7 @@
-const _throw = (status, message) => {
+const _throw = ({ errors, meta, message, code }) => {
   !message && (message = "");
-  throw { status, message };
+  !code && (code = 500);
+  throw { errors, meta, code, message };
 };
 
 export default _throw;

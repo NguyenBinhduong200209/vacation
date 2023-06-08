@@ -1,7 +1,7 @@
 const errHandler = (err, req, res, next) => {
   console.log(err.stack); // Log the error stack trace to the console
 
-  const msg = err.message;
+  const { errors, message, meta, code } = err.message;
   switch (err.name) {
     // If the error is a validation error, return a 400 Bad Request status code with the validation errors as JSON
     case "ValidationError":
@@ -9,16 +9,16 @@ const errHandler = (err, req, res, next) => {
         (obj, key) => Object.assign(obj, { [key]: err.errors[key].message }),
         {}
       );
-      return res.status(400).json({ msg: result });
+      return res.status(400).json({ errors: result, meta, message: "Validation Error" });
 
     case "TypeError":
-      return res.status(400).json({ msg });
+      return res.status(400).json({ errors, meta, message: "TypeError" });
 
     case "CastError":
-      return res.status(400).json({ msg });
+      return res.status(400).json({ errors, meta, message: "CastError" });
 
     default:
-      return res.status(err.status || 500).json({ msg });
+      return res.status(code).json({ errors, meta, message });
   }
 };
 

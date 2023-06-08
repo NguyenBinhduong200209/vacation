@@ -9,7 +9,12 @@ const userSchema = new mongoose.Schema({
     required: "Firstname required",
     maxlength: 100,
     validate: (value) => {
-      !validator.isAlpha(value, "vi-VN", { ignore: " -" }) && _throw(400, "Invalid firstname");
+      !validator.isAlpha(value, "vi-VN", { ignore: " -" }) &&
+        _throw({
+          code: 400,
+          errors: [{ field: "firstname", message: "Invalid firstname" }],
+          message: "Invalid firstname",
+        });
     },
   },
   lastname: {
@@ -18,7 +23,12 @@ const userSchema = new mongoose.Schema({
     required: "Lastname required",
     maxlength: 100,
     validate: (value) => {
-      !validator.isAlpha(value, "vi-VN", { ignore: " -" }) && _throw(400, "Invalid lastname");
+      !validator.isAlpha(value, "vi-VN", { ignore: " -" }) &&
+        _throw({
+          code: 400,
+          errors: [{ field: "lastname", message: "Invalid lastname" }],
+          message: "Invalid lastname",
+        });
     },
   },
   username: {
@@ -27,14 +37,24 @@ const userSchema = new mongoose.Schema({
     required: "Username required",
     maxlength: 100,
     validate: (value) => {
-      !validator.isAlphanumeric(value, "vi-VN", { ignore: "-_" }) && _throw(400, "Invalid username");
+      !validator.isAlphanumeric(value, "vi-VN", { ignore: "-_" }) &&
+        _throw({
+          code: 400,
+          errors: [{ field: "username", message: "Invalid username" }],
+          message: "Invalid username",
+        });
     },
   },
   email: {
     type: String,
     required: "Email required",
     validate: (value) => {
-      !validator.isEmail(value) && _throw(400, "Invalid email");
+      !validator.isEmail(value) &&
+        _throw({
+          code: 400,
+          errors: [{ field: "email", message: "Invalid email" }],
+          message: "Invalid email",
+        });
     },
   },
   avatar: {
@@ -60,7 +80,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     minlength: 8,
     validate: (value) => {
-      !validator.isStrongPassword(value) && _throw(400, "Password is weak");
+      !validator.isStrongPassword(value) &&
+        _throw({
+          code: 400,
+          errors: [{ field: "password", message: "password is weak" }],
+          message: "password is weak",
+        });
     },
   },
   accessToken: {
