@@ -8,6 +8,7 @@ router
   .post("/login", usersController.logIn)
   .post("/logout", verifyJWT, usersController.logOut)
   .post("/register", usersController.register)
+  .post("/refresh", usersController.getAccessfromRefresh)
   .put("/update", verifyJWT, usersController.update);
 
 export default router;

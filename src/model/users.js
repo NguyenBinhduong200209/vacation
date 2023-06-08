@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true,
     required: "Firstname required",
-    minlength: 100,
+    maxlength: 100,
     validate: (value) => {
       !validator.isAlpha(value, "vi-VN", { ignore: " -" }) && _throw(400, "Invalid firstname");
     },
@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true,
     required: "Lastname required",
-    minlength: 100,
+    maxlength: 100,
     validate: (value) => {
       !validator.isAlpha(value, "vi-VN", { ignore: " -" }) && _throw(400, "Invalid lastname");
     },
@@ -25,9 +25,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true,
     required: "Username required",
-    minlength: 100,
+    maxlength: 100,
     validate: (value) => {
-      !validator.isAlpha(value, "vi-VN", { ignore: "-_" }) && _throw(400, "Invalid username");
+      !validator.isAlphanumeric(value, "vi-VN", { ignore: "-_" }) && _throw(400, "Invalid username");
     },
   },
   email: {
@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema({
   },
   dateOfBirth: {
     type: Date,
-    min: new Date(),
+    max: new Date(),
     required: "Date of Birth required",
   },
   gender: {
@@ -54,7 +54,7 @@ const userSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    minlength: 65000,
+    maxlength: 65000,
   },
   password: {
     type: String,

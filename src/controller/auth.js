@@ -12,7 +12,7 @@ const usersController = {
       const value = username ? { username } : { email };
 
       //Get User from database
-      const foundUser = await Users.findOne(value).lean().exec();
+      const foundUser = await Users.findOne(value);
       !foundUser && _throw(404, "user not found");
 
       // Evaluate password
@@ -127,6 +127,40 @@ const usersController = {
 
     //Send to front
     return res.status(200).json({ msg: `user ${foundUser.username} update successfully` });
+  }),
+
+  getAccessfromRefresh: asyncWrapper(async (req, res) => {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+
+    console.log(authHeader);
+
+    // If the authorization header doesn't start with "Bearer ", throw an error
+    !authHeader && _throw(401, "auth header not found");
+
+    if (authHeader?.startsWith("Bearer ")) {
+      const refreshToken = authHeader.split(" ")[1];
+
+      //verify Token
+      await jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) => {
+        err && _throw(403, "invalid token");
+      });
+
+      //Find User have refreshToken in database
+      const foundUser = await Users.findOne({ refreshToken });
+      !foundUser && _throw(400, "invalid token");
+
+      //Create new accessToken
+      const accessToken = jwt.sign({ username: foundUser.username }, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: process.env.ACCESS_TOKEN_EXPIRATION,
+      });
+
+      //Save new accessToken to db
+      foundUser.accessToken = accessToken;
+      await foundUser.save();
+
+      //Send new accessToken to front
+      return res.status(200).json({ accessToken });
+    }
   }),
 };
 
