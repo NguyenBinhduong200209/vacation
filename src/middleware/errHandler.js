@@ -1,7 +1,7 @@
 const errHandler = (err, req, res, next) => {
   console.log(err.stack); // Log the error stack trace to the console
 
-  const { errors, message, meta, code } = err.message;
+  const { errors, message, meta, code } = err;
   switch (err.name) {
     // If the error is a validation error, return a 400 Bad Request status code with the validation errors as JSON
     case "ValidationError":

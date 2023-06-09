@@ -8,30 +8,43 @@ const vacationSchema = new mongoose.Schema({
     type: mongoose.ObjectId,
     required: "UserId required",
     validate: async (value) => {
-      const foundUser = await Users.findOne(value);
-      !foundUser && _throw(400, "Invalid UserId");
+      const foundUser = await Users.findById(value);
+      !foundUser &&
+        _throw({
+          code: 400,
+          errors: [{ field: "userId", message: "invalid userId" }],
+          message: "invalid userId",
+        });
     },
   },
+
   title: {
     type: String,
     trim: true,
     required: "Title required",
     maxlength: 100,
     validate: (value) => {
-      !validator.isAlpha(value, "vi-VN", { ignore: " -_" }) && _throw(400, "Invalid title");
+      !validator.isAlpha(value, "vi-VN", { ignore: " -_" }) &&
+        _throw({
+          code: 400,
+          errors: [{ field: "title", message: "invalid title" }],
+          message: "invalid title",
+        });
     },
   },
+
   description: {
     type: String,
     required: "Description required",
     trim: true,
     maxlength: 65000,
   },
+
   memberList: [
     {
       type: mongoose.ObjectId,
       validate: async (value) => {
-        const foundUser = await Users.findOne(value);
+        const foundUser = await Users.findById(value);
         !foundUser &&
           _throw({
             code: 400,
@@ -41,17 +54,19 @@ const vacationSchema = new mongoose.Schema({
       },
     },
   ],
+
   shareStatus: {
     type: String,
     required: "Share Status required",
     enum: ["public", "protected", "onlyme"],
     default: "public",
   },
+
   shareList: [
     {
       type: mongoose.ObjectId,
       validate: async (value) => {
-        const foundUser = await Users.findOne(value);
+        const foundUser = await Users.findById(value);
         !foundUser &&
           _throw({
             code: 400,
@@ -61,6 +76,7 @@ const vacationSchema = new mongoose.Schema({
       },
     },
   ],
+
   startingTime: {
     type: Date,
     required: "starting Time required",
@@ -73,6 +89,7 @@ const vacationSchema = new mongoose.Schema({
         });
     },
   },
+
   endingTime: {
     type: Date,
     validate: (value) => {
@@ -83,6 +100,15 @@ const vacationSchema = new mongoose.Schema({
           message: "invalid time",
         });
     },
+  },
+
+  createdAt: {
+    type: Date,
+  },
+
+  lastUpdateAt: {
+    type: Date,
+    default: new Date(),
   },
 });
 

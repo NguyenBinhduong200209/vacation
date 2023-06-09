@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema({
         });
     },
   },
+
   lastname: {
     type: String,
     trim: true,
@@ -31,6 +32,7 @@ const userSchema = new mongoose.Schema({
         });
     },
   },
+
   username: {
     type: String,
     trim: true,
@@ -45,6 +47,7 @@ const userSchema = new mongoose.Schema({
         });
     },
   },
+
   email: {
     type: String,
     required: "Email required",
@@ -57,25 +60,30 @@ const userSchema = new mongoose.Schema({
         });
     },
   },
+
   avatar: {
     type: String,
     required: "Avatar required",
   },
+
   dateOfBirth: {
     type: Date,
     max: new Date(),
     required: "Date of Birth required",
   },
+
   gender: {
     type: String,
     required: "Gender required",
     enum: ["Men", "Women"],
     default: "Men",
   },
+
   description: {
     type: String,
     maxlength: 65000,
   },
+
   password: {
     type: String,
     minlength: 8,
@@ -88,21 +96,26 @@ const userSchema = new mongoose.Schema({
         });
     },
   },
+
   accessToken: {
     type: String,
   },
+
   refreshToken: {
     type: String,
   },
+
   createdAt: {
     type: Date,
-    default: new Date(),
   },
+
   lastActiveAt: {
     type: Date,
   },
+
   lastUpdateAt: {
     type: Date,
+    default: new Date(),
   },
 });
 

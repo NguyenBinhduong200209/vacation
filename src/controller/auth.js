@@ -93,11 +93,13 @@ const usersController = {
       if (val) {
         switch (key) {
           case "username":
-            //Check username is already existed or not
-            const checkDup = await Users.findOne({ username: val });
-            checkDup
-              ? _throw({ code: 400, message: "username has already existed" })
-              : (foundUser.username = val);
+            if (foundUser.username !== val) {
+              //Check username is already existed or not
+              const checkDup = await Users.findOne({ username: val });
+              checkDup
+                ? _throw({ code: 400, message: "username has already existed" })
+                : (foundUser.username = val);
+            }
             break;
 
           case "password":
@@ -131,8 +133,10 @@ const usersController = {
     //Send to front
     return res
       .status(200)
-      .json({ data: foundUser, message: `user ${foundUser.username} update successfully` });
+      .json({ data: { userInfo: foundUser }, message: `user ${foundUser.username} update successfully` });
   }),
+
+  forgot: asyncWrapper(async (req, res) => {}),
 
   refresh: asyncWrapper(async (req, res) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
@@ -164,7 +168,7 @@ const usersController = {
       await foundUser.save();
 
       //Send new accessToken to front
-      return res.status(200).json({ data: accessToken, message: "refresh successfully" });
+      return res.status(200).json({ data: { accessToken }, message: "refresh successfully" });
     }
   }),
 };
