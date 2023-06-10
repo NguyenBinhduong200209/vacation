@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import _throw from "#root/utils/_throw";
-import Cities from "#root/utils/cities";
 import Districts from "#root/utils/districts";
 
 const locationSchema = new mongoose.Schema({
