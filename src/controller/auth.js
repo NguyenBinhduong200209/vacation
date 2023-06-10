@@ -3,6 +3,7 @@ import Users from "#root/model/users";
 import asyncWrapper from "#root/middleware/asyncWrapper";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import sendMail from "#root/utils/sendEmail";
 
 const usersController = {
   logIn: asyncWrapper(async (req, res) => {
@@ -136,7 +137,9 @@ const usersController = {
       .json({ data: { userInfo: foundUser }, message: `user ${foundUser.username} update successfully` });
   }),
 
-  forgot: asyncWrapper(async (req, res) => {}),
+  forgot: asyncWrapper(async (req, res) => {
+    await sendMail();
+  }),
 
   refresh: asyncWrapper(async (req, res) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
@@ -150,8 +153,13 @@ const usersController = {
       const refreshToken = authHeader.split(" ")[1];
 
       //verify Token
-      await jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) => {
-        err && _throw({ code: 403, message: "invalid token" });
+      await jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err) => {
+        err &&
+          _throw({
+            code: 403,
+            errrors: [{ field: "refreshToken", message: "invalid" }],
+            message: "invalid token",
+          });
       });
 
       //Find User have refreshToken in database
