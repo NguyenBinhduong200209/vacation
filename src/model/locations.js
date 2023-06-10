@@ -4,20 +4,6 @@ import Cities from "#root/utils/cities";
 import Districts from "#root/utils/districts";
 
 const locationSchema = new mongoose.Schema({
-  cityId: {
-    type: mongoose.ObjectId,
-    required: "cityId required",
-    validate: async function (value) {
-      const foundCity = await Cities.findById(value);
-      !foundCity &&
-        _throw({
-          code: 400,
-          errors: [{ field: "cityId", message: "invalid cityId" }],
-          message: "invalid cityId",
-        });
-    },
-  },
-
   districtId: {
     type: mongoose.ObjectId,
     required: "districtId required",
