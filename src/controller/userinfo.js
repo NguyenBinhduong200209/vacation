@@ -3,7 +3,7 @@ import Users from "#root/model/users";
 import asyncWrapper from "#root/middleware/asyncWrapper";
 
 
-const usersController = {
+const usersinforController = {
 
     userprofile: asyncWrapper(async (req, res) => {
         const { username } = req.body;
@@ -34,3 +34,4 @@ const usersController = {
 
     })
 }
+export default usersinforController;
