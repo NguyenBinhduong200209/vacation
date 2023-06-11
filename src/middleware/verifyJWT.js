@@ -2,15 +2,16 @@ import jwt from 'jsonwebtoken';
 import Users from '#root/model/users';
 import _throw from '#root/utils/_throw';
 import dbConnect from '#root/config/dbConnect';
+import asyncWrapper from '#root/middleware/asyncWrapper';
 
-const verifyJWT = async (req, res, next) => {
+const verifyJWT = asyncWrapper(async (req, res, next) => {
   // Get the authorization header from the request
   const authHeader = req.headers.authorization || req.headers.Authorization;
 
   console.log(authHeader); // Log the authorization header to the console
 
   // If the authorization header doesn't start with "Bearer ", throw an error
-  !authHeader && _throw(401, 'auth header not found');
+  !authHeader && _throw({ code: 401, message: 'auth header not found' });
 
   if (authHeader?.startsWith('Bearer ')) {
     const accessToken = authHeader.split(' ')[1];
@@ -34,6 +35,6 @@ const verifyJWT = async (req, res, next) => {
     // Call the next middleware function
     next();
   }
-};
+});
 
 export default verifyJWT;
