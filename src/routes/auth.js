@@ -11,6 +11,6 @@ router
   .post('/refresh', usersController.refresh)
   .put('/update', verifyJWT, usersController.update)
   .post('/forgot', usersController.forgot)
-  .post('/test', usersController.test);
+  .put('/reset', usersController.reset);
 
 export default router;

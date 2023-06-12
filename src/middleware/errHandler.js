@@ -20,7 +20,7 @@ const errHandler = (err, req, res, next) => {
       return res.status(400).json({ errors, meta, message: 'CastError' });
 
     default:
-      return res.status(code).json({ errors, meta, message });
+      return res.status(code || 500).json({ errors, meta, message });
   }
 };
 
