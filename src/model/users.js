@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema({
     required: 'Lastname required',
     maxlength: 100,
     validate: value => {
-      !validator.isAlpha(value, 'vi-VN', { ignore: ' -' }) &&
+      !validator.isAlpha(value, 'vi-VN', { ignore: " -'" }) &&
         _throw({
           code: 400,
           errors: [{ field: 'lastname', message: 'Invalid lastname' }],
@@ -75,8 +75,8 @@ const userSchema = new mongoose.Schema({
   gender: {
     type: String,
     required: 'Gender required',
-    enum: ['Men', 'Women'],
-    default: 'Men',
+    enum: ['Male', 'Female', 'Non-binary'],
+    default: 'Male',
   },
 
   description: {
@@ -88,7 +88,13 @@ const userSchema = new mongoose.Schema({
     type: String,
     minlength: 8,
     validate: value => {
-      !validator.isStrongPassword(value) &&
+      !validator.isStrongPassword(value, {
+        minLength: 8,
+        minLowercase: 1,
+        minNumbers: 1,
+        minUppercase: 1,
+        minSymbols: 1,
+      }) &&
         _throw({
           code: 400,
           errors: [{ field: 'password', message: 'password is weak' }],
