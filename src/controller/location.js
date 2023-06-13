@@ -1,5 +1,5 @@
 import _throw from '#root/utils/_throw';
-import Locations from '#root/model/location';
+import Locations from '#root/model/locations';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import mongoose from 'mongoose';
 
