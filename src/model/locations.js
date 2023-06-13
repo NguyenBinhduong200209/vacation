@@ -43,17 +43,17 @@ const locationSchema = new mongoose.Schema({
     maxlength: 65000,
   },
 
-  longitude: {
-    type: String,
-    trim: true,
-    required: 'longitude required',
-  },
+  // longitude: {
+  //   type: String,
+  //   trim: true,
+  //   required: 'longitude required',
+  // },
 
-  latitude: {
-    type: String,
-    trim: true,
-    required: 'latitude required',
-  },
+  // latitude: {
+  //   type: String,
+  //   trim: true,
+  //   required: 'latitude required',
+  // },
 
   createdAt: {
     type: Date,
