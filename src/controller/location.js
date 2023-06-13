@@ -5,12 +5,12 @@ import mongoose from 'mongoose';
 
 const locationController = {
   addNew: asyncWrapper(async (req, res) => {
-    const { districtId, title, description } = req.body;
+    const { parentId, title, description } = req.body;
     const foundUser = req.userInfo;
 
     const foundDistrict = await Locations.findOne({
       level: 2,
-      _id: districtId,
+      _id: parentId,
     });
 
     !foundDistrict &&
@@ -21,7 +21,7 @@ const locationController = {
       });
 
     const foundLocation = await Locations.findOne({
-      parentId: districtId,
+      parentId: parentId,
       title: title.trim(),
       level: 1,
     });
@@ -33,7 +33,7 @@ const locationController = {
       });
 
     const newLocation = await Locations.create({
-      parentId: districtId,
+      parentId: parentId,
       level: 1,
       userId: foundUser._id,
       title,
