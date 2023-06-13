@@ -109,10 +109,39 @@ const vacationController = {
     //Find vacation based on id
     const foundVacation = await Vacations.findById(id);
 
+    //Throw an error if cannot find vacation
+    !foundVacation &&
+      _throw({ code: 400, errors: [{ field: 'id', message: 'invalid' }], message: 'vacation did not exist' });
+
+    //Get userId from verifyJWT middleware
+    const userId = req.userInfo._id.toString();
+    switch (foundVacation.shareStatus) {
+      case 'protected':
+        //Throw an error if user is not in shareList of vacation
+        !foundVacation.shareList.includes(userId) &&
+          _throw({
+            code: 403,
+            errors: [{ field: 'shareList', message: 'user is not in shareList of this vacation' }],
+            message: 'Forbidden',
+          });
+        break;
+
+      case 'onlyme':
+        //Throw an error if shareStatus of vacation is onlyme and user is not author
+        foundVacation.userId !== userId &&
+          _throw({
+            code: 403,
+            errors: [{ field: 'shareStatus', message: 'this vacation only can be seen by its author' }],
+            message: 'Forbidden',
+          });
+        break;
+
+      default:
+        break;
+    }
+
     //Send to front
-    return foundVacation
-      ? res.status(200).json({ data: foundVacation, message: 'get detail successfully' })
-      : _throw({ code: 400, errors: [{ field: 'id', message: 'invalid' }], message: 'vacation did not exist' });
+    return res.status(200).json({ data: foundVacation, message: 'get detail successfully' });
   }),
 
   addNew: asyncWrapper(async (req, res) => {
