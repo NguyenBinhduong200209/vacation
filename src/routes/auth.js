@@ -10,7 +10,7 @@ router
   .post('/register', usersController.register)
   .post('/refresh', usersController.refresh)
   .put('/update', verifyJWT, usersController.update)
-  .post('/forgot', usersController.forgot)
+  .post('/forgot/:email', usersController.forgot)
   .put('/reset', usersController.reset);
 
 export default router;
