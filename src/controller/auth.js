@@ -22,22 +22,14 @@ const usersController = {
       !match && _throw({ code: 400, message: 'password not match' });
 
       //Generate new accessToken
-      const accessToken = jwt.sign(
-        { username: foundUser.username },
-        process.env.ACCESS_TOKEN_SECRET,
-        {
-          expiresIn: process.env.ACCESS_TOKEN_EXPIRATION,
-        }
-      );
+      const accessToken = jwt.sign({ username: foundUser.username }, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: process.env.ACCESS_TOKEN_EXPIRATION,
+      });
 
       //Generate new refreshToken
-      const refreshToken = jwt.sign(
-        { username: foundUser.username },
-        process.env.REFRESH_TOKEN_SECRET,
-        {
-          expiresIn: process.env.REFRESH_TOKEN_EXPIRATION,
-        }
-      );
+      const refreshToken = jwt.sign({ username: foundUser.username }, process.env.REFRESH_TOKEN_SECRET, {
+        expiresIn: process.env.REFRESH_TOKEN_EXPIRATION,
+      });
 
       //Save token to database to prevent previousToken still take effect
       foundUser.accessToken = accessToken;
@@ -79,8 +71,7 @@ const usersController = {
 
     //Check for duplicate username in database
     const dupUsername = await Users.findOne({ username }).lean();
-    dupUsername &&
-      _throw({ code: 400, message: 'username has already been existed' });
+    dupUsername && _throw({ code: 400, message: 'username has already been existed' });
 
     //Create new user and validate infor
     const newUser = new Users(req.body);
@@ -164,7 +155,7 @@ const usersController = {
 
   forgot: asyncWrapper(async (req, res) => {
     //Get email from req.query
-    const { email } = req.query;
+    const { email } = req.params;
 
     //Found user based on email
     const foundUser = await Users.findOne({ email });
@@ -188,9 +179,7 @@ const usersController = {
     await foundUser.save();
 
     //Send to front
-    return res
-      .status(200)
-      .json({ data: '', message: 'send reset password email successfully' });
+    return res.status(200).json({ data: '', message: 'send reset password email successfully' });
   }),
 
   reset: asyncWrapper(async (req, res) => {
@@ -214,9 +203,7 @@ const usersController = {
     await foundUser.save();
 
     // Send to front
-    return res
-      .status(200)
-      .json({ data: '', message: 'user reset password successfully' });
+    return res.status(200).json({ data: '', message: 'user reset password successfully' });
   }),
 
   refresh: asyncWrapper(async (req, res) => {
@@ -235,31 +222,23 @@ const usersController = {
       const refreshToken = authHeader.split(' ')[1];
 
       //verify Token
-      await jwt.verify(
-        refreshToken,
-        process.env.REFRESH_TOKEN_SECRET,
-        async err => {
-          err &&
-            _throw({
-              code: 403,
-              errrors: [{ field: 'refreshToken', message: 'invalid' }],
-              message: 'invalid token',
-            });
-        }
-      );
+      await jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async err => {
+        err &&
+          _throw({
+            code: 403,
+            errrors: [{ field: 'refreshToken', message: 'invalid' }],
+            message: 'invalid token',
+          });
+      });
 
       //Find User have refreshToken in database
       const foundUser = await Users.findOne({ refreshToken });
       !foundUser && _throw({ code: 400, message: 'invalid token' });
 
       //Create new accessToken
-      const accessToken = jwt.sign(
-        { username: foundUser.username },
-        process.env.ACCESS_TOKEN_SECRET,
-        {
-          expiresIn: process.env.ACCESS_TOKEN_EXPIRATION,
-        }
-      );
+      const accessToken = jwt.sign({ username: foundUser.username }, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: process.env.ACCESS_TOKEN_EXPIRATION,
+      });
 
       //Save new accessToken to db
       foundUser.accessToken = accessToken;
