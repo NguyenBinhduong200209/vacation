@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import errHandler from '#root/middleware/errHandler';
 import authRoute from '#root/routes/auth';
 import locationRoute from '#root/routes/location';
+import vacationRoute from '#root/routes/vacation';
 import credentials from '#root/middleware/credentials';
 import dbConnect from '#root/config/dbConnect';
 
@@ -32,6 +33,7 @@ app.use(express.json());
 // use router for handling requests
 app.use('/auth', authRoute);
 app.use('/location', locationRoute);
+app.use('/vacation', vacationRoute);
 
 // use middleware for handling errors
 app.use(errHandler);
@@ -39,7 +41,5 @@ app.use(errHandler);
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-  mongoose.connection
-    .once('open', () => console.log('Connected to MongoDB'))
-    .on('error', err => console.log(err));
+  mongoose.connection.once('open', () => console.log('Connected to MongoDB')).on('error', err => console.log(err));
 });
