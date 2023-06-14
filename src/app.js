@@ -10,6 +10,7 @@ import vacationRoute from '#root/routes/vacation';
 import postRoute from '#root/routes/post';
 import credentials from '#root/middleware/credentials';
 import dbConnect from '#root/config/dbConnect';
+import userinforRoute from "#root/routes/userinfor";
 
 // create an instance of an Express application
 const app = express();
@@ -37,6 +38,8 @@ app.use('/location', locationRoute);
 app.use('/vacation', vacationRoute);
 app.use('/post', postRoute);
 
+//
+app.use("/userinfor", userinforRoute);
 // use middleware for handling errors
 app.use(errHandler);
 
