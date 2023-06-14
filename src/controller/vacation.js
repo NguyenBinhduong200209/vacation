@@ -1,6 +1,7 @@
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Vacations from '#root/model/vacations';
+import mongoose from 'mongoose';
 
 const vacationController = {
   getMany: asyncWrapper(async (req, res) => {
@@ -41,6 +42,7 @@ const vacationController = {
           from: 'posts',
           pipeline: [
             { $unwind: '$subAlbum' },
+            { $sample: { size: 3 } },
             { $group: { _id: '$subAlbum', subAlbum: { $push: '$subAlbum' } } },
             { $unset: '_id' },
           ],
@@ -140,8 +142,56 @@ const vacationController = {
         break;
     }
 
+    const result = await Vacations.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      {
+        $lookup: {
+          from: 'posts',
+          pipeline: [
+            { $project: { vacationId: 0, __v: 0 } },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'userId',
+                foreignField: '_id',
+                pipeline: [{ $project: { username: 1, _id: 0 } }],
+                as: 'username',
+              },
+            },
+            { $unwind: '$username' },
+            { $addFields: { username: '$username.username' } },
+            {
+              $lookup: {
+                from: 'locations',
+                localField: 'locationId',
+                foreignField: '_id',
+                pipeline: [{ $project: { title: 1, _id: 0 } }],
+                as: 'location',
+              },
+            },
+            { $unwind: '$location' },
+            { $addFields: { location: '$location.title' } },
+          ],
+          localField: '_id',
+          foreignField: 'vacationId',
+          as: 'posts',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          pipeline: [{ $project: { username: 1, _id: 0 } }],
+          as: 'username',
+        },
+      },
+      { $unwind: '$username' },
+      { $addFields: { username: '$username.username' } },
+    ]);
+
     //Send to front
-    return res.status(200).json({ data: foundVacation, message: 'get detail successfully' });
+    return res.status(200).json({ data: result[0], message: 'get detail successfully' });
   }),
 
   addNew: asyncWrapper(async (req, res) => {

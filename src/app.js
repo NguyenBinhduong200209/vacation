@@ -7,6 +7,7 @@ import errHandler from '#root/middleware/errHandler';
 import authRoute from '#root/routes/auth';
 import locationRoute from '#root/routes/location';
 import vacationRoute from '#root/routes/vacation';
+import postRoute from '#root/routes/post';
 import credentials from '#root/middleware/credentials';
 import dbConnect from '#root/config/dbConnect';
 
@@ -34,6 +35,7 @@ app.use(express.json());
 app.use('/auth', authRoute);
 app.use('/location', locationRoute);
 app.use('/vacation', vacationRoute);
+app.use('/post', postRoute);
 
 // use middleware for handling errors
 app.use(errHandler);
