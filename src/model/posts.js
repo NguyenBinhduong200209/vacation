@@ -55,7 +55,7 @@ const postSchema = new mongoose.Schema({
     maxlength: 65000,
   },
 
-  subAlbum: [
+  resource: [
     {
       type: String,
       validate: async value => {

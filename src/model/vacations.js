@@ -40,6 +40,12 @@ const vacationSchema = new mongoose.Schema({
     maxlength: 65000,
   },
 
+  cover: {
+    type: String,
+    required: 'cover photo required',
+    trim: true,
+  },
+
   memberList: [
     {
       type: mongoose.ObjectId,
@@ -100,6 +106,12 @@ const vacationSchema = new mongoose.Schema({
           message: 'invalid time',
         });
     },
+  },
+
+  views: {
+    type: Number,
+    min: 1,
+    default: 1,
   },
 
   createdAt: {
