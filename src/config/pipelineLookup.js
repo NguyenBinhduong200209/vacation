@@ -1,11 +1,11 @@
 const pipelineLookup = {
-  getUsername: [
+  getUserInfo: [
     {
       $lookup: {
         from: 'users',
         localField: 'userId',
         foreignField: '_id',
-        pipeline: [{ $project: { username: 1 } }],
+        pipeline: [{ $project: { username: 1, avatar: 1 } }],
         as: 'authorInfo',
       },
     },
@@ -55,6 +55,34 @@ const pipelineLookup = {
       },
     },
     { $unwind: '$location' },
+  ],
+
+  countLikesAndComments: [
+    //Get total like by looking up to likes model
+    {
+      $lookup: {
+        from: 'likes',
+        pipeline: [{ $count: 'total' }],
+        localField: '_id',
+        foreignField: 'postId',
+        as: 'totalLikes',
+      },
+    },
+    { $unwind: '$totalLikes' },
+    { $addFields: { totalLikes: '$totalLikes.total' } },
+
+    //Get total comment by looking up to comment model
+    {
+      $lookup: {
+        from: 'comments',
+        pipeline: [{ $count: 'total' }],
+        localField: '_id',
+        foreignField: 'postId',
+        as: 'totalComments',
+      },
+    },
+    { $unwind: '$totalComments' },
+    { $addFields: { totalComments: '$totalComments.total' } },
   ],
 };
 

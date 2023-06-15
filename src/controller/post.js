@@ -34,34 +34,9 @@ const postController = {
       { $limit: itemOfPage },
 
       //Get username, location by looking up to other model
-      ...pipelineLookup.getUsername,
+      ...pipelineLookup.getUserInfo,
       ...pipelineLookup.location,
-
-      //Get total like by looking up to likes model
-      {
-        $lookup: {
-          from: 'likes',
-          pipeline: [{ $count: 'total' }],
-          localField: '_id',
-          foreignField: 'postId',
-          as: 'totalLikes',
-        },
-      },
-      { $unwind: '$totalLikes' },
-      { $addFields: { totalLikes: '$totalLikes.total' } },
-
-      //Get total comment by looking up to comment model
-      {
-        $lookup: {
-          from: 'comments',
-          pipeline: [{ $count: 'total' }],
-          localField: '_id',
-          foreignField: 'postId',
-          as: 'totalComments',
-        },
-      },
-      { $unwind: '$totalComments' },
-      { $addFields: { totalComments: '$totalComments.total' } },
+      ...pipelineLookup.countLikesAndComments,
 
       //Set up new array with total field is length of array and list field is array without __v field
       {
@@ -77,7 +52,7 @@ const postController = {
             },
             { $project: { _id: 0 } },
           ],
-          data: [{ $project: { userId: 0, vacationId: 0, locationId: 0 } }],
+          data: [{ $project: { userId: 0, vacationId: 0, locationId: 0, total: 0, page: 0, pages: 0 } }],
         },
       },
 
@@ -98,15 +73,11 @@ const postController = {
 
     await checkForbidden(foundUserId, foundPost.vacationId);
 
-    // Increase view of post by 1
-    foundPost.views += 1;
-    await foundPost.save();
-
     const result = await Posts.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(id) } },
 
       //Get username, location by looking up to other model
-      ...pipelineLookup.getUsername,
+      ...pipelineLookup.getUserInfo,
       ...pipelineLookup.location,
 
       //Get detail likeInfo by looking up to likes model

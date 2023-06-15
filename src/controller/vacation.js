@@ -19,6 +19,8 @@ const vacationController = {
         $match: { $or: [{ shareStatus: 'public' }, { shareStatus: 'protected', shareList: { $in: [foundUser._id] } }] },
       },
 
+      { $project: { shareList: 0, createdAt: 0, lastUpdateAt: 0 } },
+
       //Sort in order to push the newest updated vacation to top
       { $sort: { lastUpdateAt: -1, createdAt: -1 } },
 
@@ -33,7 +35,7 @@ const vacationController = {
       { $limit: itemOfPage },
 
       //Get username of author by lookup to users model by userId
-      ...pipelineLookup.getUsername,
+      ...pipelineLookup.getUserInfo,
 
       {
         $lookup: {
@@ -41,39 +43,14 @@ const vacationController = {
           localField: '_id',
           foreignField: 'vacationId',
           pipeline: [
-            //Get total like by looking up to likes model
-            {
-              $lookup: {
-                from: 'likes',
-                pipeline: [{ $count: 'total' }],
-                localField: '_id',
-                foreignField: 'postId',
-                as: 'likes',
-              },
-            },
-            { $unwind: '$likes' },
-            { $addFields: { likes: '$likes.total' } },
-
-            //Get total comment by looking up to comment model
-            {
-              $lookup: {
-                from: 'comments',
-                pipeline: [{ $count: 'total' }],
-                localField: '_id',
-                foreignField: 'postId',
-                as: 'comments',
-              },
-            },
-            { $unwind: '$comments' },
-            { $addFields: { comments: '$comments.total' } },
+            ...pipelineLookup.countLikesAndComments,
 
             //Only get field views, totalLikes, totalComments
             {
               $group: {
                 _id: '$vacationId',
-                views: { $sum: '$views' },
-                likes: { $sum: '$likes' },
-                comments: { $sum: '$comments' },
+                likes: { $sum: '$totalLikes' },
+                comments: { $sum: '$totalComments' },
               },
             },
             { $unset: '_id' },
@@ -82,7 +59,7 @@ const vacationController = {
         },
       },
       { $unwind: '$posts' },
-      { $addFields: { views: '$posts.views', likes: '$posts.likes', comments: '$posts.comments' } },
+      { $addFields: { likes: '$posts.likes', comments: '$posts.comments' } },
 
       //Set up new array with total field is length of array and list field is array without __v field
       {
@@ -114,7 +91,11 @@ const vacationController = {
     const userId = req.userInfo._id.toString();
 
     //Throw an error if user login is not in shareList
-    await checkForbidden(userId, id);
+    const foundVacation = await checkForbidden(userId, id);
+
+    // Increase view of post by 1
+    foundVacation.views += 1;
+    await foundVacation.save();
 
     const result = await Vacations.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(id) } },
