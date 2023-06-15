@@ -43,7 +43,7 @@ const locationController = {
     return res.status(201).json({ data: newLocation, meta: null, message: 'location created' });
   }),
 
-  getList: asyncWrapper(async (req, res) => {
+  getListBasedOnLevel: asyncWrapper(async (req, res) => {
     const level = Math.round(req.query.level);
 
     //Throw an error if level is not number type or greater than 3 or lower than 1
@@ -98,6 +98,22 @@ const locationController = {
           meta: { total: list.length },
           message: 'get list successfully',
         });
+  }),
+
+  getListBasedOnTrend: asyncWrapper(async (req, res) => {
+    const { quantity } = req.params;
+    const result = await Locations.aggregate([
+      { $match: { level: 1 } },
+      {
+        $lookup: {
+          from: 'posts',
+          localField: '_id',
+          foreignField: 'locationId',
+          as: 'info',
+        },
+      },
+    ]);
+    return res.status(200).json(result);
   }),
 };
 
