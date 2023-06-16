@@ -1,10 +1,9 @@
 import mongoose from 'mongoose';
 import _throw from '#root/utils/_throw';
 import Users from '#root/model/users';
-import Posts from '#root/model/posts';
 
 const likeSchema = new mongoose.Schema({
-  //Level 1 stands for
+  //Level 1 stands for postId, level 2 stands for vacationId
   level: {
     type: Number,
     required: 'districtId required',
@@ -12,18 +11,10 @@ const likeSchema = new mongoose.Schema({
     max: 2,
   },
 
-  postId: {
+  //If level is 1, parentId is postId, if level is 2, parentId is vacationId
+  parentId: {
     type: mongoose.ObjectId,
-    required: 'postId required',
-    validate: async value => {
-      const foundPost = await Posts.findById(value);
-      !foundPost &&
-        _throw({
-          code: 400,
-          errors: [{ field: 'postId', message: 'invalid postId' }],
-          message: 'invalid postId',
-        });
-    },
+    required: 'parentId required',
   },
 
   userId: {

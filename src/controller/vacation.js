@@ -43,7 +43,7 @@ const vacationController = {
           localField: '_id',
           foreignField: 'vacationId',
           pipeline: [
-            ...pipelineLookup.countLikesAndComments,
+            ...pipelineLookup.countLikesAndComments({ level: 2 }),
 
             //Only get field views, totalLikes, totalComments
             {

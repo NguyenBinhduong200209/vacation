@@ -36,7 +36,7 @@ const postController = {
       //Get username, location by looking up to other model
       ...pipelineLookup.getUserInfo,
       ...pipelineLookup.location,
-      ...pipelineLookup.countLikesAndComments,
+      ...pipelineLookup.countLikesAndComments({ level: 1 }),
 
       //Set up new array with total field is length of array and list field is array without __v field
       {
@@ -60,7 +60,7 @@ const postController = {
       { $unwind: '$meta' },
     ]);
 
-    return res.status(200).json(result[0]);
+    return res.status(200).json(result);
   }),
 
   getOne: asyncWrapper(async (req, res) => {

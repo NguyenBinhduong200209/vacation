@@ -8,9 +8,10 @@ import authRoute from '#root/routes/auth';
 import locationRoute from '#root/routes/location';
 import vacationRoute from '#root/routes/vacation';
 import postRoute from '#root/routes/post';
+import testRoute from '#root/routes/test';
 import credentials from '#root/middleware/credentials';
 import dbConnect from '#root/config/dbConnect';
-import userinforRoute from "#root/routes/userinfor";
+import userinforRoute from '#root/routes/userinfor';
 
 // create an instance of an Express application
 const app = express();
@@ -37,9 +38,10 @@ app.use('/auth', authRoute);
 app.use('/location', locationRoute);
 app.use('/vacation', vacationRoute);
 app.use('/post', postRoute);
+app.use('/test', testRoute);
 
 //
-app.use("/userinfor", userinforRoute);
+app.use('/userinfor', userinforRoute);
 // use middleware for handling errors
 app.use(errHandler);
 
