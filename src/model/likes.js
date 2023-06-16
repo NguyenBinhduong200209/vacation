@@ -8,10 +8,10 @@ const likeSchema = new mongoose.Schema({
     type: Number,
     required: 'districtId required',
     min: 1,
-    max: 2,
+    max: 3,
   },
 
-  //If level is 1, parentId is postId, if level is 2, parentId is vacationId
+  //If level is 1, parentId is postId, if level is 2, parentId is albumId, if level is 3, parentId is vacationId
   parentId: {
     type: mongoose.ObjectId,
     required: 'parentId required',
