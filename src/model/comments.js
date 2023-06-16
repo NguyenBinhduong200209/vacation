@@ -4,18 +4,18 @@ import Users from '#root/model/users';
 import Posts from '#root/model/posts';
 
 const commentSchema = new mongoose.Schema({
-  postId: {
+  //Level 1 stands for postId, level 2 stands for vacationId
+  level: {
+    type: Number,
+    required: 'districtId required',
+    min: 1,
+    max: 2,
+  },
+
+  //If level is 1, parentId is postId, if level is 2, parentId is vacationId
+  parentId: {
     type: mongoose.ObjectId,
-    required: 'postId required',
-    validate: async value => {
-      const foundPost = await Posts.findById(value);
-      !foundPost &&
-        _throw({
-          code: 400,
-          errors: [{ field: 'postId', message: 'invalid postId' }],
-          message: 'invalid postId',
-        });
-    },
+    required: 'parentId required',
   },
 
   userId: {

@@ -57,14 +57,14 @@ const pipelineLookup = {
     { $unwind: '$location' },
   ],
 
-  countLikesAndComments: [
+  countLikesAndComments: ({ level }) => [
     //Get total like by looking up to likes model
     {
       $lookup: {
         from: 'likes',
-        pipeline: [{ $count: 'total' }],
         localField: '_id',
-        foreignField: 'postId',
+        foreignField: 'parentId',
+        pipeline: level === 1 ? [{ $match: { level } }, { $count: 'total' }] : [{ $count: 'total' }],
         as: 'totalLikes',
       },
     },
@@ -75,9 +75,9 @@ const pipelineLookup = {
     {
       $lookup: {
         from: 'comments',
-        pipeline: [{ $count: 'total' }],
         localField: '_id',
-        foreignField: 'postId',
+        foreignField: 'parentId',
+        pipeline: level === 1 ? [{ $match: { level } }, { $count: 'total' }] : [{ $count: 'total' }],
         as: 'totalComments',
       },
     },

@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
     required: 'Firstname required',
     maxlength: 100,
     validate: value => {
-      !validator.isAlpha(value, 'vi-VN', { ignore: ' -' }) &&
+      !validator.isAlpha(value, 'vi-VN', { ignore: " -'" }) &&
         _throw({
           code: 400,
           errors: [{ field: 'firstname', message: 'Invalid firstname' }],
@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema({
     required: 'Username required',
     maxlength: 100,
     validate: value => {
-      !validator.isAlphanumeric(value, 'vi-VN', { ignore: '-_' }) &&
+      !validator.isAlphanumeric(value, 'vi-VN', { ignore: "-_'" }) &&
         _throw({
           code: 400,
           errors: [{ field: 'username', message: 'Invalid username' }],
