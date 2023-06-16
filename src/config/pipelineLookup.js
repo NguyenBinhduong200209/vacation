@@ -1,11 +1,11 @@
 const pipelineLookup = {
-  getUserInfo: [
+  getUserInfo: ({ field }) => [
     {
       $lookup: {
         from: 'users',
         localField: 'userId',
         foreignField: '_id',
-        pipeline: [{ $project: { username: 1, avatar: 1 } }],
+        pipeline: [{ $project: field.reduce((obj, item) => Object.assign(obj, { [item]: 1 }), {}) }],
         as: 'authorInfo',
       },
     },
@@ -58,6 +58,7 @@ const pipelineLookup = {
   ],
 
   countLikesAndComments: ({ level }) => [
+    { $project: { _id: 1 } },
     //Get total like by looking up to likes model
     {
       $lookup: {

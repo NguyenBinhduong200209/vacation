@@ -6,84 +6,128 @@ import checkForbidden from '#root/utils/checkForbidden';
 import checkAuthor from '#root/utils/checkAuthor';
 import mongoose from 'mongoose';
 
+const getVacationList = async ({ matchStatus, field, page, foundUserId }) => {
+  const itemOfPage = Number(process.env.ITEM_OF_PAGE);
+
+  const matchCondition = matchStatus
+    ? matchStatus.reduce((arr, item) => {
+        switch (item) {
+          case 'onlyme':
+            arr.push({ shareStatus: 'onlyme', userId: foundUserId });
+            break;
+
+          case 'protected':
+            arr.push({ shareStatus: 'protected', shareList: { $in: [foundUserId] } });
+            break;
+
+          case 'public':
+            arr.push({ shareStatus: 'public' });
+            break;
+
+          default:
+            break;
+        }
+        return arr;
+      }, [])
+    : [{ shareStatus: 'public' }];
+
+  const result = await Vacations.aggregate([
+    //Filter only return vacation has shareStatus is public or vacation has shareStatus is protected and has shared to user
+    { $match: { $or: matchCondition } },
+
+    //Sort in order to push the newest updated vacation to top
+    { $sort: { lastUpdateAt: -1, createdAt: -1 } },
+
+    // //Add field total to calculate length of result of prev pipeline
+    { $setWindowFields: { output: { total: { $count: {} } } } },
+
+    // //Add 2 new fields with field page is current page user wanna get, and field pages is total pages divided by length of array and itemOfPage
+    { $addFields: { page: page, pages: { $ceil: { $divide: ['$total', itemOfPage] } } } },
+
+    //Remove some firstN element in array if page > 1 and get quantity of element equal to itemOfPage
+    { $skip: (page - 1) * itemOfPage },
+    { $limit: itemOfPage },
+
+    //Get username of author by lookup to users model by userId
+    ...pipelineLookup.getUserInfo({ field: ['username', 'avatar'] }),
+
+    {
+      $lookup: {
+        from: 'posts',
+        localField: '_id',
+        foreignField: 'vacationId',
+        pipeline: [
+          ...pipelineLookup.countLikesAndComments({ level: 2 }),
+
+          //Only get field views, totalLikes, totalComments
+          {
+            $group: {
+              _id: '$vacationId',
+              likes: { $sum: '$totalLikes' },
+              comments: { $sum: '$totalComments' },
+            },
+          },
+          { $unset: '_id' },
+        ],
+        as: 'posts',
+      },
+    },
+    { $unwind: '$posts' },
+    { $addFields: { likes: '$posts.likes', comments: '$posts.comments' } },
+
+    //Set up new array with total field is length of array and list field is array without __v field
+    {
+      $facet: {
+        meta: [
+          {
+            $group: {
+              _id: '$total',
+              total: { $first: '$total' },
+              page: { $first: '$page' },
+              pages: { $first: '$pages' },
+            },
+          },
+          { $project: { _id: 0 } },
+        ],
+        data: [{ $project: field.reduce((obj, item) => Object.assign(obj, { [item]: 1 }), {}) }],
+      },
+    },
+
+    // Destructuring field
+    { $unwind: '$meta' },
+  ]);
+  return result[0];
+};
+
 const vacationController = {
   getMany: asyncWrapper(async (req, res) => {
     const { page } = req.query,
       validPage = page && page > 0 ? Number(page) : 1,
-      itemOfPage = Number(process.env.ITEM_OF_PAGE),
       foundUser = req.userInfo;
 
-    const result = await Vacations.aggregate([
-      //Filter only return vacation has shareStatus is public or vacation has shareStatus is protected and has shared to user
-      {
-        $match: { $or: [{ shareStatus: 'public' }, { shareStatus: 'protected', shareList: { $in: [foundUser._id] } }] },
-      },
+    const result = await getVacationList({
+      matchStatus: ['public', 'protected'],
+      field: ['authorInfo', 'title', 'cover', 'views', 'likes', 'comments', 'startingTime', 'endingTime'],
+      page: validPage,
+      foundUserId: foundUser._id,
+    });
 
-      { $project: { shareList: 0, createdAt: 0, lastUpdateAt: 0 } },
+    return res.status(200).json(result);
+  }),
 
-      //Sort in order to push the newest updated vacation to top
-      { $sort: { lastUpdateAt: -1, createdAt: -1 } },
+  getManyByUser: asyncWrapper(async (req, res) => {
+    const { page } = req.query,
+      validPage = page && page > 0 ? Number(page) : 1,
+      foundUser = req.userInfo;
 
-      //Add field total to calculate length of result of prev pipeline
-      { $setWindowFields: { output: { total: { $count: {} } } } },
+    const result = await getVacationList({
+      matchStatus: ['onlyme', 'protected'],
+      field: ['title', 'cover', 'views', 'likes', 'comments', 'startingTime', 'endingTime'],
+      page: validPage,
+      foundUserId: foundUser._id,
+    });
 
-      //Add 2 new fields with field page is current page user wanna get, and field pages is total pages divided by length of array and itemOfPage
-      { $addFields: { page: validPage, pages: { $ceil: { $divide: ['$total', itemOfPage] } } } },
-
-      //Remove some firstN element in array if page > 1 and get quantity of element equal to itemOfPage
-      { $skip: (validPage - 1) * itemOfPage },
-      { $limit: itemOfPage },
-
-      //Get username of author by lookup to users model by userId
-      ...pipelineLookup.getUserInfo,
-
-      {
-        $lookup: {
-          from: 'posts',
-          localField: '_id',
-          foreignField: 'vacationId',
-          pipeline: [
-            ...pipelineLookup.countLikesAndComments({ level: 2 }),
-
-            //Only get field views, totalLikes, totalComments
-            {
-              $group: {
-                _id: '$vacationId',
-                likes: { $sum: '$totalLikes' },
-                comments: { $sum: '$totalComments' },
-              },
-            },
-            { $unset: '_id' },
-          ],
-          as: 'posts',
-        },
-      },
-      { $unwind: '$posts' },
-      { $addFields: { likes: '$posts.likes', comments: '$posts.comments' } },
-
-      //Set up new array with total field is length of array and list field is array without __v field
-      {
-        $facet: {
-          meta: [
-            {
-              $group: {
-                _id: '$total',
-                total: { $first: '$total' },
-                page: { $first: '$page' },
-                pages: { $first: '$pages' },
-              },
-            },
-            { $project: { _id: 0 } },
-          ],
-          data: [{ $project: { total: 0, page: 0, pages: 0, userId: 0, __v: 0, posts: 0 } }],
-        },
-      },
-
-      // Destructuring field
-      { $unwind: '$meta' },
-    ]);
-
-    return res.status(200).json(result[0]);
+    return res.status(200).json(result);
   }),
 
   getOne: asyncWrapper(async (req, res) => {
@@ -157,7 +201,15 @@ const vacationController = {
 
     //Save new info to foundVacation
     const { memberList, shareStatus, shareList } = req.body;
-    const updateKeys = ['title', 'description', 'memberList', 'shareStatus', 'shareList', 'startingTime', 'endingTime'];
+    const updateKeys = [
+      'title',
+      'description',
+      'memberList',
+      'shareStatus',
+      'shareList',
+      'startingTime',
+      'endingTime',
+    ];
     updateKeys.forEach(key => {
       switch (key) {
         case 'memberList':

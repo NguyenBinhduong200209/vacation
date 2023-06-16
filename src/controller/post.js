@@ -34,7 +34,7 @@ const postController = {
       { $limit: itemOfPage },
 
       //Get username, location by looking up to other model
-      ...pipelineLookup.getUserInfo,
+      ...pipelineLookup.getUserInfo({ field: ['username', 'avatar'] }),
       ...pipelineLookup.location,
       ...pipelineLookup.countLikesAndComments({ level: 1 }),
 
@@ -69,7 +69,8 @@ const postController = {
 
     //Get vacationId based on postId and check forbidden of userId login and vacation contain post
     const foundPost = await Posts.findById(id);
-    !foundPost && _throw({ code: 400, errors: [{ field: 'id', message: 'invalid' }], message: 'post not found' });
+    !foundPost &&
+      _throw({ code: 400, errors: [{ field: 'id', message: 'invalid' }], message: 'post not found' });
 
     await checkForbidden(foundUserId, foundPost.vacationId);
 
@@ -77,7 +78,7 @@ const postController = {
       { $match: { _id: new mongoose.Types.ObjectId(id) } },
 
       //Get username, location by looking up to other model
-      ...pipelineLookup.getUserInfo,
+      ...pipelineLookup.getUserInfo({ field: ['username', 'avatar'] }),
       ...pipelineLookup.location,
 
       //Get detail likeInfo by looking up to likes model
