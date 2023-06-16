@@ -2,29 +2,24 @@ import _throw from '#root/utils/_throw';
 import Locations from '#root/model/locations';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import mongoose from 'mongoose';
+import pipelineLookup from '#root/config/pipelineLookup';
 
 const locationController = {
   addNew: asyncWrapper(async (req, res) => {
     const { parentId, title, description } = req.body;
     const foundUser = req.userInfo;
 
-    const foundDistrict = await Locations.findOne({
-      level: 2,
-      _id: parentId,
-    });
-
+    //Throw an error if cannot find district based on parentId
+    const foundDistrict = await Locations.findOne({ level: 2, _id: parentId });
     !foundDistrict &&
       _throw({
         code: 400,
-        errors: [{ field: 'district', message: 'invalid district' }],
+        errors: [{ field: 'district', message: 'district not found' }],
         message: 'invalid district',
       });
 
-    const foundLocation = await Locations.findOne({
-      parentId: parentId,
-      title: title.trim(),
-      level: 1,
-    });
+    //Throw an error if location has already existed
+    const foundLocation = await Locations.findOne({ parentId: parentId, title: title.trim(), level: 1 });
     foundLocation &&
       _throw({
         code: 400,
@@ -32,6 +27,7 @@ const locationController = {
         message: 'location has already existed',
       });
 
+    // Create new Location and save to database
     const newLocation = await Locations.create({
       parentId: parentId,
       level: 1,
@@ -40,6 +36,7 @@ const locationController = {
       description,
     });
 
+    //Send to front
     return res.status(201).json({ data: newLocation, meta: null, message: 'location created' });
   }),
 
@@ -102,18 +99,48 @@ const locationController = {
 
   getListBasedOnTrend: asyncWrapper(async (req, res) => {
     const { quantity } = req.params;
+
+    //Throw an error if quantity received from params is not an positive integer
+    (!Number(quantity) || !Number.isInteger(Number(quantity)) || Number(quantity) <= 0) &&
+      _throw({
+        code: 400,
+        errors: [{ field: 'params', message: 'params must be a positive integer' }],
+        message: 'invalid params',
+      });
+
+    //Get the result through aggregation
     const result = await Locations.aggregate([
+      //Get all location matched level 1
       { $match: { level: 1 } },
+
+      //Only get field title and _id
+      { $project: { title: 1 } },
+
+      //Lookup to posts model to get likes and comments
       {
         $lookup: {
           from: 'posts',
           localField: '_id',
           foreignField: 'locationId',
-          as: 'info',
+          pipeline: [{ $project: { _id: 1 } }, ...pipelineLookup.countLikesAndComments({ level: 1 })],
+          as: 'postInfo',
         },
       },
+
+      //Add new field is the summary of likes and comments
+      {
+        $addFields: {
+          interactions: { $sum: [{ $sum: '$postInfo.totalLikes' }, { $sum: '$postInfo.totalComments' }] },
+        },
+      },
+
+      //Only firstN elements in array based on params
+      { $limit: Number(quantity) },
+
+      //unset field postInfo
+      { $unset: 'postInfo' },
     ]);
-    return res.status(200).json(result);
+    return res.status(200).json({ data: result, message: 'get trending list successfully' });
   }),
 };
 
