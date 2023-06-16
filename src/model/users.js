@@ -63,13 +63,12 @@ const userSchema = new mongoose.Schema({
 
   avatar: {
     type: String,
-    required: 'Avatar required',
   },
 
   dateOfBirth: {
     type: Date,
     max: new Date(),
-    required: 'Date of Birth required',
+    default: new Date(),
   },
 
   gender: {

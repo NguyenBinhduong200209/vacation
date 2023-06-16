@@ -4,6 +4,14 @@ import Users from '#root/model/users';
 import Posts from '#root/model/posts';
 
 const likeSchema = new mongoose.Schema({
+  //Level 1 stands for
+  level: {
+    type: Number,
+    required: 'districtId required',
+    min: 1,
+    max: 2,
+  },
+
   postId: {
     type: mongoose.ObjectId,
     required: 'postId required',
