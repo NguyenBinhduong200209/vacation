@@ -98,7 +98,7 @@ const locationController = {
   }),
 
   getListBasedOnTrend: asyncWrapper(async (req, res) => {
-    const { quantity } = req.params;
+    const { quantity } = req.query;
 
     //Throw an error if quantity received from params is not an positive integer
     (!Number(quantity) || !Number.isInteger(Number(quantity)) || Number(quantity) <= 0) &&
