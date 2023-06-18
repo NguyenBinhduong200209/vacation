@@ -3,40 +3,40 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/posts';
 import checkForbidden from '#root/utils/checkForbidden';
 import checkAuthor from '#root/utils/checkAuthor';
-import pipelineLookup from '#root/config/pipelineLookup';
+import pipeline from '#root/config/pipeline';
 import mongoose from 'mongoose';
+
+const { addTotalPageFields, getUserInfo, countLikesAndComments, getLocation, getLikesInfo, getCommentsInfo } =
+  pipeline;
 
 const postController = {
   getMany: asyncWrapper(async (req, res) => {
-    const { vacationId, page } = req.query,
-      validPage = page && page > 0 ? Number(page) : 1,
-      itemOfPage = Number(process.env.ITEM_OF_PAGE),
+    const { type, id, page } = req.query,
       foundUserId = req.userInfo._id;
 
+    //Throw an error if type is not vacation and location
+    !['vacation', 'location'].includes(type) &&
+      _throw({
+        code: 400,
+        errors: [{ field: 'type', message: 'type can only be vacation or location' }],
+        message: 'invalid type',
+      });
+
     //Throw an error if user have no permission to see any post of vacation
-    await checkForbidden(foundUserId, vacationId);
+    type === 'vacation' && (await checkForbidden(foundUserId, id));
 
     const result = await Posts.aggregate([
       //Get all posts belong to vacationId
-      { $match: { vacationId: new mongoose.Types.ObjectId(vacationId) } },
+      { $match: { [type === 'vacation' ? 'vacationId' : 'locationId']: new mongoose.Types.ObjectId(id) } },
 
       //Sort in order to push the newest updated post to top
       { $sort: { lastUpdateAt: -1, createdAt: -1 } },
 
-      //Add field total to calculate length of result of prev pipeline
-      { $setWindowFields: { output: { total: { $count: {} } } } },
-
-      //Add 2 new fields with field page is current page user wanna get, and field pages is total pages divided by length of array and itemOfPage
-      { $addFields: { page: validPage, pages: { $ceil: { $divide: ['$total', itemOfPage] } } } },
-
-      //Remove some firstN element in array if page > 1 and get quantity of element equal to itemOfPage
-      { $skip: (validPage - 1) * itemOfPage },
-      { $limit: itemOfPage },
-
-      //Get username, location by looking up to other model
-      ...pipelineLookup.getUserInfo({ field: ['username', 'avatar'] }),
-      ...pipelineLookup.location,
-      ...pipelineLookup.countLikesAndComments({ level: 1 }),
+      //Add 3 new fields (total, page, pages) and then Get username, location by looking up to other model
+      ...addTotalPageFields({ page: page }),
+      ...getUserInfo({ field: ['username', 'avatar'] }),
+      ...countLikesAndComments({ level: 1 }),
+      ...(type === 'vacation' ? getLocation({ localField: 'locationId' }) : []),
 
       //Set up new array with total field is length of array and list field is array without __v field
       {
@@ -60,7 +60,7 @@ const postController = {
       { $unwind: '$meta' },
     ]);
 
-    return res.status(200).json(result);
+    return res.status(200).json(result[0]);
   }),
 
   getOne: asyncWrapper(async (req, res) => {
@@ -72,64 +72,21 @@ const postController = {
     !foundPost &&
       _throw({ code: 400, errors: [{ field: 'id', message: 'invalid' }], message: 'post not found' });
 
+    //Check the authorization of user to post
     await checkForbidden(foundUserId, foundPost.vacationId);
 
     const result = await Posts.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(id) } },
 
       //Get username, location by looking up to other model
-      ...pipelineLookup.getUserInfo({ field: ['username', 'avatar'] }),
-      ...pipelineLookup.location,
+      ...getUserInfo({ field: ['username', 'avatar'] }),
+      ...getLocation({ localField: 'locationId' }),
 
-      //Get detail likeInfo by looking up to likes model
-      {
-        $lookup: {
-          from: 'likes',
-          pipeline: [
-            { $project: { userId: 1 } },
-            {
-              $lookup: {
-                from: 'users',
-                localField: 'userId',
-                foreignField: '_id',
-                pipeline: [{ $project: { username: 1, _id: 0 } }],
-                as: 'userInfo',
-              },
-            },
-            { $unwind: '$userInfo' },
-            { $addFields: { username: '$userInfo.username' } },
-            { $unset: 'userInfo' },
-          ],
-          localField: '_id',
-          foreignField: 'parentId',
-          as: 'likesInfo',
-        },
-      },
+      //Get detail likeInfo and commentInfo by looking up to likes and comments model
+      ...getLikesInfo({ field: ['userId', 'username', 'level'] }),
+      ...getCommentsInfo({ field: ['userId', 'username', 'content', 'lastUpdateAt', 'level'] }),
 
-      //Get detail commentInfo by looking up to comment model
-      {
-        $lookup: {
-          from: 'comments',
-          pipeline: [
-            { $project: { postId: 0, __v: 0 } },
-            {
-              $lookup: {
-                from: 'users',
-                localField: 'userId',
-                foreignField: '_id',
-                pipeline: [{ $project: { username: 1, _id: 0 } }],
-                as: 'userInfo',
-              },
-            },
-            { $unwind: '$userInfo' },
-            { $addFields: { username: '$userInfo.username' } },
-            { $project: { userInfo: 0, parentId: 0 } },
-          ],
-          localField: '_id',
-          foreignField: 'parentId',
-          as: 'commentsInfo',
-        },
-      },
+      //Remove unnecessary fields
       { $project: { vacationId: 0, userId: 0, locationId: 0, __v: 0 } },
     ]);
 
