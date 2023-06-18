@@ -1,65 +1,59 @@
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Vacations from '#root/model/vacations';
-import pipelineLookup from '#root/config/pipelineLookup';
+import pipeline from '#root/config/pipeline';
 import checkForbidden from '#root/utils/checkForbidden';
 import checkAuthor from '#root/utils/checkAuthor';
 import mongoose from 'mongoose';
 
-const getVacationList = async ({ matchStatus, field, page, foundUserId }) => {
-  const itemOfPage = Number(process.env.ITEM_OF_PAGE);
+const { addTotalPageFields, getUserInfo, countLikesAndComments } = pipeline;
 
-  const matchCondition = matchStatus
-    ? matchStatus.reduce((arr, item) => {
-        switch (item) {
-          case 'onlyme':
-            arr.push({ shareStatus: 'onlyme', userId: foundUserId });
-            break;
+const getVacationList = async ({ where, field, page, foundUserId }) => {
+  //Get filter Object
+  let matchCondition;
+  switch (where) {
+    case 'newFeed':
+      matchCondition = {
+        $or: [{ shareStatus: 'public' }, { shareStatus: 'protected', shareList: { $in: [foundUserId] } }],
+      };
+      break;
 
-          case 'protected':
-            arr.push({ shareStatus: 'protected', shareList: { $in: [foundUserId] } });
-            break;
+    case 'userProfile':
+      matchCondition = {
+        $or: [
+          { shareStatus: 'public', memberList: { $in: [foundUserId] } },
+          { shareStatus: 'protected', shareList: { $in: [foundUserId] } },
+          { shareStatus: 'onlyme', userId: foundUserId },
+        ],
+      };
+      break;
 
-          case 'public':
-            arr.push({ shareStatus: 'public' });
-            break;
-
-          default:
-            break;
-        }
-        return arr;
-      }, [])
-    : [{ shareStatus: 'public' }];
+    default:
+      matchCondition = { $or: [{ shareStatus: 'public' }] };
+      break;
+  }
 
   const result = await Vacations.aggregate([
     //Filter only return vacation has shareStatus is public or vacation has shareStatus is protected and has shared to user
-    { $match: { $or: matchCondition } },
+    { $match: matchCondition },
 
     //Sort in order to push the newest updated vacation to top
     { $sort: { lastUpdateAt: -1, createdAt: -1 } },
 
-    // //Add field total to calculate length of result of prev pipeline
-    { $setWindowFields: { output: { total: { $count: {} } } } },
-
-    // //Add 2 new fields with field page is current page user wanna get, and field pages is total pages divided by length of array and itemOfPage
-    { $addFields: { page: page, pages: { $ceil: { $divide: ['$total', itemOfPage] } } } },
-
-    //Remove some firstN element in array if page > 1 and get quantity of element equal to itemOfPage
-    { $skip: (page - 1) * itemOfPage },
-    { $limit: itemOfPage },
+    //Add field total, page and pages fields
+    ...addTotalPageFields({ page }),
 
     //Get username of author by lookup to users model by userId
-    ...pipelineLookup.getUserInfo({ field: ['username', 'avatar'] }),
+    ...getUserInfo({ field: ['username', 'avatar'] }),
 
+    //Get total Likes and Comment by lookup to posts model
     {
       $lookup: {
         from: 'posts',
         localField: '_id',
         foreignField: 'vacationId',
         pipeline: [
-          ...pipelineLookup.countLikesAndComments({ level: 2 }),
-
-          //Only get field views, totalLikes, totalComments
+          ...countLikesAndComments({ level: 2 }),
           {
             $group: {
               _id: '$vacationId',
@@ -101,30 +95,31 @@ const getVacationList = async ({ matchStatus, field, page, foundUserId }) => {
 
 const vacationController = {
   getMany: asyncWrapper(async (req, res) => {
-    const { page } = req.query,
-      validPage = page && page > 0 ? Number(page) : 1,
-      foundUser = req.userInfo;
+    const { type, page } = req.query;
+
+    //Throw an error if type query is not newFeed or userProfile
+    !['newFeed', 'userProfile'].includes(type) &&
+      _throw({
+        code: 400,
+        errors: [{ field: 'type', message: 'type query can only be newFeed or userProfile' }],
+        message: 'invalid type query',
+      });
 
     const result = await getVacationList({
-      matchStatus: ['public', 'protected'],
-      field: ['authorInfo', 'title', 'cover', 'views', 'likes', 'comments', 'startingTime', 'endingTime'],
-      page: validPage,
-      foundUserId: foundUser._id,
-    });
-
-    return res.status(200).json(result);
-  }),
-
-  getManyByUser: asyncWrapper(async (req, res) => {
-    const { page } = req.query,
-      validPage = page && page > 0 ? Number(page) : 1,
-      foundUser = req.userInfo;
-
-    const result = await getVacationList({
-      matchStatus: ['onlyme', 'protected'],
-      field: ['title', 'cover', 'views', 'likes', 'comments', 'startingTime', 'endingTime'],
-      page: validPage,
-      foundUserId: foundUser._id,
+      where: type,
+      field: [
+        type === 'newFeed' && 'authorInfo',
+        'title',
+        'cover',
+        'shareStatus',
+        'views',
+        'likes',
+        'comments',
+        'startingTime',
+        'endingTime',
+      ],
+      page: page,
+      foundUserId: req.userInfo._id,
     });
 
     return res.status(200).json(result);
@@ -143,17 +138,7 @@ const vacationController = {
 
     const result = await Vacations.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(id) } },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'userId',
-          foreignField: '_id',
-          pipeline: [{ $project: { username: 1, avatar: 1 } }],
-          as: 'userInfo',
-        },
-      },
-      { $project: { userId: 0, __v: 0 } },
-      { $unwind: '$userInfo' },
+      ...getUserInfo({ field: ['username', 'avatar'] }),
     ]);
 
     //Send to front
