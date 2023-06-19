@@ -1,3 +1,4 @@
+
 const errHandler = (err, req, res, next) => {
   console.log(err.stack); // Log the error stack trace to the console
 
