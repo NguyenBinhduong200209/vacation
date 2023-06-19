@@ -6,6 +6,10 @@ const router = express.Router();
 
 router.use(verifyJWT);
 router.route('/').get(vacationController.getMany).post(vacationController.addNew);
-router.route('/:id').get(vacationController.getOne).put(vacationController.update).delete(vacationController.delete);
+router
+  .route('/:id')
+  .get(vacationController.getOne)
+  .put(vacationController.update)
+  .delete(vacationController.delete);
 
 export default router;

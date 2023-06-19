@@ -40,6 +40,7 @@ const usersController = {
       //Return result
       return res.status(200).json({
         data: {
+          _id: foundUser._id,
           username: foundUser.username,
           accessToken,
           refreshToken,

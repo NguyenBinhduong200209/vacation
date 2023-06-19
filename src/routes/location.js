@@ -4,6 +4,6 @@ import verifyJWT from '#root/middleware/verifyJWT';
 
 const router = express.Router();
 
-router.route('/').get(locationController.getListBasedOnLevel).post(verifyJWT, locationController.addNew);
-router.get('/trending', locationController.getListBasedOnTrend);
+router.route('/').get(locationController.getMany).post(verifyJWT, locationController.addNew);
+router.get('/:id', locationController.getOne);
 export default router;
