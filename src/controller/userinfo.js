@@ -17,6 +17,7 @@ const usersinforController = {
       return res.status(200).json({
         data: {
           id: foundUser._id,
+          avatar: foundUser.avatar,
           username: foundUser.username,
           firstname: foundUser.firstname,
           lastname: foundUser.lastname,
@@ -32,29 +33,32 @@ const usersinforController = {
   }),
 
   getfriendprofile: asyncWrapper(async (req, res) => {
-    const { userid } = req.body;
-    const value = { userid };
-    if (userid) {
-      //Get User Information from database
-      console.log(userid);
-      const foundUser = await Users.findById(userid);
-      if (!foundUser) {
-        return res.status(404).json({ message: 'User not found' });
-      }
+    const { id } = req.params;
+    console.log(id);
+    if (!id) {
+      return res.status(404).json({ message: 'User ID not provided' });
+    }
 
-      return res.status(200).json({
-        data: {
-          id: foundUser._id,
-          firstname: foundUser.firstname,
-          lastname: foundUser.lastname,
-          avatar: foundUser.avatar,
-          dateOfBirth: foundUser.dateOfBirth,
-          gender: foundUser.gender,
-          description: foundUser.description,
-        },
-        message: 'Get infor successfully',
-      });
-    } else _throw({ code: 404, message: 'Username not provided' });
+    // Get User Information from database
+
+    const foundUser = await Users.findById(id);
+    if (!foundUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({
+      data: {
+        id: foundUser._id,
+        avatar: foundUser.avatar,
+        firstname: foundUser.firstname,
+        lastname: foundUser.lastname,
+        avatar: foundUser.avatar,
+        dateOfBirth: foundUser.dateOfBirth,
+        gender: foundUser.gender,
+        description: foundUser.description,
+      },
+      message: 'Get info successfully',
+    });
   }),
 };
 export default usersinforController;

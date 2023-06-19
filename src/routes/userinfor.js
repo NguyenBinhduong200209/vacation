@@ -7,6 +7,6 @@ const router = express.Router();
 router
   .get('/', verifyJWT, usersinforController.getprofile)
 
-  .get('/friends', usersinforController.getfriendprofile);
+  .get('/:id', usersinforController.getfriendprofile);
 
 export default router;

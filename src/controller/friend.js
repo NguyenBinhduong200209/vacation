@@ -43,7 +43,6 @@ const friendsController = {
       .exec();
 
     return res.status(200).json({
-      success: true,
       message: 'Friend request sent',
       friendship: populatedFriendship,
     });
@@ -62,8 +61,8 @@ const friendsController = {
     const friendList = await Friends.find({
       $or: [{ userId1: foundUser._id }, { userId2: foundUser._id }],
     })
-      .populate('userId1', 'firstname lastname ')
-      .populate('userId2', 'firstname lastname ')
+      .populate('userId1', 'firstname lastname avatar dateOfBirth gender description')
+      .populate('userId2', 'firstname lastname avatar dateOfBirth gender description')
       .exec();
     const filteredFriendList = friendList.map(friend => {
       if (friend.userId1._id.toString() === foundUser._id.toString()) {
@@ -74,13 +73,12 @@ const friendsController = {
     });
 
     return res.status(200).json({
-      success: true,
       message: 'Friend list retrieved',
       data: filteredFriendList,
     });
   }),
   removeFriend: asyncWrapper(async (req, res) => {
-    const { friendId } = req.body;
+    const { friendId } = req.params;
 
     // Lấy ID của người dùng đăng nhập từ đối tượng req.userInfo
     const userId = req.userInfo._id;
