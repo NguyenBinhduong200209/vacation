@@ -12,6 +12,9 @@ import testRoute from '#root/routes/test';
 import credentials from '#root/middleware/credentials';
 import dbConnect from '#root/config/dbConnect';
 import userinforRoute from '#root/routes/userinfor';
+import friendRoute from '#root/routes/friend';
+import albumsRoute from '#root/routes/albums';
+
 
 // create an instance of an Express application
 const app = express();
@@ -42,6 +45,8 @@ app.use('/test', testRoute);
 
 //
 app.use('/userinfor', userinforRoute);
+app.use('/friend', friendRoute);
+app.use('/albums', albumsRoute);
 // use middleware for handling errors
 app.use(errHandler);
 
