@@ -90,7 +90,7 @@ const getVacationList = async ({ where, field, page, foundUserId }) => {
     // Destructuring field
     { $unwind: '$meta' },
   ]);
-  return result;
+  return result[0];
 };
 
 const vacationController = {

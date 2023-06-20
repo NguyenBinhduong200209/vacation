@@ -70,7 +70,7 @@ const userSchema = new mongoose.Schema(
           : val;
       },
       get: val => {
-        return 'data:image/webp;base64,' + val.toString('base64');
+        return val && 'data:image/webp;base64,' + val.toString('base64');
       },
     },
 
@@ -144,12 +144,6 @@ const userSchema = new mongoose.Schema(
     runSettersOnQuery: true,
   }
 );
-
-userSchema.set('toJSON', {
-  transform: function (doc, ret) {
-    ret.avatar = 'data:image/webp;base64,' + ret.avatar.toString('base64');
-  },
-});
 
 const Users = mongoose.model('Users', userSchema);
 

@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-export default async function sendMail({ type, email, token, url, body }) {
+export default async function sendMail({ type, email, token, url }) {
   try {
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
@@ -29,7 +29,7 @@ export default async function sendMail({ type, email, token, url, body }) {
       from: process.env.EMAIL_USER,
       to: email,
       subject: `${type} account`.toUpperCase(),
-      html: compiledTemplate({ email, token, url, body }),
+      html: compiledTemplate({ email, token, url }),
     };
 
     await transporter.sendMail(message, (error, info) => {
