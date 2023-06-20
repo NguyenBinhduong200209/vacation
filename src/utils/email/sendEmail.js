@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-export default async function sendMail({ email, token }) {
+export default async function sendMail({ type, email, token, url, body }) {
   try {
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
@@ -20,7 +20,7 @@ export default async function sendMail({ email, token }) {
 
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const source = fs.readFileSync(
-      path.join(__dirname, 'template.handlebars'),
+      path.join(__dirname, type === 'reset' ? 'reset.handlebars' : 'verify.handlebars'),
       'utf8'
     );
     const compiledTemplate = handlebars.compile(source);
@@ -28,8 +28,8 @@ export default async function sendMail({ email, token }) {
     const message = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: 'RESET PASSWORD',
-      html: compiledTemplate({ email, token }),
+      subject: `${type} account`.toUpperCase(),
+      html: compiledTemplate({ email, token, url, body }),
     };
 
     await transporter.sendMail(message, (error, info) => {
