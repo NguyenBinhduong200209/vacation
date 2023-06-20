@@ -76,7 +76,12 @@ const usersController = {
     duplicate && _throw({ code: 400, message: 'username or email has already been existed' });
 
     //Send email
-    await sendMail({ type: 'verify', email, url: 'http://localhost:3100/auth/verify', body: req.body });
+    const query = ['firstname', 'lastname', 'username', 'email', 'password'].reduce((str, item) => {
+      const value = req.body[item];
+      return str.concat(`${item}=${value}&`);
+    }, '');
+    console.log(query);
+    await sendMail({ type: 'verify', email, url: `http://localhost:3100/auth/verify?${query}` });
 
     //Send to front
     return res
@@ -86,14 +91,14 @@ const usersController = {
 
   verify: asyncWrapper(async (req, res) => {
     //Get username and password from req.body
-    const { email, username, password } = req.body;
+    const { email, username, password } = req.query;
 
     //Check for duplicate username in database
     const duplicate = await Users.findOne({ $or: [{ username }, { email }] }).lean();
     duplicate && _throw({ code: 400, message: 'username or email has already been registerred' });
 
     //Create new user and validate infor
-    const newUser = new Users(req.body);
+    const newUser = new Users(req.query);
     await newUser.validate();
 
     //Save hashedPwd
@@ -113,7 +118,7 @@ const usersController = {
   update: asyncWrapper(async (req, res) => {
     //Find User by username get from accessToken
     const foundUser = req.userInfo;
-    console.log(req.body);
+
     //Get schema User
     const templateUser = await Users.schema.obj;
     //Update User

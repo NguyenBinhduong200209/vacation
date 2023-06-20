@@ -18,17 +18,9 @@
   <body>
     <p class="para" >Hi {{email}},<br>
     <p class="para">You registered an account on [customer portal], before being able to use your account you need to verify that this is your email address by clicking here: 
-      <div id="link">Link</div>
+      <a id="link" href={{url}} target="_blank">Link</a>
     </p>
     <p>Problems? Please contact support@travip.com</p>
     <p>Kind Regards,</p>
-  <script>
-    const link = document.getElementById("link")
-    link.onclick = async()=>{
-      const result = await fetch({{url}}, {method: "post", body: JSON.stringify({{body}})})
-      console.log(result)
-      window.location.href= "http://www.google.com"
-    }
-  </script>
   </body>
 </html>

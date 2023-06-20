@@ -69,7 +69,7 @@ const resourceSchema = new mongoose.Schema(
       },
 
       get: val => {
-        return 'data:image/webp;base64,' + val.toString('base64');
+        return val && 'data:image/webp;base64,' + val.toString('base64');
       },
     },
 
