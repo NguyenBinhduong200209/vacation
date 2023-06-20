@@ -69,33 +69,28 @@ const usersController = {
 
   register: asyncWrapper(async (req, res) => {
     //Get username and password from req.body
-    const { email, username, password } = req.body;
+    const { email, username } = req.body;
 
     //Check for duplicate username in database
     const duplicate = await Users.findOne({ $or: [{ username }, { email }] }).lean();
     duplicate && _throw({ code: 400, message: 'username or email has already been existed' });
 
-    //Create new user and validate infor
-    const newUser = new Users(req.body);
-    await newUser.validate();
+    //Send email
+    await sendMail({ type: 'verify', email, url: 'http://localhost:3100/auth/verify', body: req.body });
 
-    //Save hashedPwd
-    const hashedPwd = await bcrypt.hash(password, 10);
-    newUser.password = hashedPwd;
-
-    //Save to database
-    await newUser.save();
-
-    //Send result to frontend
-    res.status(201).json({
-      data: newUser,
-      message: `New user ${username} has been created`,
-    });
+    //Send to front
+    return res
+      .status(200)
+      .json({ message: `an email has been send to ${email} account. Please check your email account` });
   }),
 
   verify: asyncWrapper(async (req, res) => {
     //Get username and password from req.body
     const { email, username, password } = req.body;
+
+    //Check for duplicate username in database
+    const duplicate = await Users.findOne({ $or: [{ username }, { email }] }).lean();
+    duplicate && _throw({ code: 400, message: 'username or email has already been registerred' });
 
     //Create new user and validate infor
     const newUser = new Users(req.body);

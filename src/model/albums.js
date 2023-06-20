@@ -1,16 +1,8 @@
-<<<<<<< HEAD
 import mongoose from 'mongoose';
 import validator from 'validator';
-import _throw from '#root/utils/throw';
+import _throw from '#root/utils/_throw';
 import Users from '#root/model/users';
 import Vacations from '#root/model/vacations';
-=======
-import mongoose from "mongoose";
-import validator from "validator";
-import _throw from '#root/utils/_throw';
-import Users from "#root/model/users";
-import Vacations from "#root/model/vacations";
->>>>>>> 0bdcae46f928b3f0fdef45a13162a137767f30f7
 
 const albumSchema = new mongoose.Schema(
   {
