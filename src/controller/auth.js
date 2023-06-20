@@ -42,6 +42,7 @@ const usersController = {
         data: {
           _id: foundUser._id,
           username: foundUser.username,
+          avatar: foundUser.avatar,
           accessToken,
           refreshToken,
         },
@@ -68,11 +69,11 @@ const usersController = {
 
   register: asyncWrapper(async (req, res) => {
     //Get username and password from req.body
-    const { username, password } = req.body;
+    const { email, username, password } = req.body;
 
     //Check for duplicate username in database
-    const dupUsername = await Users.findOne({ username }).lean();
-    dupUsername && _throw({ code: 400, message: 'username has already been existed' });
+    const duplicate = await Users.findOne({ $or: [{ username }, { email }] }).lean();
+    duplicate && _throw({ code: 400, message: 'username or email has already been existed' });
 
     //Create new user and validate infor
     const newUser = new Users(req.body);
@@ -95,7 +96,7 @@ const usersController = {
   update: asyncWrapper(async (req, res) => {
     //Find User by username get from accessToken
     const foundUser = req.userInfo;
-
+    console.log(req.body);
     //Get schema User
     const templateUser = await Users.schema.obj;
     //Update User
@@ -117,6 +118,12 @@ const usersController = {
                   })
                 : (foundUser.username = val);
             }
+            break;
+
+          case 'avatar':
+            const { path } = req.file,
+              resource = fs.readFileSync(path).toString('base64');
+            foundUser.avatar = resource;
             break;
 
           case 'password':

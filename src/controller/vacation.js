@@ -43,9 +43,6 @@ const getVacationList = async ({ where, field, page, foundUserId }) => {
     //Add field total, page and pages fields
     ...addTotalPageFields({ page }),
 
-    //Get username of author by lookup to users model by userId
-    ...getUserInfo({ field: ['username', 'avatar'] }),
-
     //Get total Likes and Comment by lookup to posts model
     {
       $lookup: {
@@ -53,7 +50,7 @@ const getVacationList = async ({ where, field, page, foundUserId }) => {
         localField: '_id',
         foreignField: 'vacationId',
         pipeline: [
-          ...countLikesAndComments({ level: 2 }),
+          ...countLikesAndComments({ modelType: 'post' }),
           {
             $group: {
               _id: '$vacationId',
@@ -68,6 +65,9 @@ const getVacationList = async ({ where, field, page, foundUserId }) => {
     },
     { $unwind: '$posts' },
     { $addFields: { likes: '$posts.likes', comments: '$posts.comments' } },
+
+    //Get username of author by lookup to users model by userId
+    ...getUserInfo({ field: ['username', 'avatar'] }),
 
     //Set up new array with total field is length of array and list field is array without __v field
     {
@@ -90,7 +90,7 @@ const getVacationList = async ({ where, field, page, foundUserId }) => {
     // Destructuring field
     { $unwind: '$meta' },
   ]);
-  return result[0];
+  return result;
 };
 
 const vacationController = {
@@ -139,6 +139,7 @@ const vacationController = {
     const result = await Vacations.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(id) } },
       ...getUserInfo({ field: ['username', 'avatar'] }),
+      { $project: { userId: 0 } },
     ]);
 
     //Send to front
@@ -147,7 +148,8 @@ const vacationController = {
 
   addNew: asyncWrapper(async (req, res) => {
     //Get vital information from req.body
-    const { title, description, memberList, shareStatus, shareList, startingTime, endingTime } = req.body;
+    const { title, description, memberList, shareStatus, shareList, startingTime, endingTime, cover } =
+      req.body;
     //Get userId from verifyJWT middleware
     const userId = req.userInfo._id.toString();
 
@@ -172,6 +174,7 @@ const vacationController = {
       startingTime,
       endingTime,
       userId,
+      cover,
     });
 
     //Send to front
@@ -194,12 +197,15 @@ const vacationController = {
       'shareList',
       'startingTime',
       'endingTime',
+      'cover',
     ];
     updateKeys.forEach(key => {
       switch (key) {
         case 'memberList':
           //if memberList receive is not an array, then return memberlist contain only userId, otherwises, combine memberList and userId
-          const newMemberList = Array.isArray(memberList) ? [...new Set([...memberList, userId])] : [userId];
+          const newMemberList = Array.isArray(memberList)
+            ? [...new Set([...memberList, req.userInfo._id])]
+            : [req.userInfo._id];
           foundVacation.memberList = newMemberList;
           break;
 
