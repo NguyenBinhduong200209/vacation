@@ -25,13 +25,13 @@ await dbConnect();
 app.use(credentials);
 
 //build-in middleware to handle urlencoded data
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 // Enable Cross-Origin Resource Sharing
 app.use(cors());
 
 // Parse JSON request bodies
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 
 // use router for handling requests
 app.use('/auth', authRoute);
@@ -48,5 +48,7 @@ app.use(errHandler);
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-  mongoose.connection.once('open', () => console.log('Connected to MongoDB')).on('error', err => console.log(err));
+  mongoose.connection
+    .once('open', () => console.log('Connected to MongoDB'))
+    .on('error', err => console.log(err));
 });

@@ -35,7 +35,7 @@ const postController = {
       //Add 3 new fields (total, page, pages) and then Get username, location by looking up to other model
       ...addTotalPageFields({ page: page }),
       ...getUserInfo({ field: ['username', 'avatar'] }),
-      ...countLikesAndComments({ level: 1 }),
+      ...countLikesAndComments({ modelType: 'post' }),
       ...(type === 'vacation' ? getLocation({ localField: 'locationId' }) : []),
 
       //Set up new array with total field is length of array and list field is array without __v field
@@ -60,7 +60,7 @@ const postController = {
       { $unwind: '$meta' },
     ]);
 
-    return res.status(200).json(result[0]);
+    return res.status(200).json(result);
   }),
 
   getOne: asyncWrapper(async (req, res) => {
@@ -70,7 +70,7 @@ const postController = {
     //Get vacationId based on postId and check forbidden of userId login and vacation contain post
     const foundPost = await Posts.findById(id);
     !foundPost &&
-      _throw({ code: 400, errors: [{ field: 'id', message: 'invalid' }], message: 'post not found' });
+      _throw({ code: 404, errors: [{ field: 'id', message: 'invalid' }], message: 'post not found' });
 
     //Check the authorization of user to post
     await checkForbidden(foundUserId, foundPost.vacationId);

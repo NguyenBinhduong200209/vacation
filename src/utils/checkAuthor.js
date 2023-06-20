@@ -9,7 +9,11 @@ async function checkAuthor({ type, postId, vacationId, userId }) {
         //Throw an error if cannot find post based on id params
         const foundVacation = await Vacations.findById(vacationId);
         !foundVacation &&
-          _throw({ code: 400, errors: [{ field: 'id', message: 'vacationId not found' }], message: 'invalid id' });
+          _throw({
+            code: 404,
+            errors: [{ field: 'vacationId', message: 'vacationId not found' }],
+            message: 'invalid vacationId',
+          });
 
         //Throw an error if user login is not author of this post
         foundVacation.userId.toString() !== userId.toString() &&
@@ -24,7 +28,11 @@ async function checkAuthor({ type, postId, vacationId, userId }) {
         //Throw an error if cannot find post based on id params
         const foundPost = await Posts.findById(postId);
         !foundPost &&
-          _throw({ code: 400, errors: [{ field: 'id', message: 'postId not found' }], message: 'invalid id' });
+          _throw({
+            code: 404,
+            errors: [{ field: 'postId', message: 'postId not found' }],
+            message: 'invalid postId',
+          });
 
         //Throw an error if user login is not author of this post
         foundPost.userId.toString() !== userId.toString() &&

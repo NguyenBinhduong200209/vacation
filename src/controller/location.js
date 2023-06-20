@@ -75,7 +75,7 @@ const locationController = {
               from: 'posts',
               localField: '_id',
               foreignField: 'locationId',
-              pipeline: [{ $project: { _id: 1 } }, ...countLikesAndComments({ level: 1 })],
+              pipeline: [{ $project: { _id: 1 } }, ...countLikesAndComments({ modelType: 'post' })],
               as: 'postInfo',
             },
           },

@@ -1,19 +1,18 @@
 import express from 'express';
 const router = express.Router();
 import asyncWrapper from '#root/middleware/asyncWrapper';
-import Vacations from '#root/model/vacations';
+import upload from '#root/middleware/upload';
+import Resources from '#root/model/resource';
+import verifyJWT from '#root/middleware/verifyJWT';
+import Users from '#root/model/users';
+import fs from 'fs';
 
-const test = asyncWrapper(async (req, res) => {
-  const result = await Vacations.find();
-  for (let i = 0; i < result.length; i++) {
-    const vacation = result[i];
-    const newImage = `https://picsum.photos/id/${i + 100}/1000/500`;
-    vacation.cover = newImage;
-    await vacation.save();
-  }
-  return res.json('Done');
+const test2 = asyncWrapper(async (req, res) => {
+  const userId = '648692a56746401d9690a02c';
+
+  return res.json(result);
 });
 
-router.get('/', test);
+router.get('/:id', test2);
 
 export default router;
