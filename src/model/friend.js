@@ -4,6 +4,7 @@ import _throw from '#root/utils/_throw';
 const friendSchema = new mongoose.Schema(
   {
     userId1: {
+<<<<<<< HEAD
       type: mongoose.ObjectId,
       required: 'UserId required',
       validate: async value => {
@@ -36,6 +37,20 @@ const friendSchema = new mongoose.Schema(
     toJSON: { getters: true, setters: true },
     runSettersOnQuery: true,
   }
+=======
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Users',
+      required: 'UserId required',
+     
+    },
+    userId2: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Users',
+      required: 'UserId required',
+      
+    },
+  },
+>>>>>>> 0bdcae46f928b3f0fdef45a13162a137767f30f7
 );
 
 const Friends = mongoose.model('Friends', friendSchema);
