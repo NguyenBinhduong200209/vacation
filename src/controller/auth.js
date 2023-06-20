@@ -93,6 +93,28 @@ const usersController = {
     });
   }),
 
+  verify: asyncWrapper(async (req, res) => {
+    //Get username and password from req.body
+    const { email, username, password } = req.body;
+
+    //Create new user and validate infor
+    const newUser = new Users(req.body);
+    await newUser.validate();
+
+    //Save hashedPwd
+    const hashedPwd = await bcrypt.hash(password, 10);
+    newUser.password = hashedPwd;
+
+    //Save to database
+    await newUser.save();
+
+    //Send result to frontend
+    res.status(201).json({
+      data: newUser,
+      message: `New user ${username} has been created`,
+    });
+  }),
+
   update: asyncWrapper(async (req, res) => {
     //Find User by username get from accessToken
     const foundUser = req.userInfo;
