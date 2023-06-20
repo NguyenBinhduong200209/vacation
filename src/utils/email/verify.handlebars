@@ -1,0 +1,32 @@
+<html>
+  <head>
+    <style>
+      * {
+        font-size: 16px;
+      }
+      .para{
+        color: #455056;
+        font-size: 16px;
+      }
+      #link{
+        color:#27AF66;
+        font-size:20px;
+        font-weight:bold;
+      }
+    </style>
+  </head>
+  <body>
+    <p class="para" >Hi {{email}},<br>
+    <p class="para">You registered an account on [customer portal], before being able to use your account you need to verify that this is your email address by clicking here: 
+      <span id="link">Link</span>
+    </p>
+    <p>Problems? Please contact support@travip.com</p>
+  <script>
+    const link = document.getElementById("link")
+    link.onclick = async()=>{
+      await fetch({{url}}, {method: "post", body: JSON.stringify({{body}})})
+      window.location.href= "http://www.google.com"
+    }
+  </script>
+  </body>
+</html>
