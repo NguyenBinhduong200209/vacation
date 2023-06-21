@@ -139,5 +139,31 @@ const albumsController = {
       message: 'Albums deleted',
     });
   }),
+  getablumsuser: asyncWrapper(async (req, res) => {
+    // Get the user ID from the request
+    const userId = req.userInfo._id;
+
+    // Retrieve the albums associated with the user ID
+    const albums = await Albums.find({ userId });
+    const albumList = albums.map(album => album.toObject()); // Convert each album to a plain JavaScript object
+    // Return the list of albums
+    res.json({
+      message: 'get infor albums sucsses',
+      data: albumList,
+    });
+  }),
+  getonealbum: asyncWrapper(async (req, res) => {
+    // Get the user ID from the request
+    const { id } = req.params;
+
+    // Retrieve the albums associated with the user ID
+    const albums = await Albums.findById({ id });
+
+    // Return the list of albums
+    res.json({
+      message: 'get infor albums sucsses',
+      data: albums,
+    });
+  }),
 };
 export default albumsController;

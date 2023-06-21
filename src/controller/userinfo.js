@@ -26,6 +26,7 @@ const usersinforController = {
           dateOfBirth: foundUser.dateOfBirth,
           gender: foundUser.gender,
           description: foundUser.description,
+          national: foundUser.national,
         },
         message: 'Get info successfully',
       });
@@ -56,6 +57,7 @@ const usersinforController = {
         dateOfBirth: foundUser.dateOfBirth,
         gender: foundUser.gender,
         description: foundUser.description,
+        national: foundUser.national,
       },
       message: 'Get info successfully',
     });

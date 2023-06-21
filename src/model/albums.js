@@ -88,6 +88,15 @@ const albumSchema = new mongoose.Schema(
   }
 );
 
+<<<<<<< HEAD
+  lastUpdateAt: {
+    type: Date,
+    default: new Date(),
+  },
+});
+
+=======
+>>>>>>> bc180ca06e053b18c9a0b320c54987d56e91d7da
 const Albums = mongoose.model('Albums', albumSchema);
 
 export default Albums;
