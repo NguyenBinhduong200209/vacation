@@ -1,5 +1,5 @@
 import express from 'express';
-import vacationController from '#root/controller/vacation';
+import vacationController from '#root/controller/vacation/vacation';
 import verifyJWT from '#root/middleware/verifyJWT';
 
 const router = express.Router();

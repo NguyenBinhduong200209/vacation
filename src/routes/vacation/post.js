@@ -1,5 +1,5 @@
 import express from 'express';
-import postController from '#root/controller/post';
+import postController from '#root/controller/vacation/post';
 import verifyJWT from '#root/middleware/verifyJWT';
 
 const router = express.Router();

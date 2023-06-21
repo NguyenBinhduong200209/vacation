@@ -1,26 +1,19 @@
 import mongoose from 'mongoose';
 import _throw from '#root/utils/_throw';
-import Users from '#root/model/users';
+import Users from '#root/model/user/users';
 
-const locationSchema = new mongoose.Schema(
+const commentSchema = new mongoose.Schema(
   {
-    level: {
-      type: Number,
-      required: 'districtId required',
-      min: 1,
-      max: 4,
-    },
-
-    title: {
+    modelType: {
       type: String,
-      required: 'title required',
-      maxlength: 1000,
-      trim: true,
+      required: 'model Type required',
+      enum: ['vacation', 'post', 'album'],
+      default: 'vacation',
     },
 
-    parentId: {
+    modelId: {
       type: mongoose.ObjectId,
-      default: null,
+      required: 'modelId required',
     },
 
     userId: {
@@ -37,13 +30,18 @@ const locationSchema = new mongoose.Schema(
       },
     },
 
-    description: {
+    content: {
       type: String,
+      required: 'content required',
       trim: true,
       maxlength: 65000,
     },
 
     createdAt: {
+      type: Date,
+    },
+
+    lastUpdateAt: {
       type: Date,
       default: new Date(),
     },
@@ -56,6 +54,6 @@ const locationSchema = new mongoose.Schema(
   }
 );
 
-const Locations = mongoose.model('Locations', locationSchema);
+const Comments = mongoose.model('Comments', commentSchema);
 
-export default Locations;
+export default Comments;

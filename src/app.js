@@ -4,17 +4,19 @@ import cors from 'cors';
 import express from 'express';
 import mongoose from 'mongoose';
 import errHandler from '#root/middleware/errHandler';
-import authRoute from '#root/routes/auth';
-import locationRoute from '#root/routes/location';
-import vacationRoute from '#root/routes/vacation';
-import postRoute from '#root/routes/post';
+import authRoute from '#root/routes/user/auth';
+import userinforRoute from '#root/routes/user/userinfor';
+import friendRoute from '#root/routes/user/friend';
+import locationRoute from '#root/routes/vacation/location';
+import vacationRoute from '#root/routes/vacation/vacation';
+import postRoute from '#root/routes/vacation/post';
 import testRoute from '#root/routes/test';
+import likeRoute from '#root/routes/interaction/like';
+import commentRoute from '#root/routes/interaction/comment';
+import searchRoute from '#root/routes/search/search';
 import credentials from '#root/middleware/credentials';
 import dbConnect from '#root/config/dbConnect';
-import userinforRoute from '#root/routes/userinfor';
-import friendRoute from '#root/routes/friend';
 import albumsRoute from '#root/routes/albums';
-
 
 // create an instance of an Express application
 const app = express();
@@ -41,12 +43,14 @@ app.use('/auth', authRoute);
 app.use('/location', locationRoute);
 app.use('/vacation', vacationRoute);
 app.use('/post', postRoute);
-app.use('/test', testRoute);
-
-//
+app.use('/like', likeRoute);
+app.use('/comment', commentRoute);
+app.use('/search', searchRoute);
 app.use('/userinfor', userinforRoute);
 app.use('/friend', friendRoute);
 app.use('/albums', albumsRoute);
+app.use('/test', testRoute);
+
 // use middleware for handling errors
 app.use(errHandler);
 

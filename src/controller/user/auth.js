@@ -1,10 +1,13 @@
 import _throw from '#root/utils/_throw';
-import Users from '#root/model/users';
+import Users from '#root/model/user/users';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import sendMail from '#root/utils/email/sendEmail';
 import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const usersController = {
   logIn: asyncWrapper(async (req, res) => {
@@ -84,36 +87,38 @@ const usersController = {
     await sendMail({ type: 'verify', email, url: `http://localhost:3100/auth/verify?${query}` });
 
     //Send to front
-    return res
-      .status(200)
-      .json({ message: `an email has been send to ${email} account. Please check your email account` });
+    return res.status(200).json({ message: `an email has been send to ${email} account. Please check your email account` });
   }),
 
-  verify: asyncWrapper(async (req, res) => {
-    //Get username and password from req.body
-    const { email, username, password } = req.query;
+  verify: async (req, res) => {
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    try {
+      //Get username and password from req.body
+      const { email, username, password } = req.query;
 
-    //Check for duplicate username in database
-    const duplicate = await Users.findOne({ $or: [{ username }, { email }] }).lean();
-    duplicate && _throw({ code: 400, message: 'username or email has already been registerred' });
+      //Check for duplicate username in database
+      const duplicate = await Users.findOne({ $or: [{ username }, { email }] }).lean();
+      duplicate && _throw({ code: 400, message: 'username or email has already been registerred' });
 
-    //Create new user and validate infor
-    const newUser = new Users(req.query);
-    await newUser.validate();
+      //Create new user and validate infor
+      const newUser = new Users(req.query);
+      await newUser.validate();
 
-    //Save hashedPwd
-    const hashedPwd = await bcrypt.hash(password, 10);
-    newUser.password = hashedPwd;
+      //Save hashedPwd
+      const hashedPwd = await bcrypt.hash(password, 10);
+      newUser.password = hashedPwd;
 
-    //Save to database
-    await newUser.save();
+      //Save to database
+      await newUser.save();
 
-    //Send result to frontend
-    res.status(201).json({
-      data: newUser,
-      message: `New user ${username} has been created`,
-    });
-  }),
+      //Send result to frontend
+      const successHTMLPath = path.join(__dirname, '..', '..', '..', 'public', 'successVerification.html');
+      return res.sendFile(successHTMLPath);
+    } catch (error) {
+      const failHTMLPath = path.join(__dirname, '..', '..', '..', 'public', 'failVerification.html');
+      res.sendFile(failHTMLPath);
+    }
+  },
 
   update: asyncWrapper(async (req, res) => {
     //Find User by username get from accessToken
@@ -130,15 +135,9 @@ const usersController = {
           case 'username':
             if (foundUser.username !== val) {
               //Check username is already existed or not
-              const checkDup = await Users.findOne({
-                username: val,
-              });
-              checkDup
-                ? _throw({
-                    code: 400,
-                    message: 'username has already existed',
-                  })
-                : (foundUser.username = val);
+              const checkDup = await Users.findOne({ username: val });
+              checkDup && _throw({ code: 400, message: 'username has already existed' });
+              foundUser.username = val;
             }
             break;
 
@@ -146,6 +145,8 @@ const usersController = {
             const { path } = req.file,
               resource = fs.readFileSync(path).toString('base64');
             foundUser.avatar = resource;
+            //Delete file
+            fs.unlinkSync(path);
             break;
 
           case 'password':
@@ -203,7 +204,7 @@ const usersController = {
     foundUser.passwordToken = passwordToken;
 
     //Send passwordToken to email got from req.query
-    await sendMail({ email, token: passwordToken });
+    await sendMail({ type: 'reset', email, token: passwordToken });
 
     //Save new info of foundUser to database
     await foundUser.save();

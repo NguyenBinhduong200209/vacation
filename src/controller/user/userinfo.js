@@ -1,5 +1,5 @@
 import _throw from '#root/utils/_throw';
-import Users from '#root/model/users';
+import Users from '#root/model/user/users';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 
 const usersinforController = {

@@ -1,19 +1,26 @@
 import mongoose from 'mongoose';
 import _throw from '#root/utils/_throw';
-import Users from '#root/model/users';
+import Users from '#root/model/user/users';
 
-const likeSchema = new mongoose.Schema(
+const locationSchema = new mongoose.Schema(
   {
-    modelType: {
-      type: String,
-      required: 'model Type required',
-      enum: ['vacation', 'post', 'album'],
-      default: 'vacation',
+    level: {
+      type: Number,
+      required: 'districtId required',
+      min: 1,
+      max: 4,
     },
 
-    modelId: {
+    title: {
+      type: String,
+      required: 'title required',
+      maxlength: 1000,
+      trim: true,
+    },
+
+    parentId: {
       type: mongoose.ObjectId,
-      required: 'modelId required',
+      default: null,
     },
 
     userId: {
@@ -30,11 +37,13 @@ const likeSchema = new mongoose.Schema(
       },
     },
 
-    createdAt: {
-      type: Date,
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 65000,
     },
 
-    lastUpdateAt: {
+    createdAt: {
       type: Date,
       default: new Date(),
     },
@@ -47,6 +56,6 @@ const likeSchema = new mongoose.Schema(
   }
 );
 
-const Likes = mongoose.model('Likes', likeSchema);
+const Locations = mongoose.model('Locations', locationSchema);
 
-export default Likes;
+export default Locations;

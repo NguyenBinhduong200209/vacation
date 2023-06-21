@@ -1,4 +1,3 @@
-
 const errHandler = (err, req, res, next) => {
   console.log(err.stack); // Log the error stack trace to the console
 
@@ -16,7 +15,11 @@ const errHandler = (err, req, res, next) => {
       return res.status(400).json({ errors: err.message, meta, message: 'TypeError' });
 
     case 'CastError':
-      return res.status(400).json({ errors: err.message, meta, message: 'CastError' });
+      return res.status(400).json({
+        errors: [{ field: err.path, message: `Cast failed for value ${err.value}` }],
+        meta,
+        message: 'CastError',
+      });
 
     case 'MongooseError':
       return res.status(500).json({ errors: err.message, message: 'Database Error' });

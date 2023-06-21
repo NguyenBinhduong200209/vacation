@@ -1,6 +1,6 @@
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
-import Friends from '#root/model/friend';
+import Friends from '#root/model/user/friend';
 import Albums from '#root/model/albums';
 
 const albumsController = {
