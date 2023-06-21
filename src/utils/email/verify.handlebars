@@ -1,0 +1,26 @@
+<html>
+  <head>
+    <style>
+      * {
+        font-size: 16px;
+      }
+      .para{
+        color: #455056;
+        font-size: 16px;
+      }
+      #link{
+        color:#27AF66;
+        font-size:20px;
+        font-weight:bold;
+      }
+    </style>
+  </head>
+  <body>
+    <p class="para" >Hi {{email}},<br>
+    <p class="para">You registered an account on [customer portal], before being able to use your account you need to verify that this is your email address by clicking here: 
+      <a id="link" href={{url}} target="_blank">Link</a>
+    </p>
+    <p>Problems? Please contact support@travip.com</p>
+    <p>Kind Regards,</p>
+  </body>
+</html>

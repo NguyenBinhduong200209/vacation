@@ -25,6 +25,10 @@ const locationController = {
         const { parentId } = req.query;
         let list = [];
         switch (number) {
+          case 4:
+            list = await Locations.aggregate([{ $match: { level: 4 } }, { $project: { _id: 1, title: 1 } }]);
+            break;
+
           case 3:
             list = await Locations.aggregate([{ $match: { level: 3 } }, { $project: { _id: 1, title: 1 } }]);
             break;
@@ -49,7 +53,7 @@ const locationController = {
           default:
             _throw({
               code: 400,
-              errors: [{ field: 'query', message: 'level can be in range from 2 to 3' }],
+              errors: [{ field: 'query', message: 'level can be in range from 2 to 4' }],
               message: 'invalid level field',
             });
         }
@@ -75,7 +79,7 @@ const locationController = {
               from: 'posts',
               localField: '_id',
               foreignField: 'locationId',
-              pipeline: [{ $project: { _id: 1 } }, ...countLikesAndComments({ level: 1 })],
+              pipeline: [{ $project: { _id: 1 } }, ...countLikesAndComments({ modelType: 'post' })],
               as: 'postInfo',
             },
           },

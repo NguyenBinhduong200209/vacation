@@ -61,15 +61,15 @@ const pipeline = {
     ];
   },
 
-  countLikesAndComments: function ({ level }) {
+  countLikesAndComments: function ({ modelType }) {
     return [
       //Get total like by looking up to likes model
       {
         $lookup: {
           from: 'likes',
           localField: '_id',
-          foreignField: 'parentId',
-          pipeline: level === 1 ? [{ $match: { level } }, { $count: 'total' }] : [{ $count: 'total' }],
+          foreignField: 'modelId',
+          pipeline: [{ $match: { modelType } }, { $count: 'total' }],
           as: 'totalLikes',
         },
       },
@@ -81,8 +81,8 @@ const pipeline = {
         $lookup: {
           from: 'comments',
           localField: '_id',
-          foreignField: 'parentId',
-          pipeline: level === 1 ? [{ $match: { level } }, { $count: 'total' }] : [{ $count: 'total' }],
+          foreignField: 'modelId',
+          pipeline: [{ $match: { modelType } }, { $count: 'total' }],
           as: 'totalComments',
         },
       },

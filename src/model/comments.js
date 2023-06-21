@@ -3,51 +3,57 @@ import _throw from '#root/utils/_throw';
 import Users from '#root/model/users';
 import Posts from '#root/model/posts';
 
-const commentSchema = new mongoose.Schema({
-  //Level 1 stands for postId, level 2 stands for vacationId
-  level: {
-    type: Number,
-    required: 'districtId required',
-    min: 1,
-    max: 2,
-  },
+const commentSchema = new mongoose.Schema(
+  {
+    modelType: {
+      type: String,
+      required: 'model Type required',
+      enum: ['vacation', 'post', 'album'],
+      default: 'vacation',
+    },
 
-  //If level is 1, parentId is postId, if level is 2, parentId is vacationId
-  parentId: {
-    type: mongoose.ObjectId,
-    required: 'parentId required',
-  },
+    modelId: {
+      type: mongoose.ObjectId,
+      required: 'modelId required',
+    },
 
-  userId: {
-    type: mongoose.ObjectId,
-    required: 'UserId required',
-    validate: async value => {
-      const foundUser = await Users.findById(value);
-      !foundUser &&
-        _throw({
-          code: 400,
-          errors: [{ field: 'userId', message: 'invalid userId' }],
-          message: 'invalid userId',
-        });
+    userId: {
+      type: mongoose.ObjectId,
+      required: 'UserId required',
+      validate: async value => {
+        const foundUser = await Users.findById(value);
+        !foundUser &&
+          _throw({
+            code: 400,
+            errors: [{ field: 'userId', message: 'invalid userId' }],
+            message: 'invalid userId',
+          });
+      },
+    },
+
+    content: {
+      type: String,
+      required: 'content required',
+      trim: true,
+      maxlength: 65000,
+    },
+
+    createdAt: {
+      type: Date,
+    },
+
+    lastUpdateAt: {
+      type: Date,
+      default: new Date(),
     },
   },
-
-  content: {
-    type: String,
-    required: 'content required',
-    trim: true,
-    maxlength: 65000,
-  },
-
-  createdAt: {
-    type: Date,
-  },
-
-  lastUpdateAt: {
-    type: Date,
-    default: new Date(),
-  },
-});
+  {
+    versionKey: false,
+    toObject: { getters: true, setters: true },
+    toJSON: { getters: true, setters: true },
+    runSettersOnQuery: true,
+  }
+);
 
 const Comments = mongoose.model('Comments', commentSchema);
 

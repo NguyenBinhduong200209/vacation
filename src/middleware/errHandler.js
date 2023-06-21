@@ -10,19 +10,16 @@ const errHandler = (err, req, res, next) => {
         (obj, key) => Object.assign(obj, { [key]: err.errors[key].message }),
         {}
       );
-      return res
-        .status(400)
-        .json({ errors: result, meta, message: 'Validation Error' });
+      return res.status(400).json({ errors: result, meta, message: 'Validation Error' });
 
     case 'TypeError':
-      return res
-        .status(400)
-        .json({ errors: err.message, meta, message: 'TypeError' });
+      return res.status(400).json({ errors: err.message, meta, message: 'TypeError' });
 
     case 'CastError':
-      return res
-        .status(400)
-        .json({ errors: err.message, meta, message: 'CastError' });
+      return res.status(400).json({ errors: err.message, meta, message: 'CastError' });
+
+    case 'MongooseError':
+      return res.status(500).json({ errors: err.message, message: 'Database Error' });
 
     default:
       return res.status(code || 500).json({ errors, meta, message });

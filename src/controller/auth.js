@@ -42,6 +42,7 @@ const usersController = {
         data: {
           _id: foundUser._id,
           username: foundUser.username,
+          avatar: foundUser.avatar,
           accessToken,
           refreshToken,
         },
@@ -68,14 +69,36 @@ const usersController = {
 
   register: asyncWrapper(async (req, res) => {
     //Get username and password from req.body
-    const { username, password } = req.body;
+    const { email, username } = req.body;
 
     //Check for duplicate username in database
-    const dupUsername = await Users.findOne({ username }).lean();
-    dupUsername && _throw({ code: 400, message: 'username has already been existed' });
+    const duplicate = await Users.findOne({ $or: [{ username }, { email }] }).lean();
+    duplicate && _throw({ code: 400, message: 'username or email has already been existed' });
+
+    //Send email
+    const query = ['firstname', 'lastname', 'username', 'email', 'password'].reduce((str, item) => {
+      const value = req.body[item];
+      return str.concat(`${item}=${value}&`);
+    }, '');
+    console.log(query);
+    await sendMail({ type: 'verify', email, url: `http://localhost:3100/auth/verify?${query}` });
+
+    //Send to front
+    return res
+      .status(200)
+      .json({ message: `an email has been send to ${email} account. Please check your email account` });
+  }),
+
+  verify: asyncWrapper(async (req, res) => {
+    //Get username and password from req.body
+    const { email, username, password } = req.query;
+
+    //Check for duplicate username in database
+    const duplicate = await Users.findOne({ $or: [{ username }, { email }] }).lean();
+    duplicate && _throw({ code: 400, message: 'username or email has already been registerred' });
 
     //Create new user and validate infor
-    const newUser = new Users(req.body);
+    const newUser = new Users(req.query);
     await newUser.validate();
 
     //Save hashedPwd
@@ -117,6 +140,12 @@ const usersController = {
                   })
                 : (foundUser.username = val);
             }
+            break;
+
+          case 'avatar':
+            const { path } = req.file,
+              resource = fs.readFileSync(path).toString('base64');
+            foundUser.avatar = resource;
             break;
 
           case 'password':
