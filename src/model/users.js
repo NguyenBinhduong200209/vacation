@@ -77,6 +77,9 @@ const userSchema = new mongoose.Schema({
     enum: ['Male', 'Female', 'Non-binary'],
     default: 'Male',
   },
+  national: {
+    type: String,
+  },
 
   description: {
     type: String,
