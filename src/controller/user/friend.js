@@ -1,6 +1,6 @@
 import asyncWrapper from '#root/middleware/asyncWrapper';
-import Friends from '#root/model/friend';
-import Users from '#root/model/users';
+import Friends from '#root/model/user/friend';
+import Users from '#root/model//user/users';
 import _throw from '#root/utils/_throw';
 
 const friendsController = {

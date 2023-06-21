@@ -70,7 +70,7 @@ const userSchema = new mongoose.Schema(
           : val;
       },
       get: val => {
-        return val && 'data:image/webp;base64,' + val.toString('base64');
+        return val && val.toString('base64');
       },
     },
 

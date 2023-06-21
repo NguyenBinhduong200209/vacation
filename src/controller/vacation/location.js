@@ -1,10 +1,8 @@
 import _throw from '#root/utils/_throw';
-import Locations from '#root/model/locations';
+import Locations from '#root/model/vacation/locations';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import mongoose from 'mongoose';
-import pipeline from '#root/config/pipeline';
-
-const { getUserInfo, countLikesAndComments, getLocation } = pipeline;
+import { getUserInfo, countLikesAndComments, getLocation } from '#root/config/pipeline';
 
 const locationController = {
   getMany: asyncWrapper(async (req, res) => {
@@ -79,7 +77,7 @@ const locationController = {
               from: 'posts',
               localField: '_id',
               foreignField: 'locationId',
-              pipeline: [{ $project: { _id: 1 } }, ...countLikesAndComments({ modelType: 'post' })],
+              pipeline: [{ $project: { _id: 1 } }].concat(countLikesAndComments({ modelType: 'post' })),
               as: 'postInfo',
             },
           },
@@ -116,12 +114,17 @@ const locationController = {
   getOne: asyncWrapper(async (req, res) => {
     const { id } = req.params;
 
-    const result = await Locations.aggregate([
-      { $match: { _id: new mongoose.Types.ObjectId(id) } },
-      ...getUserInfo({ field: ['username', 'avatar'] }),
-      ...getLocation({ localField: '_id' }),
-      { $project: { level: 0, title: 0, userId: 0, parentId: 0 } },
-    ]);
+    const result = await Locations.aggregate(
+      //Filter based on id
+      [{ $match: { _id: new mongoose.Types.ObjectId(id) } }].concat(
+        //Get user and location infor by lookup to model
+        getUserInfo({ field: ['username', 'avatar'] }),
+        getLocation({ localField: '_id' }),
+
+        //Get specific fields
+        [{ $project: { level: 0, title: 0, userId: 0, parentId: 0 } }]
+      )
+    );
 
     return res.status(200).json({ data: result[0], message: 'get detail successfully' });
   }),

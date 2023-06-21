@@ -1,5 +1,5 @@
 import express from 'express';
-import friendsController from '#root/controller/friend';
+import friendsController from '#root/controller/user/friend';
 import verifyJWT from '#root/middleware/verifyJWT';
 
 const router = express.Router();

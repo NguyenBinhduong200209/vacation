@@ -1,9 +1,8 @@
 import mongoose from 'mongoose';
 import _throw from '#root/utils/_throw';
-import Users from '#root/model/users';
-import Posts from '#root/model/posts';
+import Users from '#root/model/user/users';
 
-const commentSchema = new mongoose.Schema(
+const likeSchema = new mongoose.Schema(
   {
     modelType: {
       type: String,
@@ -31,17 +30,6 @@ const commentSchema = new mongoose.Schema(
       },
     },
 
-    content: {
-      type: String,
-      required: 'content required',
-      trim: true,
-      maxlength: 65000,
-    },
-
-    createdAt: {
-      type: Date,
-    },
-
     lastUpdateAt: {
       type: Date,
       default: new Date(),
@@ -55,6 +43,6 @@ const commentSchema = new mongoose.Schema(
   }
 );
 
-const Comments = mongoose.model('Comments', commentSchema);
+const Likes = mongoose.model('Likes', likeSchema);
 
-export default Comments;
+export default Likes;

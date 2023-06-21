@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import validator from 'validator';
 import _throw from '#root/utils/_throw';
-import Users from '#root/model/users';
-import Vacations from '#root/model/vacations';
+import Users from '#root/model/user/users';
+import Vacations from '#root/model/vacation/vacations';
 
 const albumSchema = new mongoose.Schema(
   {

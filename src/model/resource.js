@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import validator from 'validator';
 import _throw from '#root/utils/_throw';
-import Users from '#root/model/users';
+import Users from '#root/model/user/users';
 
 const resourceSchema = new mongoose.Schema(
   {
@@ -69,7 +69,7 @@ const resourceSchema = new mongoose.Schema(
       },
 
       get: val => {
-        return val && 'data:image/webp;base64,' + val.toString('base64');
+        return val && val.toString('base64');
       },
     },
 

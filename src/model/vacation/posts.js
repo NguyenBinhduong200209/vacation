@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 import validator from 'validator';
 import _throw from '#root/utils/_throw';
-import Users from '#root/model/users';
-import Vacations from '#root/model/vacations';
-import Locations from '#root/model/locations';
+import Users from '#root/model/user/users';
+import Vacations from '#root/model/vacation/vacations';
+import Locations from '#root/model/vacation/locations';
 
 const postSchema = new mongoose.Schema(
   {

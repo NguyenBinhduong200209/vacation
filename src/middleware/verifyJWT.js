@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import Users from '#root/model/users';
+import Users from '#root/model/user/users';
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 // import dbConnect from '#root/config/dbConnect';
@@ -23,14 +23,10 @@ const verifyJWT = asyncWrapper(async (req, res, next) => {
   const accessToken = authHeader.split(' ')[1];
 
   // Verify the access token using the secret key
-  await jwt.verify(
-    accessToken,
-    process.env.ACCESS_TOKEN_SECRET,
-    async (err, decoded) => {
-      err && _throw({ code: 403, message: 'invalid token' });
-      req.username = decoded.username;
-    }
-  );
+  await jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, async (err, decoded) => {
+    err && _throw({ code: 403, message: 'invalid token' });
+    req.username = decoded.username;
+  });
 
   // Find the token in the database, if the token is not found in the database, return a 403 Forbidden status code
   const foundUser = await Users.findOne({ accessToken });

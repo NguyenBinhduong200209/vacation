@@ -1,44 +1,51 @@
-import Vacations from '#root/model/vacations';
+import Vacations from '#root/model/vacation/vacations';
+import Albums from '#root/model/albums';
 import _throw from '#root/utils/_throw';
 
-async function checkForbidden(foundUserId, vacationId) {
-  try {
-    const foundVacation = await Vacations.findById(vacationId);
-    //Throw an error if cannot find vacation
-    !foundVacation &&
-      _throw({ code: 400, errors: [{ field: 'id', message: 'invalid' }], message: 'vacation not found' });
+async function checkForbidden({ crUserId, modelType, modelId }) {
+  const result =
+    modelType === 'vacation'
+      ? await Vacations.findById(modelId)
+      : modelType === 'album'
+      ? await Albums.findById(modelId)
+      : _throw({
+          code: 400,
+          errors: [{ field: modelType, message: `invalid ${modelType}Id` }],
+          message: `invalid ${modelType}Id`,
+        });
 
-    const { shareList, shareStatus, userId } = foundVacation;
-    switch (shareStatus) {
-      //Throw an error if userId login is not author of this vacation
-      case 'onlyme':
-        foundUserId.toString() !== userId.toString() &&
-          _throw({
-            code: 403,
-            errors: [{ field: 'shareList', message: 'user have no permission to access this vacation' }],
-            message: 'Forbidden',
-          });
-        break;
+  //Throw an error if cannot find modelType
+  !result &&
+    _throw({ code: 404, errors: [{ field: 'id', message: 'invalid' }], message: `${modelType} not found` });
 
-      case 'protected':
-        //Throw an error if userId login is not in shareList of this vacation
-        !shareList.includes(foundUserId) &&
-          _throw({
-            code: 403,
-            errors: [{ field: 'shareList', message: 'user is not in shareList of this vacation' }],
-            message: 'Forbidden',
-          });
-        break;
+  const { shareList, shareStatus, userId } = result;
+  switch (shareStatus) {
+    //Throw an error if userId login is not author of this modelType
+    case 'onlyme':
+      crUserId.toString() !== userId.toString() &&
+        _throw({
+          code: 403,
+          errors: [{ field: 'shareList', message: `user have no permission to access this ${modelType}` }],
+          message: 'Forbidden',
+        });
+      break;
 
-      default:
-        break;
-    }
+    case 'protected':
+      //Throw an error if userId login is not in shareList of this modelType
+      !shareList.includes(crUserId) &&
+        _throw({
+          code: 403,
+          errors: [{ field: 'shareList', message: `user is not in shareList of this ${modelType}` }],
+          message: 'Forbidden',
+        });
+      break;
 
-    //Return vacation found
-    return foundVacation;
-  } catch (error) {
-    throw error;
+    default:
+      break;
   }
+
+  //Return model found
+  return result;
 }
 
 export default checkForbidden;

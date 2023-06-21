@@ -1,95 +1,66 @@
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
-import Vacations from '#root/model/vacations';
-import pipeline from '#root/config/pipeline';
+import Vacations from '#root/model/vacation/vacations';
+import { addTotalPageFields, getUserInfo, countLikesAndComments, facet } from '#root/config/pipeline';
 import checkForbidden from '#root/utils/checkForbidden';
 import checkAuthor from '#root/utils/checkAuthor';
 import mongoose from 'mongoose';
 
-const { addTotalPageFields, getUserInfo, countLikesAndComments } = pipeline;
-
 const getVacationList = async ({ where, field, page, foundUserId }) => {
-  //Get filter Object
-  let matchCondition;
-  switch (where) {
-    case 'newFeed':
-      matchCondition = {
-        $or: [{ shareStatus: 'public' }, { shareStatus: 'protected', shareList: { $in: [foundUserId] } }],
-      };
-      break;
-
-    case 'userProfile':
-      matchCondition = {
-        $or: [
-          { shareStatus: 'public', memberList: { $in: [foundUserId] } },
-          { shareStatus: 'protected', shareList: { $in: [foundUserId] } },
-          { shareStatus: 'onlyme', userId: foundUserId },
-        ],
-      };
-      break;
-
-    default:
-      matchCondition = { $or: [{ shareStatus: 'public' }] };
-      break;
-  }
-
-  const result = await Vacations.aggregate([
-    //Filter only return vacation has shareStatus is public or vacation has shareStatus is protected and has shared to user
-    { $match: matchCondition },
-
-    //Sort in order to push the newest updated vacation to top
-    { $sort: { lastUpdateAt: -1, createdAt: -1 } },
-
-    //Add field total, page and pages fields
-    ...addTotalPageFields({ page }),
-
-    //Get total Likes and Comment by lookup to posts model
-    {
-      $lookup: {
-        from: 'posts',
-        localField: '_id',
-        foreignField: 'vacationId',
-        pipeline: [
-          ...countLikesAndComments({ modelType: 'post' }),
-          {
-            $group: {
-              _id: '$vacationId',
-              likes: { $sum: '$totalLikes' },
-              comments: { $sum: '$totalComments' },
-            },
-          },
-          { $unset: '_id' },
-        ],
-        as: 'posts',
+  const result = await Vacations.aggregate(
+    [].concat(
+      //Filter only return vacation has shareStatus is public or vacation has shareStatus is protected and has shared to user
+      {
+        $match: {
+          $or: [
+            where === 'newFeed'
+              ? { shareStatus: 'public' }
+              : { shareStatus: 'public', memberList: { $in: [foundUserId] } },
+            { shareStatus: 'protected', shareList: { $in: [foundUserId] } },
+            { shareStatus: 'onlyme', userId: foundUserId },
+          ],
+        },
       },
-    },
-    { $unwind: '$posts' },
-    { $addFields: { likes: '$posts.likes', comments: '$posts.comments' } },
 
-    //Get username of author by lookup to users model by userId
-    ...getUserInfo({ field: ['username', 'avatar'] }),
+      //Sort in order to push the newest updated vacation to top
+      { $sort: { lastUpdateAt: -1, createdAt: -1 } },
 
-    //Set up new array with total field is length of array and list field is array without __v field
-    {
-      $facet: {
-        meta: [
-          {
-            $group: {
-              _id: '$total',
-              total: { $first: '$total' },
-              page: { $first: '$page' },
-              pages: { $first: '$pages' },
+      //Add field total, page and pages fields
+      addTotalPageFields({ page }),
+
+      //Get total Likes and Comment by lookup to posts model
+      {
+        $lookup: {
+          from: 'posts',
+          localField: '_id',
+          foreignField: 'vacationId',
+          pipeline: countLikesAndComments({ modelType: 'post' }).concat([
+            {
+              $group: {
+                _id: '$vacationId',
+                likes: { $sum: '$totalLikes' },
+                comments: { $sum: '$totalComments' },
+              },
             },
-          },
-          { $project: { _id: 0 } },
-        ],
-        data: [{ $project: field.reduce((obj, item) => Object.assign(obj, { [item]: 1 }), {}) }],
-      },
-    },
+            { $unset: '_id' },
+          ]),
 
-    // Destructuring field
-    { $unwind: '$meta' },
-  ]);
+          as: 'posts',
+        },
+      },
+      { $unwind: '$posts' },
+      { $addFields: { likes: '$posts.likes', comments: '$posts.comments' } },
+
+      //Get username of author by lookup to users model by userId
+      getUserInfo({ field: ['username', 'avatar'] }),
+
+      //Set up new array with total field is length of array and list field is array without __v field
+      facet({ meta: ['total', 'page', 'pages'], data: field }),
+
+      // Destructuring field
+      { $unwind: '$meta' }
+    )
+  );
   return result[0];
 };
 
@@ -127,20 +98,28 @@ const vacationController = {
 
   getOne: asyncWrapper(async (req, res) => {
     const { id } = req.params;
-    const userId = req.userInfo._id.toString();
 
     //Throw an error if user login is not in shareList
-    const foundVacation = await checkForbidden(userId, id);
+    const foundVacation = await checkForbidden({
+      crUserId: req.userInfo._id,
+      modelType: 'vacation',
+      modelId: id,
+    });
 
     // Increase view of post by 1
     foundVacation.views += 1;
     await foundVacation.save();
 
-    const result = await Vacations.aggregate([
-      { $match: { _id: new mongoose.Types.ObjectId(id) } },
-      ...getUserInfo({ field: ['username', 'avatar'] }),
-      { $project: { userId: 0 } },
-    ]);
+    const result = await Vacations.aggregate(
+      //Filter based on id
+      [{ $match: { _id: new mongoose.Types.ObjectId(id) } }].concat(
+        //Get userInfo by looking up to model
+        getUserInfo({ field: ['username', 'avatar'] }),
+
+        //Get specific fields
+        [{ $project: { userId: 0 } }]
+      )
+    );
 
     //Send to front
     return res.status(200).json({ data: result[0], message: 'get detail successfully' });
@@ -154,7 +133,7 @@ const vacationController = {
     const userId = req.userInfo._id.toString();
 
     //if memberList receive is not an array, then return memberlist contain only userId, otherwises, combine memberList and userId
-    const newMemberList = Array.isArray(memberList) ? [...new Set([...memberList, userId])] : [userId];
+    const newMemberList = Array.isArray(memberList) ? [...new Set(memberList.concat(userId))] : [userId];
 
     //If shareStatus is protected, and shareList is an array, then return combination of newMemberList and shareList, otherwise, return newMemberList, if shareStatus is not protected, then return null
     const newShareList =
@@ -185,7 +164,7 @@ const vacationController = {
     const { id } = req.params;
 
     //Check whether user login is author of this vacation, if user is not author, then throw an error Forbidden
-    const foundVacation = await checkAuthor({ type: 'vacation', vacationId: id, userId: req.userInfo._id });
+    const foundVacation = await checkAuthor({ modelType: 'vacation', modelId: id, userId: req.userInfo._id });
 
     //Save new info to foundVacation
     const { memberList, shareStatus, shareList } = req.body;
@@ -204,7 +183,7 @@ const vacationController = {
         case 'memberList':
           //if memberList receive is not an array, then return memberlist contain only userId, otherwises, combine memberList and userId
           const newMemberList = Array.isArray(memberList)
-            ? [...new Set([...memberList, req.userInfo._id])]
+            ? [...new Set(memberList.concat(req.userInfo._id))]
             : [req.userInfo._id];
           foundVacation.memberList = newMemberList;
           break;
@@ -247,7 +226,7 @@ const vacationController = {
     const { id } = req.params;
 
     //Check whether user login is author of this vacation, if user is not author, then throw an error Forbidden
-    await checkAuthor({ type: 'vacation', vacationId: id, userId: req.userInfo._id });
+    await checkAuthor({ modelType: 'vacation', modelId: id, userId: req.userInfo._id });
 
     //Delete Vacation
     const deleteVacation = await Vacations.findByIdAndDelete(id);

@@ -1,5 +1,5 @@
 import express from 'express';
-import usersinforController from '#root/controller/userinfo';
+import usersinforController from '#root/controller/user/userinfo';
 
 const router = express.Router();
 
