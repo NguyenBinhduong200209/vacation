@@ -3,13 +3,7 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
 import checkForbidden from '#root/utils/checkForbidden';
 import checkAuthor from '#root/utils/checkAuthor';
-import {
-  addTotalPageFields,
-  getUserInfo,
-  countLikesAndComments,
-  getLocation,
-  facet,
-} from '#root/config/pipeline';
+import { addTotalPageFields, getUserInfo, countLikesAndComments, getLocation, facet } from '#root/config/pipeline';
 import mongoose from 'mongoose';
 
 const postController = {
@@ -68,15 +62,7 @@ const postController = {
         //Set up new array with total field is length of array and list field is array without __v field
         facet({
           meta: ['total', 'page', 'pages'],
-          data: [
-            'content',
-            'lastUpdateAt',
-            'resource',
-            'createdAt',
-            'authorInfo',
-            'totalLikes',
-            'totalComments',
-          ],
+          data: ['content', 'lastUpdateAt', 'resource', 'createdAt', 'authorInfo', 'totalLikes', 'totalComments'],
         })
       )
     );
@@ -89,8 +75,7 @@ const postController = {
 
     //Get vacationId based on postId and check forbidden of userId login and vacation contain post
     const foundPost = await Posts.findById(id);
-    !foundPost &&
-      _throw({ code: 404, errors: [{ field: 'id', message: 'invalid' }], message: 'post not found' });
+    !foundPost && _throw({ code: 404, errors: [{ field: 'id', message: 'invalid' }], message: 'post not found' });
 
     //Check the authorization of user to post
     await checkForbidden({

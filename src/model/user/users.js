@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import validator from 'validator';
 import _throw from '#root/utils/_throw';
+import Locations from '#root/model/vacation/locations';
 
 const userSchema = new mongoose.Schema(
   {
@@ -63,15 +64,8 @@ const userSchema = new mongoose.Schema(
     },
 
     avatar: {
-      type: Buffer,
-      set: val => {
-        return typeof val === 'string'
-          ? Buffer.from(val.replace(/data:image\/\w+;base64,/, ''), 'base64')
-          : val;
-      },
-      get: val => {
-        return val && val.toString('base64');
-      },
+      type: String,
+      trim: true,
     },
 
     dateOfBirth: {
@@ -135,6 +129,21 @@ const userSchema = new mongoose.Schema(
     lastUpdateAt: {
       type: Date,
       default: new Date(),
+    },
+
+    nationality: {
+      type: String,
+      maxlength: 1000,
+      validate: async value => {
+        const locationList = (await Locations.find({ level: 4 })).map(item => item.title);
+        !locationList.includes(value) &&
+          _throw({ code: 400, errors: [{ field: 'nationality', message: 'invalid value' }], message: 'invalid value' });
+      },
+    },
+
+    emailVerified: {
+      type: Boolean,
+      default: false,
     },
   },
   {

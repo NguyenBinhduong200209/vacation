@@ -9,7 +9,7 @@ const router = express.Router();
 router
   .post('/login', usersController.logIn)
   .post('/register', usersController.register)
-  .get('/verify', usersController.verify)
+  .post('/verify', usersController.verify)
   .post('/refresh', usersController.refresh)
   .post('/forgot/:email', usersController.forgot)
   .put('/reset', usersController.reset);
