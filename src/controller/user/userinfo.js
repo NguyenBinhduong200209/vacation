@@ -3,6 +3,8 @@ import Users from '#root/model/user/users';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Likes from '#root/model/interaction/likes';
 import Posts from '#root/model/vacation/posts';
+import Vacations from '#root/model/vacation/vacations';
+import Friends from '#root/model/user/friend';
 
 const usersinforController = {
   getprofile: asyncWrapper(async (req, res) => {
@@ -20,6 +22,14 @@ const usersinforController = {
       const totalLikes = await Likes.countDocuments({ userId: foundUser._id });
       //tính tổng số bài post
       const totalPosts = await Posts.countDocuments({ userId: foundUser._id });
+      //toongt số bạn bè
+      const totalFriends = await Friends.countDocuments({
+        $or: [{ userId1: foundUser._id }, { userId2: foundUser._id }],
+      });
+      // Tính tổng số kỳ nghỉ khi người dùng là thành viên
+      const totalVacations = await Vacations.countDocuments({
+        $or: [{ userId: foundUser._id }, { memberList: foundUser._id }],
+      });
       return res.status(200).json({
         data: {
           id: foundUser._id,
@@ -35,6 +45,8 @@ const usersinforController = {
           national: foundUser.national,
           totalLikes: totalLikes,
           totalPosts: totalPosts,
+          totalFriends: totalFriends,
+          totalVacations: totalVacations,
         },
         message: 'Get info successfully',
       });
@@ -58,7 +70,14 @@ const usersinforController = {
     const totalLikes = await Likes.countDocuments({ userId: foundUser._id });
     //tính tổng số bài post
     const totalPosts = await Posts.countDocuments({ userId: foundUser._id });
-
+    //toongt số bạn bè
+    const totalFriends = await Friends.countDocuments({
+      $or: [{ userId1: foundUser._id }, { userId2: foundUser._id }],
+    });
+    // Tính tổng số kỳ nghỉ khi người dùng là thành viên
+    const totalVacations = await Vacations.countDocuments({
+      $or: [{ userId: foundUser._id }, { memberList: foundUser._id }],
+    });
     return res.status(200).json({
       data: {
         id: foundUser._id,
@@ -72,6 +91,8 @@ const usersinforController = {
         national: foundUser.national,
         totalLikes: totalLikes,
         totalPosts: totalPosts,
+        totalFriends: totalFriends,
+        totalVacations: totalVacations,
       },
       message: 'Get info successfully',
     });
