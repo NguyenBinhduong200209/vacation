@@ -1,6 +1,8 @@
 import _throw from '#root/utils/_throw';
 import Users from '#root/model/user/users';
 import asyncWrapper from '#root/middleware/asyncWrapper';
+import Likes from '#root/model/interaction/likes';
+import Posts from '#root/model/vacation/posts';
 
 const usersinforController = {
   getprofile: asyncWrapper(async (req, res) => {
@@ -14,6 +16,10 @@ const usersinforController = {
       if (!foundUser) {
         return res.status(404).json({ message: 'User not found' });
       }
+      // Đếm tổng số like
+      const totalLikes = await Likes.countDocuments({ userId: foundUser._id });
+      //tính tổng số bài post
+      const totalPosts = await Posts.countDocuments({ userId: foundUser._id });
       return res.status(200).json({
         data: {
           id: foundUser._id,
@@ -27,6 +33,8 @@ const usersinforController = {
           gender: foundUser.gender,
           description: foundUser.description,
           national: foundUser.national,
+          totalLikes: totalLikes,
+          totalPosts: totalPosts,
         },
         message: 'Get info successfully',
       });
@@ -47,6 +55,10 @@ const usersinforController = {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    const totalLikes = await Likes.countDocuments({ userId: foundUser._id });
+    //tính tổng số bài post
+    const totalPosts = await Posts.countDocuments({ userId: foundUser._id });
+
     return res.status(200).json({
       data: {
         id: foundUser._id,
@@ -58,6 +70,8 @@ const usersinforController = {
         gender: foundUser.gender,
         description: foundUser.description,
         national: foundUser.national,
+        totalLikes: totalLikes,
+        totalPosts: totalPosts,
       },
       message: 'Get info successfully',
     });
