@@ -5,39 +5,6 @@ import Users from '#root/model/user/users';
 
 const resourceSchema = new mongoose.Schema(
   {
-    category: [
-      {
-        classType: {
-          type: String,
-          required: 'classType required',
-          enum: ['profileAvatar', 'vacationCover', 'post', 'album'],
-        },
-
-        classId: {
-          type: mongoose.ObjectId,
-          required: 'classId required',
-        },
-
-        isSelected: {
-          type: Boolean,
-        },
-      },
-    ],
-
-    userId: {
-      type: mongoose.ObjectId,
-      required: 'UserId required',
-      validate: async value => {
-        const foundUser = await Users.findById(value);
-        !foundUser &&
-          _throw({
-            code: 404,
-            errors: [{ field: 'userId', message: 'userId not found' }],
-            message: 'invalid userId',
-          });
-      },
-    },
-
     name: {
       type: String,
       trim: true,
@@ -45,32 +12,57 @@ const resourceSchema = new mongoose.Schema(
       maxlength: 50,
       validate: value => {
         !validator.isAlphanumeric(value, 'vi-VN', { ignore: " -_',()" }) &&
-          _throw({
-            code: 400,
-            errors: [{ field: 'name', message: 'invalid name' }],
-            message: 'invalid name',
-          });
+          _throw({ code: 400, errors: [{ field: 'name', message: 'invalid name' }] });
       },
     },
 
-    contentType: {
+    type: {
       type: String,
       trim: true,
-      required: 'contentType required',
+      required: 'type required',
     },
 
-    resource: {
-      type: Buffer,
-      required: 'resource required',
-      set: val => {
-        return typeof val === 'string'
-          ? Buffer.from(val.replace(/data:image\/\w+;base64,/, ''), 'base64')
-          : val;
-      },
+    size: {
+      type: Number,
+      required: 'size required',
+      min: 0,
+      default: 0,
+    },
 
-      get: val => {
-        return val && val.toString('base64');
+    path: {
+      type: String,
+      trim: true,
+      required: 'path required',
+    },
+
+    userId: {
+      type: mongoose.ObjectId,
+      required: 'UserId required',
+      validate: async value => {
+        const foundUser = await Users.findById(value);
+        !foundUser && _throw({ code: 404, errors: [{ field: 'userId', message: 'userId not found' }] });
       },
+    },
+
+    ref: {
+      type: [
+        {
+          model: {
+            type: String,
+            required: 'model ref required',
+            trim: true,
+            enum: Object.keys(mongoose.connection.models).map(item => item.toLowerCase()),
+          },
+          field: {
+            type: String,
+            required: 'field ref required',
+          },
+        },
+      ],
+      validate: value => {
+        value.length === 0 && _throw({ code: 400, errors: [{ field: 'ref', message: 'ref must not be an empty array' }] });
+      },
+      index: true,
     },
 
     createdAt: {

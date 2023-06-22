@@ -5,9 +5,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import sendMail from '#root/utils/email/sendEmail';
 import mongoose from 'mongoose';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { __publicPath } from '#root/app';
 
 const usersController = {
   logIn: asyncWrapper(async (req, res) => {
@@ -72,53 +70,62 @@ const usersController = {
 
   register: asyncWrapper(async (req, res) => {
     //Get username and password from req.body
-    const { email, username } = req.body;
+    const { email, username, password } = req.body;
 
     //Check for duplicate username in database
     const duplicate = await Users.findOne({ $or: [{ username }, { email }] }).lean();
     duplicate && _throw({ code: 400, message: 'username or email has already been existed' });
 
+    //Create new user and validate infor
+    const newUser = new Users(req.body);
+    await newUser.validate();
+
+    //Save hashedPwd
+    const hashedPwd = await bcrypt.hash(password, 10);
+    newUser.password = hashedPwd;
+
+    //Save to database
+    await newUser.save();
+
     //Send email
-    const query = ['firstname', 'lastname', 'username', 'email', 'password'].reduce((str, item) => {
-      const value = req.body[item];
-      return str.concat(`${item}=${value}&`);
-    }, '');
-    console.log(query);
-    await sendMail({ type: 'verify', email, url: `http://localhost:3100/auth/verify?${query}` });
+    await sendMail({ type: 'verify', email, url: `http://localhost:3100/static` });
 
     //Send to front
     return res.status(200).json({ message: `an email has been send to ${email} account. Please check your email account` });
   }),
 
-  verify: async (req, res) => {
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    try {
-      //Get username and password from req.body
-      const { email, username, password } = req.query;
+  verify: asyncWrapper(async (req, res) => {
+    //Get username and password from req.body
+    const { email } = req.query;
 
-      //Check for duplicate username in database
-      const duplicate = await Users.findOne({ $or: [{ username }, { email }] }).lean();
-      duplicate && _throw({ code: 400, message: 'username or email has already been registerred' });
+    //Throw an error if cannot find user
+    const foundUser = await Users.findOne({ email });
+    !foundUser &&
+      _throw({ code: 400, errors: [{ field: 'email', message: 'verify failed' }], message: 'verify email failed' });
 
-      //Create new user and validate infor
-      const newUser = new Users(req.query);
-      await newUser.validate();
+    //Generate new accessToken
+    const accessToken = jwt.sign({ username: foundUser.username }, process.env.ACCESS_TOKEN_SECRET, {
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRATION,
+    });
 
-      //Save hashedPwd
-      const hashedPwd = await bcrypt.hash(password, 10);
-      newUser.password = hashedPwd;
+    //Generate new refreshToken
+    const refreshToken = jwt.sign({ username: foundUser.username }, process.env.REFRESH_TOKEN_SECRET, {
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRATION,
+    });
 
-      //Save to database
-      await newUser.save();
+    //Save token to database to prevent previousToken still take effect
+    foundUser.accessToken = accessToken;
+    foundUser.refreshToken = refreshToken;
+    foundUser.emailVerified = true;
+    foundUser.createdAt = new Date();
+    await foundUser.save();
 
-      //Send result to frontend
-      const successHTMLPath = path.join(__dirname, '..', '..', '..', 'public', 'successVerification.html');
-      return res.sendFile(successHTMLPath);
-    } catch (error) {
-      const failHTMLPath = path.join(__dirname, '..', '..', '..', 'public', 'failVerification.html');
-      res.sendFile(failHTMLPath);
-    }
-  },
+    //Send result to frontend
+    return res.status(200).json({
+      data: { _id: foundUser._id, username: foundUser.username, accessToken, refreshToken },
+      message: 'verify successfully',
+    });
+  }),
 
   update: asyncWrapper(async (req, res) => {
     //Find User by username get from accessToken
@@ -141,14 +148,6 @@ const usersController = {
             }
             break;
 
-          case 'avatar':
-            const { path } = req.file,
-              resource = fs.readFileSync(path).toString('base64');
-            foundUser.avatar = resource;
-            //Delete file
-            fs.unlinkSync(path);
-            break;
-
           case 'password':
             //Hash the new password
             const newPassword = await bcrypt.hash(val, 10);
@@ -168,7 +167,11 @@ const usersController = {
             break;
 
           default:
-            foundUser[key] = val;
+            if (req.file) {
+              const { destination, originalname } = req.file;
+              const folder = destination.split('\\').slice(-1)[0] + '/' + originalname;
+              foundUser.avatar = folder;
+            } else foundUser[key] = val;
             break;
         }
       }
