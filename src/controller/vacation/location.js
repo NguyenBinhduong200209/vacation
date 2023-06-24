@@ -2,7 +2,7 @@ import _throw from '#root/utils/_throw';
 import Locations from '#root/model/vacation/locations';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import mongoose from 'mongoose';
-import { getUserInfo, countLikesAndComments, getLocation } from '#root/config/pipeline';
+import { getUserInfo, getCountInfo, getLocation } from '#root/config/pipeline';
 
 const locationController = {
   getMany: asyncWrapper(async (req, res) => {
@@ -77,7 +77,7 @@ const locationController = {
               from: 'posts',
               localField: '_id',
               foreignField: 'locationId',
-              pipeline: [{ $project: { _id: 1 } }].concat(countLikesAndComments({ modelType: 'post' })),
+              pipeline: [{ $project: { _id: 1 } }].concat(getCountInfo({ field: ['like', 'comment'] })),
               as: 'postInfo',
             },
           },

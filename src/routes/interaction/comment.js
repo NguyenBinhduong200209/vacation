@@ -4,10 +4,10 @@ import verifyJWT from '#root/middleware/verifyJWT';
 const router = express.Router();
 
 router.use(verifyJWT);
-router.route('/').post(commentController.addNew);
 router
   .route('/:id')
   .get(commentController.getMany)
+  .post(commentController.addNew)
   .put(commentController.update)
   .delete(commentController.delete);
 

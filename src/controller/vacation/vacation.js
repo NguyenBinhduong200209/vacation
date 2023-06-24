@@ -1,72 +1,20 @@
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Vacations from '#root/model/vacation/vacations';
-import { addTotalPageFields, getUserInfo, countLikesAndComments, facet } from '#root/config/pipeline';
-import checkForbidden from '#root/utils/checkForbidden';
-import checkAuthor from '#root/utils/checkAuthor';
+import Posts from '#root/model/vacation/posts';
+import { addTotalPageFields, getUserInfo, getCountInfo, facet } from '#root/config/pipeline';
+import checkPermission from '#root/utils/checkForbidden/checkPermission';
+import checkAuthor from '#root/utils/checkForbidden/checkAuthor';
 import mongoose from 'mongoose';
-
-const getVacationList = async ({ where, field, page, foundUserId }) => {
-  const result = await Vacations.aggregate(
-    [].concat(
-      //Filter only return vacation has shareStatus is public or vacation has shareStatus is protected and has shared to user
-      {
-        $match: {
-          $or: [
-            where === 'newFeed'
-              ? { shareStatus: 'public' }
-              : { shareStatus: 'public', memberList: { $in: [foundUserId] } },
-            { shareStatus: 'protected', shareList: { $in: [foundUserId] } },
-            { shareStatus: 'onlyme', userId: foundUserId },
-          ],
-        },
-      },
-
-      //Sort in order to push the newest updated vacation to top
-      { $sort: { lastUpdateAt: -1, createdAt: -1 } },
-
-      //Add field total, page and pages fields
-      addTotalPageFields({ page }),
-
-      //Get total Likes and Comment by lookup to posts model
-      {
-        $lookup: {
-          from: 'posts',
-          localField: '_id',
-          foreignField: 'vacationId',
-          pipeline: countLikesAndComments({ modelType: 'post' }).concat([
-            {
-              $group: {
-                _id: '$vacationId',
-                likes: { $sum: '$totalLikes' },
-                comments: { $sum: '$totalComments' },
-              },
-            },
-            { $unset: '_id' },
-          ]),
-
-          as: 'posts',
-        },
-      },
-      { $unwind: '$posts' },
-      { $addFields: { likes: '$posts.likes', comments: '$posts.comments' } },
-
-      //Get username of author by lookup to users model by userId
-      getUserInfo({ field: ['username', 'avatar'] }),
-
-      //Set up new array with total field is length of array and list field is array without __v field
-      facet({ meta: ['total', 'page', 'pages'], data: field }),
-
-      // Destructuring field
-      { $unwind: '$meta' }
-    )
-  );
-  return result[0];
-};
+import Likes from '#root/model/interaction/likes';
+import Comments from '#root/model/interaction/comments';
+import Views from '#root/model/interaction/views';
+import viewController from '#root/controller/interaction/views';
 
 const vacationController = {
   getMany: asyncWrapper(async (req, res) => {
     const { type, page } = req.query;
+    const userId = req.userInfo._id;
 
     //Throw an error if type query is not newFeed or userProfile
     !['newFeed', 'userProfile'].includes(type) &&
@@ -76,48 +24,95 @@ const vacationController = {
         message: 'invalid type query',
       });
 
-    const result = await getVacationList({
-      where: type,
-      field: [
-        type === 'newFeed' && 'authorInfo',
-        'title',
-        'cover',
-        'shareStatus',
-        'views',
-        'likes',
-        'comments',
-        'startingTime',
-        'endingTime',
-      ],
-      page: page,
-      foundUserId: req.userInfo._id,
-    });
+    const result = await Vacations.aggregate(
+      [].concat(
+        //Filter only return vacation has shareStatus is public or vacation has shareStatus is protected and has shared to user
+        {
+          $match: {
+            $or: [
+              type === 'newFeed' ? { shareStatus: 'public' } : { shareStatus: 'public', memberList: { $in: [userId] } },
+              { shareStatus: 'protected', shareList: { $in: [userId] } },
+              { shareStatus: 'onlyme', userId: userId },
+            ],
+          },
+        },
 
-    return res.status(200).json(result);
+        //Sort in order to push the newest updated vacation to top
+        { $sort: { lastUpdateAt: -1, createdAt: -1 } },
+
+        //Add field total, page and pages fields
+        addTotalPageFields({ page }),
+
+        //Get total Likes and Comment by lookup to posts model
+        {
+          $lookup: {
+            from: 'posts',
+            localField: '_id',
+            foreignField: 'vacationId',
+            pipeline: getCountInfo({ field: ['like', 'comment'] }),
+            as: 'posts',
+          },
+        },
+
+        getCountInfo({ field: ['view'] }),
+
+        //Replace field post with total posts, add new field likes and comments with value is total
+        {
+          $addFields: {
+            likes: { $sum: '$posts.likes' },
+            comments: { $sum: '$posts.comments' },
+            posts: { $size: '$posts' },
+          },
+        },
+
+        //Get username of author by lookup to users model by userId
+        getUserInfo({ field: ['username', 'avatar'] }),
+
+        //Set up new array with total field is length of array and list field is array without __v field
+        facet({
+          meta: ['total', 'page', 'pages'],
+          data: [
+            type === 'newFeed' && 'authorInfo',
+            'title',
+            'cover',
+            'shareStatus',
+            'posts',
+            'views',
+            'likes',
+            'comments',
+            'startingTime',
+            'endingTime',
+          ],
+        })
+      )
+    );
+
+    return res.status(200).json(result[0]);
   }),
 
   getOne: asyncWrapper(async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.params,
+      userId = req.userInfo._id;
 
     //Throw an error if user login is not in shareList
-    const foundVacation = await checkForbidden({
-      crUserId: req.userInfo._id,
-      modelType: 'vacation',
-      modelId: id,
-    });
+    await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: id });
 
     // Increase view of post by 1
-    foundVacation.views += 1;
-    await foundVacation.save();
+    await viewController.update({ modelType: 'vacation', modelId: id, userId: userId });
 
     const result = await Vacations.aggregate(
-      //Filter based on id
-      [{ $match: { _id: new mongoose.Types.ObjectId(id) } }].concat(
+      [].concat(
+        //Filter based on id
+        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+
         //Get userInfo by looking up to model
-        getUserInfo({ field: ['username', 'avatar'] }),
+        getUserInfo({ field: ['username', 'avatar'], getFriendList: true }),
+
+        //Get field count total views of vacation
+        getCountInfo({ field: ['view'] }),
 
         //Get specific fields
-        [{ $project: { userId: 0 } }]
+        { $project: { userId: 0 } }
       )
     );
 
@@ -127,8 +122,7 @@ const vacationController = {
 
   addNew: asyncWrapper(async (req, res) => {
     //Get vital information from req.body
-    const { title, description, memberList, shareStatus, shareList, startingTime, endingTime, cover } =
-      req.body;
+    const { title, description, memberList, shareStatus, shareList, startingTime, endingTime, cover } = req.body;
     //Get userId from verifyJWT middleware
     const userId = req.userInfo._id.toString();
 
@@ -228,11 +222,42 @@ const vacationController = {
     //Check whether user login is author of this vacation, if user is not author, then throw an error Forbidden
     await checkAuthor({ modelType: 'vacation', modelId: id, userId: req.userInfo._id });
 
-    //Delete Vacation
-    const deleteVacation = await Vacations.findByIdAndDelete(id);
+    //Find Posts in Vacation
+    const foundPosts = await Posts.find({ vacationId: id });
+
+    //Define promises for deleting post
+    const deletePostPromise = foundPosts.reduce((arr, post) => {
+      const postId = post._id;
+      //Define deletePost method
+      const deletePost = Posts.findByIdAndDelete(postId);
+
+      //Define deleteLikes method
+      const deleteLikes = Likes.deleteMany({
+        $or: [
+          { modelType: 'post', modelId: postId },
+          { modelType: 'vacation', modelId: id },
+        ],
+      });
+
+      //Define deleteComments method
+      const deleteComments = Comments.deleteMany({
+        $or: [
+          { modelType: 'post', modelId: postId },
+          { modelType: 'vacation', modelId: id },
+        ],
+      });
+
+      //Define deleteViews method
+      const deleteViews = Views.deleteMany({ modelType: 'vacation', modelId: id });
+      arr.push(deletePost, deleteLikes, deleteComments, deleteViews);
+      return arr;
+    }, []);
+
+    //Delete Vacation and posts
+    await Promise.all(deletePostPromise.concat(Vacations.findByIdAndDelete(id)));
 
     //Send to front
-    return res.status(202).json({ data: deleteVacation, message: 'delete successfully' });
+    return res.status(202).json({ message: 'delete successfully' });
   }),
 };
 

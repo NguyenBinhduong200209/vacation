@@ -3,20 +3,26 @@ import Albums from '#root/model/albums';
 import _throw from '#root/utils/_throw';
 
 async function checkForbidden({ crUserId, modelType, modelId }) {
-  const result =
-    modelType === 'vacation'
-      ? await Vacations.findById(modelId)
-      : modelType === 'album'
-      ? await Albums.findById(modelId)
-      : _throw({
-          code: 400,
-          errors: [{ field: modelType, message: `invalid ${modelType}Id` }],
-          message: `invalid ${modelType}Id`,
-        });
+  let result;
+  switch (modelType) {
+    case 'vacation':
+      result = await Vacations.findById(modelId);
+      break;
+
+    case 'album':
+      result = await Albums.findById(modelId);
+
+    default:
+      _throw({
+        code: 400,
+        errors: [{ field: modelType, message: `invalid ${modelType}Id` }],
+        message: `invalid ${modelType}Id`,
+      });
+      break;
+  }
 
   //Throw an error if cannot find modelType
-  !result &&
-    _throw({ code: 404, errors: [{ field: 'id', message: 'invalid' }], message: `${modelType} not found` });
+  !result && _throw({ code: 404, errors: [{ field: 'id', message: 'invalid' }], message: `${modelType} not found` });
 
   const { shareList, shareStatus, userId } = result;
   switch (shareStatus) {

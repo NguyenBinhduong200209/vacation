@@ -3,7 +3,7 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Likes from '#root/model/interaction/likes';
 import mongoose from 'mongoose';
 import { addTotalPageFields, getUserInfo, facet } from '#root/config/pipeline';
-import checkForbidden from '#root/utils/checkForbidden';
+import checkPermission from '#root/utils/checkForbidden/checkPermission';
 import Posts from '#root/model/vacation/posts';
 
 const likeController = {
@@ -32,39 +32,35 @@ const likeController = {
       { type } = req.query,
       userId = req.userInfo._id;
 
-    switch (type) {
-      case 'post':
-        //Throw an error if cannot find post
-        const foundPost = await Posts.findById(id);
-        !foundPost &&
-          _throw({
-            code: 404,
-            errors: [{ field: 'postId', message: 'postId not found' }],
-            message: 'post not found',
-          });
-        //Check whether user has permission to see this vacation
-        await checkForbidden({ crUserId: userId, modelType: 'vacation', modelId: foundPost.vacationId });
-        break;
-
-      default:
-        //Check whether user has permission to see this modelType
-        await checkForbidden({ crUserId: userId, modelType: type, modelId: id });
-        break;
+    //Check permission of this type
+    if (type === 'post') {
+      //Throw an error if cannot find post
+      const foundPost = await Posts.findById(id);
+      !foundPost &&
+        _throw({
+          code: 404,
+          errors: [{ field: 'postId', message: 'postId not found' }],
+          message: 'post not found',
+        });
+      //Check whether user has permission to see this vacation
+      await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: foundPost.vacationId });
     }
+
+    //Check whether user has permission to see this modelType
+    else await checkPermission({ crUserId: userId, modelType: type, modelId: id });
 
     //Find and delete like
     const foundLike = await Likes.findOneAndDelete({ modelType: type, modelId: id, userId: userId });
 
-    //If found and deleted successfully, send immedialy to front
-    if (foundLike) {
-      return res.status(200).json({ data: foundLike, message: `user has unliked this ${type}` });
-    }
-
-    //If cannot find, meaning user did not like, then create new document and save to collection
-    else {
-      const newLike = await Likes.create({ modelType: type, modelId: id, userId: userId });
-      return res.status(201).json({ data: newLike, message: `user has liked this ${type}` });
-    }
+    //If found and deleted successfully, send immedialy to front. If cannot find, meaning user did not like, then create new document and save to collection
+    return foundLike
+      ? res.status(200).json({ data: foundLike, message: `user has unliked this ${type}` })
+      : res
+          .status(201)
+          .json({
+            data: await Likes.create({ modelType: type, modelId: id, userId: userId }),
+            message: `user has liked this ${type}`,
+          });
   }),
 };
 

@@ -1,5 +1,6 @@
 import _throw from '#root/utils/_throw';
 import Users from '#root/model/user/users';
+import Resources from '#root/model/resource';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -17,6 +18,8 @@ const usersController = {
       //Get User from database
       const foundUser = await Users.findOne(value);
       !foundUser && _throw({ code: 404, message: 'user not found' });
+
+      !foundUser.emailVerified && _throw({ code: 401, message: 'account has not been verified by email yet' });
 
       // Evaluate password
       const match = await bcrypt.compare(password, foundUser.password);
@@ -167,11 +170,27 @@ const usersController = {
             break;
 
           default:
+            //if user does upload a file, then upload to server, and create new Resource document
             if (req.file) {
-              const { destination, originalname } = req.file;
-              const folder = destination.split('\\').slice(-1)[0] + '/' + originalname;
-              foundUser.avatar = folder;
-            } else foundUser[key] = val;
+              const { fieldname, destination, originalname, mimetype, size } = req.file;
+              //Config path of file uploaded to server
+              const newPath = destination.split('\\').slice(-1)[0] + '/' + originalname;
+
+              console.log(destination);
+
+              //Create new Resource document
+              const newResource = await Resources.create({
+                name: originalname,
+                type: mimetype,
+                size: size,
+                path: newPath,
+                userId: foundUser._id,
+                ref: [{ model: 'users', field: fieldname }],
+              });
+              foundUser.avatar = newResource;
+            }
+            //if user did not upload any file, then return any value that match key
+            else foundUser[key] = val;
             break;
         }
       }
@@ -182,7 +201,7 @@ const usersController = {
 
     //Send to front
     return res.status(200).json({
-      data: { userInfo: foundUser },
+      data: { userInfo: Object.assign(foundUser) },
       message: `user ${foundUser.username} update successfully`,
     });
   }),
