@@ -4,20 +4,9 @@ import cors from 'cors';
 import express from 'express';
 import mongoose from 'mongoose';
 import errHandler from '#root/middleware/errHandler';
-import authRoute from '#root/routes/user/auth';
-import userinforRoute from '#root/routes/user/userinfor';
-import friendRoute from '#root/routes/user/friend';
-import locationRoute from '#root/routes/vacation/location';
-import vacationRoute from '#root/routes/vacation/vacation';
-import postRoute from '#root/routes/vacation/post';
-import testRoute from '#root/routes/test';
-import likeRoute from '#root/routes/interaction/like';
-import commentRoute from '#root/routes/interaction/comment';
-import searchRoute from '#root/routes/search/search';
-import albumsRoute from '#root/routes/albums';
-import resourceRoute from '#root/routes/resource';
 import credentials from '#root/middleware/credentials';
 import dbConnect from '#root/config/dbConnect';
+import pathArr from '#root/routes/index';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -47,18 +36,7 @@ app.use(cors());
 app.use(express.json({ limit: '100kb' }));
 
 // use router for handling requests
-app.use('/auth', authRoute);
-app.use('/location', locationRoute);
-app.use('/vacation', vacationRoute);
-app.use('/post', postRoute);
-app.use('/like', likeRoute);
-app.use('/comment', commentRoute);
-app.use('/search', searchRoute);
-app.use('/userinfor', userinforRoute);
-app.use('/friend', friendRoute);
-app.use('/albums', albumsRoute);
-app.use('/resource', resourceRoute);
-app.use('/test', testRoute);
+pathArr.forEach(({ path, route }) => app.use(path, route));
 
 // use middleware for handling errors
 app.use(errHandler);

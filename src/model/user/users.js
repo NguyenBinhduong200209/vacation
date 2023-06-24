@@ -63,10 +63,10 @@ const userSchema = new mongoose.Schema(
       },
     },
 
-    avatar: {
-      type: String,
-      trim: true,
-    },
+    // avatar: {
+    //   type: String,
+    //   trim: true,
+    // },
 
     dateOfBirth: {
       type: Date,

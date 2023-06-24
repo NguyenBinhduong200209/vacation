@@ -1,9 +1,9 @@
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
-import checkForbidden from '#root/utils/checkForbidden';
-import checkAuthor from '#root/utils/checkAuthor';
-import { addTotalPageFields, getUserInfo, countLikesAndComments, getLocation, facet } from '#root/config/pipeline';
+import checkPermission from '#root/utils/checkForbidden/checkPermission';
+import checkAuthor from '#root/utils/checkForbidden/checkAuthor';
+import { addTotalPageFields, getUserInfo, getCountInfo, getLocation, facet } from '#root/config/pipeline';
 import mongoose from 'mongoose';
 
 const postController = {
@@ -21,7 +21,7 @@ const postController = {
       });
 
     //Throw an error if user have no permission to see any post of vacation
-    isVacation && (await checkForbidden({ crUserId: userId, modelType: 'vacation', modelId: id }));
+    isVacation && (await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: id }));
 
     const result = await Posts.aggregate(
       [].concat(
@@ -50,19 +50,20 @@ const postController = {
                 },
               },
             ],
+
         //Sort in order to push the newest updated post to top
         { $sort: { lastUpdateAt: -1, createdAt: -1 } },
 
         //Add 3 new fields (total, page, pages) and then Get username, location by looking up to other model
-        addTotalPageFields({ page: page }),
+        addTotalPageFields({ page }),
         getUserInfo({ field: ['username', 'avatar'] }),
-        countLikesAndComments({ modelType: 'post' }),
+        getCountInfo({ field: ['like', 'comment'] }),
         isVacation ? getLocation({ localField: 'locationId' }) : [],
 
         //Set up new array with total field is length of array and list field is array without __v field
         facet({
           meta: ['total', 'page', 'pages'],
-          data: ['content', 'lastUpdateAt', 'resource', 'createdAt', 'authorInfo', 'totalLikes', 'totalComments'],
+          data: ['content', 'lastUpdateAt', 'resource', 'location', 'createdAt', 'authorInfo', 'likes', 'comments'],
         })
       )
     );
@@ -78,11 +79,7 @@ const postController = {
     !foundPost && _throw({ code: 404, errors: [{ field: 'id', message: 'invalid' }], message: 'post not found' });
 
     //Check the authorization of user to post
-    await checkForbidden({
-      crUserId: req.userInfo._id,
-      modelType: 'vacation',
-      modelId: foundPost.vacationId,
-    });
+    await checkPermission({ crUserId: req.userInfo._id, modelType: 'vacation', modelId: foundPost.vacationId });
 
     const result = await Posts.aggregate(
       //Filter based on id
@@ -147,11 +144,20 @@ const postController = {
     //Throw an error if user login is not author of this post
     await checkAuthor({ modelType: 'post', modelId: id, userId: req.userInfo._id });
 
-    //Find and delete post match id parse in params
-    const deletePost = await Posts.findByIdAndDelete(id);
+    //Define deletePost method
+    const deletePost = Posts.findByIdAndDelete(id);
+
+    //Define deleteLikes method
+    const deleteLikes = Likes.deleteMany({ modelType: 'post', modelId: id });
+
+    //Define deleteComments method
+    const deleteComments = Comments.deleteMany({ modelType: 'post', modelId: id });
+
+    //Run all methods at once
+    await Promise.all([deletePost, deleteLikes, deleteComments]);
 
     //Send to front
-    return res.status(202).json({ data: deletePost, message: 'delete post successfully' });
+    return res.status(202).json({ message: 'delete post successfully' });
   }),
 };
 

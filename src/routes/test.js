@@ -9,7 +9,7 @@ const test2 = asyncWrapper(async (req, res) => {
 
   for (let index = 0; index < foundUsers.length; index++) {
     const user = foundUsers[index];
-    user.avatar = `https://picsum.photos/id/${index + 110}/200/300`;
+    user.emailVerified = true;
     await user.save();
   }
 

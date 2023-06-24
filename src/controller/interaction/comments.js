@@ -3,8 +3,8 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Comments from '#root/model/interaction/comments';
 import mongoose from 'mongoose';
 import { addTotalPageFields, getUserInfo, facet } from '#root/config/pipeline';
-import checkAuthor from '#root/utils/checkAuthor';
-import checkForbidden from '#root/utils/checkForbidden';
+import checkAuthor from '#root/utils/checkForbidden/checkAuthor';
+import checkPermission from '#root/utils/checkForbidden/checkPermission';
 import Posts from '#root/model/vacation/posts';
 
 const commentController = {
@@ -31,11 +31,13 @@ const commentController = {
   }),
 
   addNew: asyncWrapper(async (req, res) => {
-    const { modelId, modelType, content } = req.body,
+    const { id } = req.params,
+      { type } = req.query,
+      { content } = req.body,
       userId = req.userInfo._id;
 
-    if (modelType === 'post') {
-      const foundPost = await Posts.findById(modelId);
+    if (type === 'post') {
+      const foundPost = await Posts.findById(id);
       //Throw an error if cannot find post
       !foundPost &&
         _throw({
@@ -44,13 +46,13 @@ const commentController = {
           message: `not found`,
         });
       //Throw an error if user is unable to see this post
-      await checkForbidden({ crUserId: userId, modelType: 'vacation', modelId: foundPost.vacationId });
+      await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: foundPost.vacationId });
     }
     //Throw an error if user is unable to see this model Type
-    else await checkForbidden({ crUserId: userId, modelType: modelType, modelId: modelId });
+    else await checkPermission({ crUserId: userId, modelType: type, modelId: id });
 
     //Create new comment
-    const newComment = await Comments.create({ modelType, modelId, userId, content, createdAt: new Date() });
+    const newComment = await Comments.create({ modelType: type, modelId: id, userId, content, createdAt: new Date() });
 
     //Send to front
     return res.status(201).json({ data: newComment, message: 'add comment successfully' });

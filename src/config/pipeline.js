@@ -1,14 +1,35 @@
 import mongoose from 'mongoose';
 import _throw from '#root/utils/_throw';
 
-export function getUserInfo({ field }) {
+export function getUserInfo({ field, getFriendList }) {
   return [
     {
       $lookup: {
         from: 'users',
         localField: 'userId',
         foreignField: '_id',
-        pipeline: [{ $project: field.reduce((obj, item) => Object.assign(obj, { [item]: 1 }), {}) }],
+        pipeline: [].concat(
+          { $project: field.reduce((obj, item) => Object.assign(obj, { [item]: 1 }), {}) },
+          getFriendList
+            ? [
+                {
+                  $lookup: {
+                    from: 'friends',
+                    let: { user_id: { $toObjectId: '$_id' } },
+                    pipeline: [
+                      {
+                        $match: { $expr: { $or: [{ $eq: ['$userId1', '$$user_id'] }, { $eq: ['$userId2', '$$user_id'] }] } },
+                      },
+                      { $count: 'total' },
+                    ],
+                    as: 'friends',
+                  },
+                },
+                { $unwind: '$friends' },
+                { $addFields: { friends: '$friends.total' } },
+              ]
+            : []
+        ),
         as: 'authorInfo',
       },
     },
@@ -63,34 +84,52 @@ export function getLocation({ localField }) {
   ];
 }
 
-export function countLikesAndComments({ modelType }) {
-  return [
-    //Get total like by looking up to likes model
-    {
-      $lookup: {
-        from: 'likes',
-        localField: '_id',
-        foreignField: 'modelId',
-        pipeline: [{ $match: { modelType } }, { $count: 'total' }],
-        as: 'totalLikes',
-      },
-    },
-    { $unwind: '$totalLikes' },
-    { $addFields: { totalLikes: '$totalLikes.total' } },
+export function getCountInfo({ field }) {
+  return field.reduce((arr, item) => {
+    switch (item) {
+      case 'like':
+        return arr.concat(
+          {
+            $lookup: {
+              from: 'likes',
+              localField: '_id',
+              foreignField: 'modelId',
+              as: 'likes',
+            },
+          },
+          { $addFields: { likes: { $size: '$likes' } } }
+        );
 
-    //Get total comment by looking up to comment model
-    {
-      $lookup: {
-        from: 'comments',
-        localField: '_id',
-        foreignField: 'modelId',
-        pipeline: [{ $match: { modelType } }, { $count: 'total' }],
-        as: 'totalComments',
-      },
-    },
-    { $unwind: '$totalComments' },
-    { $addFields: { totalComments: '$totalComments.total' } },
-  ];
+      case 'comment':
+        return arr.concat(
+          {
+            $lookup: {
+              from: 'comments',
+              localField: '_id',
+              foreignField: 'modelId',
+              as: 'comments',
+            },
+          },
+          { $addFields: { comments: { $size: '$comments' } } }
+        );
+
+      case 'view':
+        return arr.concat(
+          {
+            $lookup: {
+              from: 'views',
+              localField: '_id',
+              foreignField: 'modelId',
+              as: 'views',
+            },
+          },
+          { $addFields: { views: { $sum: '$views.quantity' } } }
+        );
+
+      default:
+        return arr;
+    }
+  }, []);
 }
 
 export function addTotalPageFields({ page }) {
@@ -110,6 +149,20 @@ export function addTotalPageFields({ page }) {
   ];
 }
 
+export function getView() {
+  return [
+    {
+      $lookup: {
+        from: 'views',
+        localField: '_id',
+        foreignField: 'modelId',
+        pipeline: [{ $match: { modelType } }, { $count: 'total' }],
+        as: 'totalLikes',
+      },
+    },
+  ];
+}
+
 export function facet({ meta, data }) {
   return [
     {
@@ -117,7 +170,7 @@ export function facet({ meta, data }) {
         meta: [
           {
             $group: Object.assign(
-              { _id: '$total' },
+              { _id: null },
               meta.reduce((obj, item) => Object.assign(obj, { [item]: { $first: `$${item}` } }), {})
             ),
           },

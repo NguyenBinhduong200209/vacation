@@ -1,6 +1,8 @@
 const _throw = ({ errors, meta, message, code }) => {
-  !message && (message = "");
+  !message && (message = '');
   !code && (code = 500);
+  !meta && (meta = '');
+  !errors && (errors = '');
   throw { errors, meta, code, message };
 };
 
