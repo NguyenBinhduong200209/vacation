@@ -24,6 +24,12 @@ const errHandler = (err, req, res, next) => {
     case 'MongooseError':
       return res.status(500).json({ errors: err.message, message: 'Database Error' });
 
+    case 'MongoServerError':
+      return res.status(500).json({ errors: err.message, message: 'Database Error' });
+
+    case 'MulterError':
+      return res.status(400).json({ errors: err.message, message: 'MulterError' });
+
     default:
       return res.status(code || 500).json({ errors, meta, message });
   }
