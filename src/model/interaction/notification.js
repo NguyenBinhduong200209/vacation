@@ -19,7 +19,7 @@ const notiSchema = new mongoose.Schema(
     action: {
       type: String,
       required: 'action required',
-      enum: ['like', 'comment', 'add as friend'],
+      enum: ['like', 'comment', 'addFriend'],
     },
 
     userId: {

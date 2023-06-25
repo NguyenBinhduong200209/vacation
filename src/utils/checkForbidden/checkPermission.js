@@ -2,7 +2,7 @@ import Vacations from '#root/model/vacation/vacations';
 import Albums from '#root/model/albums';
 import _throw from '#root/utils/_throw';
 
-async function checkForbidden({ crUserId, modelType, modelId }) {
+async function checkPermission({ crUserId, modelType, modelId }) {
   let result;
   switch (modelType) {
     case 'vacation':
@@ -54,4 +54,4 @@ async function checkForbidden({ crUserId, modelType, modelId }) {
   return result;
 }
 
-export default checkForbidden;
+export default checkPermission;
