@@ -30,32 +30,51 @@ const commentController = {
     return result.length === 0 ? res.sendStatus(204) : res.status(200).json(result[0]);
   }),
 
-  addNew: asyncWrapper(async (req, res) => {
+  addNew: asyncWrapper(async (req, res, next) => {
     const { id } = req.params,
       { type } = req.query,
       { content } = req.body,
       userId = req.userInfo._id;
 
-    if (type === 'post') {
-      const foundPost = await Posts.findById(id);
-      //Throw an error if cannot find post
-      !foundPost &&
-        _throw({
-          code: 404,
-          errors: [{ field: 'post', message: `post not found` }],
-          message: `not found`,
-        });
-      //Throw an error if user is unable to see this post
-      await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: foundPost.vacationId });
+    let result;
+    switch (type) {
+      case 'post':
+        const foundPost = await Posts.findById(id);
+        //Throw an error if cannot find post
+        !foundPost &&
+          _throw({
+            code: 404,
+            errors: [{ field: 'post', message: `post not found` }],
+            message: `not found`,
+          });
+        //Throw an error if user is unable to see this post
+        result = await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: foundPost.vacationId });
+        break;
+
+      default:
+        //Throw an error if user is unable to see this model Type
+        result = await checkPermission({ crUserId: userId, modelType: type, modelId: id });
+        break;
     }
-    //Throw an error if user is unable to see this model Type
-    else await checkPermission({ crUserId: userId, modelType: type, modelId: id });
 
     //Create new comment
     const newComment = await Comments.create({ modelType: type, modelId: id, userId, content, createdAt: new Date() });
 
-    //Send to front
-    return res.status(201).json({ data: newComment, message: 'add comment successfully' });
+    //Create new Notification or update document
+    req.noti = {
+      modelType: type,
+      modelId: id,
+      receiverId: result.userId,
+      action: 'comment',
+    };
+
+    //Transfer response to next middleware
+    res.result = {
+      code: 201,
+      data: newComment,
+      message: `add comment successfully`,
+    };
+    next();
   }),
 
   update: asyncWrapper(async (req, res) => {
