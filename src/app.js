@@ -8,6 +8,7 @@ import credentials from '#root/middleware/credentials';
 import dbConnect from '#root/config/dbConnect';
 import corsOptions from '#root/config/corsOption';
 import pathArr from '#root/routes/index';
+import internalTasks from '#root/services/internalTasks';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -24,6 +25,9 @@ app.use('/static', express.static(__publicPath));
 //Connect to database
 await dbConnect();
 
+//Run internal Task
+internalTasks();
+
 //Handle options credentials check
 app.use(credentials);
 
@@ -31,7 +35,7 @@ app.use(credentials);
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 // Enable Cross-Origin Resource Sharing
-app.use(cors(corsOptions));
+app.use(cors());
 
 // Parse JSON request bodies
 app.use(express.json({ limit: '100kb' }));
