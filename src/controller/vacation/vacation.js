@@ -26,7 +26,7 @@ const vacationController = {
 
     const result = await Vacations.aggregate(
       [].concat(
-        //Filter only return vacation has shareStatus is public or vacation has shareStatus is protected and has shared to user
+        // Filter only return vacation has shareStatus is public or vacation has shareStatus is protected and has shared to user
         {
           $match: {
             $or: [
@@ -82,6 +82,7 @@ const vacationController = {
             'comments',
             'startingTime',
             'endingTime',
+            'lastUpdateAt',
           ],
         })
       )

@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import errHandler from '#root/middleware/errHandler';
 import credentials from '#root/middleware/credentials';
 import dbConnect from '#root/config/dbConnect';
+import corsOptions from '#root/config/corsOption';
 import pathArr from '#root/routes/index';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -30,7 +31,7 @@ app.use(credentials);
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 // Enable Cross-Origin Resource Sharing
-app.use(cors());
+app.use(cors(corsOptions));
 
 // Parse JSON request bodies
 app.use(express.json({ limit: '100kb' }));

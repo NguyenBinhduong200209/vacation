@@ -27,40 +27,54 @@ const likeController = {
     return result.length === 0 ? res.sendStatus(204) : res.status(200).json(result[0]);
   }),
 
-  update: asyncWrapper(async (req, res) => {
+  update: asyncWrapper(async (req, res, next) => {
     const { id } = req.params,
       { type } = req.query,
       userId = req.userInfo._id;
 
-    //Check permission of this type
-    if (type === 'post') {
-      //Throw an error if cannot find post
-      const foundPost = await Posts.findById(id);
-      !foundPost &&
-        _throw({
-          code: 404,
-          errors: [{ field: 'postId', message: 'postId not found' }],
-          message: 'post not found',
-        });
-      //Check whether user has permission to see this vacation
-      await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: foundPost.vacationId });
-    }
-
-    //Check whether user has permission to see this modelType
-    else await checkPermission({ crUserId: userId, modelType: type, modelId: id });
-
     //Find and delete like
     const foundLike = await Likes.findOneAndDelete({ modelType: type, modelId: id, userId: userId });
 
-    //If found and deleted successfully, send immedialy to front. If cannot find, meaning user did not like, then create new document and save to collection
-    return foundLike
-      ? res.status(200).json({ data: foundLike, message: `user has unliked this ${type}` })
-      : res
-          .status(201)
-          .json({
-            data: await Likes.create({ modelType: type, modelId: id, userId: userId }),
-            message: `user has liked this ${type}`,
+    //If found and deleted successfully, send immedialy to front.
+    if (foundLike) return res.status(200).json({ data: foundLike, message: `user has unliked this ${type}` });
+
+    //Check permission
+    let result;
+    switch (type) {
+      case 'post':
+        //Throw an error if cannot find post
+        const foundPost = await Posts.findById(id);
+        !foundPost &&
+          _throw({
+            code: 404,
+            errors: [{ field: 'postId', message: 'postId not found' }],
+            message: 'post not found',
           });
+        result = await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: foundPost.vacationId });
+        break;
+
+      default:
+        result = await checkPermission({ crUserId: userId, modelType: type, modelId: id });
+        break;
+    }
+    //Create new Like document
+    const newLike = await Likes.create({ modelType: type, modelId: id, userId: userId });
+
+    //Transfer notiInfo to next middleware
+    req.noti = {
+      modelType: type,
+      modelId: id,
+      receiverId: result.userId,
+      action: 'like',
+    };
+
+    //Transfer response to next middleware
+    res.result = {
+      code: 201,
+      data: newLike,
+      message: `user has liked this ${type}`,
+    };
+    next();
   }),
 };
 

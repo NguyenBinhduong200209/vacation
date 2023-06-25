@@ -174,7 +174,7 @@ export function facet({ meta, data }) {
               meta.reduce((obj, item) => Object.assign(obj, { [item]: { $first: `$${item}` } }), {})
             ),
           },
-          { $project: { _id: 0 } },
+          { $unset: '_id' },
         ],
         data: [{ $project: data.reduce((obj, item) => Object.assign(obj, { [item]: 1 }), {}) }],
       },
