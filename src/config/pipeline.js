@@ -1,40 +1,130 @@
 import mongoose from 'mongoose';
 import _throw from '#root/utils/_throw';
 
-export function getUserInfo({ field, getFriendList }) {
-  return [
+export function getCountInfo({ field }) {
+  return field.reduce((arr, item) => {
+    switch (item) {
+      case 'like':
+        return arr.concat(
+          {
+            $lookup: {
+              from: 'likes',
+              localField: '_id',
+              foreignField: 'modelId',
+              as: 'likes',
+            },
+          },
+          { $addFields: { likes: { $size: '$likes' } } }
+        );
+
+      case 'comment':
+        return arr.concat(
+          {
+            $lookup: {
+              from: 'comments',
+              localField: '_id',
+              foreignField: 'modelId',
+              as: 'comments',
+            },
+          },
+          { $addFields: { comments: { $size: '$comments' } } }
+        );
+
+      case 'view':
+        return arr.concat([
+          {
+            $lookup: {
+              from: 'views',
+              localField: '_id',
+              foreignField: 'modelId',
+              as: 'views',
+            },
+          },
+          { $addFields: { views: { $sum: '$views.quantity' } } },
+        ]);
+
+      case 'friend':
+        return arr.concat([
+          {
+            $lookup: {
+              from: 'friends',
+              let: { user_id: { $toObjectId: '$_id' } },
+              pipeline: [
+                { $match: { $expr: { $or: [{ $eq: ['$userId1', '$$user_id'] }, { $eq: ['$userId2', '$$user_id'] }] } } },
+              ],
+              as: 'friends',
+            },
+          },
+          { $addFields: { friends: { $size: '$friends' } } },
+        ]);
+
+      case 'memberList':
+        return arr.concat([
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'memberList',
+              foreignField: '_id',
+              as: 'members',
+            },
+          },
+          { $addFields: { members: { $size: '$members' } } },
+          { $project: { memberList: 0, __v: 0 } },
+        ]);
+
+      default:
+        return arr;
+    }
+  }, []);
+}
+
+export function getUserInfo({ field, countFriend }) {
+  const isGetAvatar = field.includes('avatar');
+  return [].concat(
     {
       $lookup: {
         from: 'users',
         localField: 'userId',
         foreignField: '_id',
         pipeline: [].concat(
-          { $project: field.reduce((obj, item) => Object.assign(obj, { [item]: 1 }), {}) },
-          getFriendList
+          //Get avatar link if field params contain avatar
+          isGetAvatar
             ? [
                 {
                   $lookup: {
-                    from: 'friends',
-                    let: { user_id: { $toObjectId: '$_id' } },
+                    from: 'resources',
+                    let: { userId: { $toObjectId: '$_id' } },
                     pipeline: [
                       {
-                        $match: { $expr: { $or: [{ $eq: ['$userId1', '$$user_id'] }, { $eq: ['$userId2', '$$user_id'] }] } },
+                        $match: {
+                          $expr: { $eq: ['$userId', '$$userId'] },
+                          ref: { $elemMatch: { model: 'users', field: 'avatar' } },
+                        },
                       },
-                      { $count: 'total' },
+                      { $sort: { createdAt: -1 } },
                     ],
-                    as: 'friends',
+                    as: 'avatar',
                   },
                 },
-                { $unwind: '$friends' },
-                { $addFields: { friends: '$friends.total' } },
+                //Get the first element in array
+                { $addFields: { avatar: { $arrayElemAt: ['$avatar', 0] } } },
+                //Get the path
+                { $addFields: { avatar: '$avatar.path' } },
               ]
-            : []
+            : {},
+
+          //Limit field pass to next stage based on field params
+          { $project: field.reduce((obj, item) => Object.assign(obj, { [item]: 1 }), {}) },
+
+          //Get totalFiend based on countTotalFriend params
+          countFriend ? getCountInfo({ field: ['friend'] }) : []
         ),
         as: 'authorInfo',
       },
     },
-    { $unwind: '$authorInfo' },
-  ];
+    { $unset: 'userId' },
+    { $unwind: '$authorInfo' }
+  );
 }
 
 export function getLocation({ localField }) {
@@ -84,54 +174,6 @@ export function getLocation({ localField }) {
   ];
 }
 
-export function getCountInfo({ field }) {
-  return field.reduce((arr, item) => {
-    switch (item) {
-      case 'like':
-        return arr.concat(
-          {
-            $lookup: {
-              from: 'likes',
-              localField: '_id',
-              foreignField: 'modelId',
-              as: 'likes',
-            },
-          },
-          { $addFields: { likes: { $size: '$likes' } } }
-        );
-
-      case 'comment':
-        return arr.concat(
-          {
-            $lookup: {
-              from: 'comments',
-              localField: '_id',
-              foreignField: 'modelId',
-              as: 'comments',
-            },
-          },
-          { $addFields: { comments: { $size: '$comments' } } }
-        );
-
-      case 'view':
-        return arr.concat(
-          {
-            $lookup: {
-              from: 'views',
-              localField: '_id',
-              foreignField: 'modelId',
-              as: 'views',
-            },
-          },
-          { $addFields: { views: { $sum: '$views.quantity' } } }
-        );
-
-      default:
-        return arr;
-    }
-  }, []);
-}
-
 export function addTotalPageFields({ page }) {
   const itemOfPage = Number(process.env.ITEM_OF_PAGE),
     validPage = page && page > 0 ? Number(page) : 1;
@@ -146,20 +188,6 @@ export function addTotalPageFields({ page }) {
     //Remove some firstN element in array if page > 1 and get quantity of element equal to itemOfPage
     { $skip: (validPage - 1) * itemOfPage },
     { $limit: itemOfPage },
-  ];
-}
-
-export function getView() {
-  return [
-    {
-      $lookup: {
-        from: 'views',
-        localField: '_id',
-        foreignField: 'modelId',
-        pipeline: [{ $match: { modelType } }, { $count: 'total' }],
-        as: 'totalLikes',
-      },
-    },
   ];
 }
 

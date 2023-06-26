@@ -63,7 +63,17 @@ const postController = {
         //Set up new array with total field is length of array and list field is array without __v field
         facet({
           meta: ['total', 'page', 'pages'],
-          data: ['content', 'lastUpdateAt', 'resource', 'location', 'createdAt', 'authorInfo', 'likes', 'comments'],
+          data: [
+            'content',
+            'lastUpdateAt',
+            'resource',
+            'location',
+            'createdAt',
+            'authorInfo',
+            'likes',
+            'comments',
+            'timeline',
+          ],
         })
       )
     );
