@@ -84,6 +84,9 @@ const postController = {
       )
     );
 
+    //Restructure Object return
+    result[0].meta.timeline = timeline;
+
     return res.status(200).json(result[0]);
   }),
 

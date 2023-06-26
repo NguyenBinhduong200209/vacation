@@ -24,11 +24,19 @@ const locationController = {
         let list = [];
         switch (number) {
           case 4:
-            list = await Locations.aggregate([{ $match: { level: 4 } }, { $project: { _id: 1, title: 1 } }]);
+            list = await Locations.aggregate([
+              { $match: { level: 4 } },
+              { $project: { _id: 1, title: 1 } },
+              { $sort: { title: 1 } },
+            ]);
             break;
 
           case 3:
-            list = await Locations.aggregate([{ $match: { level: 3 } }, { $project: { _id: 1, title: 1 } }]);
+            list = await Locations.aggregate([
+              { $match: { level: 3 } },
+              { $project: { _id: 1, title: 1 } },
+              { $sort: { title: 1 } },
+            ]);
             break;
 
           case 2:
@@ -44,6 +52,7 @@ const locationController = {
             list = await Locations.aggregate([
               { $match: { level: number, parentId: new mongoose.Types.ObjectId(parentId) } },
               { $project: { _id: 1, title: 1 } },
+              { $sort: { title: 1 } },
             ]);
             break;
 
