@@ -174,12 +174,12 @@ const usersController = {
             if (req.file) {
               const { fieldname, destination, originalname, mimetype, size } = req.file;
               //Config path of file uploaded to server
-              const newPath = destination.split('\\').slice(-1)[0] + '/' + originalname;
+              const newPath = destination.split(`\\`).slice(-1)[0] + '/' + originalname;
 
-              console.log(destination);
+              console.log(newPath);
 
               //Create new Resource document
-              const newResource = await Resources.create({
+              await Resources.create({
                 name: originalname,
                 type: mimetype,
                 size: size,
@@ -187,7 +187,6 @@ const usersController = {
                 userId: foundUser._id,
                 ref: [{ model: 'users', field: fieldname }],
               });
-              foundUser.avatar = newResource;
             }
             //if user did not upload any file, then return any value that match key
             else foundUser[key] = val;
@@ -201,7 +200,7 @@ const usersController = {
 
     //Send to front
     return res.status(200).json({
-      data: { userInfo: Object.assign(foundUser) },
+      data: { userInfo: foundUser },
       message: `user ${foundUser.username} update successfully`,
     });
   }),

@@ -66,7 +66,7 @@ const vacationController = {
         },
 
         //Get username of author by lookup to users model by userId
-        getUserInfo({ field: ['username', 'avatar'] }),
+        type === 'newFeed' ? getUserInfo({ field: ['username', 'avatar'] }) : [],
 
         //Set up new array with total field is length of array and list field is array without __v field
         facet({
@@ -107,13 +107,10 @@ const vacationController = {
         { $match: { _id: new mongoose.Types.ObjectId(id) } },
 
         //Get userInfo by looking up to model
-        getUserInfo({ field: ['username', 'avatar'], getFriendList: true }),
+        getUserInfo({ field: ['username', 'avatar'], countFriend: true }),
 
         //Get field count total views of vacation
-        getCountInfo({ field: ['view'] }),
-
-        //Get specific fields
-        { $project: { userId: 0 } }
+        getCountInfo({ field: ['view', 'memberList'] })
       )
     );
 
