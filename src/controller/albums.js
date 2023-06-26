@@ -12,9 +12,9 @@ const albumsController = {
     const foundUser = req.userInfo;
     // Get vacation information from vacationId
     const vacation = await Vacations.findById(vacationId);
-
     // Check if the foundUser is in the memberList or is the creator of the vacation
-    if (![...vacation.memberList, vacation.userId].includes(foundUser._id.toString())) {
+    const userIds = [...vacation.memberList, vacation.userId].map(value => value.toString());
+    if (!userIds.includes(foundUser._id.toString())) {
       return res.status(403).json({ message: 'You are not allowed to create an album for this vacation' });
     }
 
