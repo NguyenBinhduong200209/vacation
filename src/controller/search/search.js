@@ -18,7 +18,7 @@ const searchController = {
       { value, page } = req.query;
     const result = await search({ models: [type], searchValue: value, page });
 
-    return result.length === 0 ? res.sendStatus(204) : res.status(200).json(result);
+    return result.length === 0 ? res.sendStatus(204) : res.status(200).json(result[0]);
   }),
 };
 
