@@ -54,37 +54,37 @@ const usersinforController = {
   }),
 
   getfriendprofile: asyncWrapper(async (req, res) => {
-    const { id } = req.params;
-    console.log(id);
-    if (!id) {
-      return res.status(404).json({ message: 'User ID not provided' });
+    const { ids } = req.body;
+    console.log(ids);
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Invalid IDs provided' });
     }
 
     // Get User Information from database
 
-    const foundUser = await Users.findById(id);
-    if (!foundUser) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    const users = [];
 
-    const totalLikes = await Likes.countDocuments({ userId: foundUser._id });
-    //tính tổng số bài post
-    const totalPosts = await Posts.countDocuments({ userId: foundUser._id });
-    //toongt số bạn bè
-    const totalFriends = await Friends.countDocuments({
-      $or: [{ userId1: foundUser._id }, { userId2: foundUser._id }],
-    });
-    // Tính tổng số kỳ nghỉ khi người dùng là thành viên
-    const totalVacations = await Vacations.countDocuments({
-      $or: [{ userId: foundUser._id }, { memberList: foundUser._id }],
-    });
-    return res.status(200).json({
-      data: {
+    for (const id of ids) {
+      const foundUser = await Users.findById(id);
+
+      if (!foundUser) {
+        // Bỏ qua ID không hợp lệ
+        continue;
+      }
+
+      const totalLikes = await Likes.countDocuments({ userId: foundUser._id });
+      const totalPosts = await Posts.countDocuments({ userId: foundUser._id });
+      const totalFriends = await Friends.countDocuments({
+        $or: [{ userId1: foundUser._id }, { userId2: foundUser._id }],
+      });
+      const totalVacations = await Vacations.countDocuments({
+        $or: [{ userId: foundUser._id }, { memberList: foundUser._id }],
+      });
+      users.push({
         id: foundUser._id,
         avatar: foundUser.avatar,
         firstname: foundUser.firstname,
         lastname: foundUser.lastname,
-        avatar: foundUser.avatar,
         dateOfBirth: foundUser.dateOfBirth,
         gender: foundUser.gender,
         description: foundUser.description,
@@ -93,8 +93,13 @@ const usersinforController = {
         totalPosts: totalPosts,
         totalFriends: totalFriends,
         totalVacations: totalVacations,
-      },
+      });
+    }
+    const totalUsers = users.length;
+    return res.status(200).json({
       message: 'Get info successfully',
+      totalUsers: totalUsers,
+      data: users,
     });
   }),
 };
