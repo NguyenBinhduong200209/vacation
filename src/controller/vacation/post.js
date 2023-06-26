@@ -20,9 +20,15 @@ const postController = {
         message: 'invalid type',
       });
 
-    //Throw an error if user have no permission to see any post of vacation
-    isVacation && (await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: id }));
+    //Get timeline
+    let timeline;
+    if (isVacation) {
+      //Throw an error if user have no permission to see any post of vacation
+      await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: id });
+      timeline = await Posts.find({ vacationId: id }).distinct('createdAt');
+    }
 
+    //Get other data
     const result = await Posts.aggregate(
       [].concat(
         //Get all posts belong to vacationId
