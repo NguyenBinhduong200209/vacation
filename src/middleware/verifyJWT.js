@@ -8,7 +8,7 @@ const verifyJWT = asyncWrapper(async (req, res, next) => {
   // Get the authorization header from the request
   const authHeader = req.headers.authorization || req.headers.Authorization;
 
-  console.log(authHeader); // Log the authorization header to the console
+  // console.log(authHeader); // Log the authorization header to the console
 
   // If the authorization header doesn't start with "Bearer ", throw an error
   !authHeader && _throw({ code: 401, message: 'auth header not found' });

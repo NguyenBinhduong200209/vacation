@@ -107,9 +107,7 @@ export function getUserInfo({ field, countFriend }) {
                   },
                 },
                 //Get the first element in array
-                { $addFields: { avatar: { $arrayElemAt: ['$avatar', 0] } } },
-                //Get the path
-                { $addFields: { avatar: '$avatar.path' } },
+                { $addFields: { avatar: { $first: '$avatar.path' } } },
               ]
             : {},
 

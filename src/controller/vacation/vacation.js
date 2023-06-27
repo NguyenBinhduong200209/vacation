@@ -37,8 +37,29 @@ const vacationController = {
           },
         },
 
+        {
+          $lookup: {
+            from: 'friends',
+            let: { userId: { $toObjectId: userId }, authorId: { $toObjectId: '$userId' } },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $or: [
+                      { $and: [{ $eq: ['$userId1', '$$userId'] }, { $eq: ['$userId2', '$$authorId'] }] },
+                      { $and: [{ $eq: ['$userId2', '$$userId'] }, { $eq: ['$userId1', '$$authorId'] }] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'isFriend',
+          },
+        },
+        { $addFields: { isFriend: { $toBool: { $size: '$isFriend' } } } },
+
         //Sort in order to push the newest updated vacation to top
-        { $sort: { lastUpdateAt: -1, createdAt: -1 } },
+        { $sort: { isFriend: -1, lastUpdateAt: -1, createdAt: -1 } },
 
         //Add field total, page and pages fields
         addTotalPageFields({ page }),
@@ -83,6 +104,7 @@ const vacationController = {
             'startingTime',
             'endingTime',
             'lastUpdateAt',
+            'isFriend',
           ],
         })
       )

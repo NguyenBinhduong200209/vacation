@@ -88,6 +88,7 @@ const usersController = {
     newUser.password = hashedPwd;
 
     //Save to database
+    newUser.createdAt = new Date();
     await newUser.save();
 
     //Send email
@@ -120,7 +121,7 @@ const usersController = {
     foundUser.accessToken = accessToken;
     foundUser.refreshToken = refreshToken;
     foundUser.emailVerified = true;
-    foundUser.createdAt = new Date();
+    foundUser.lastUpdateAt = new Date();
     await foundUser.save();
 
     //Send result to frontend
@@ -176,8 +177,6 @@ const usersController = {
               //Config path of file uploaded to server
               const newPath = destination.split(`\\`).slice(-1)[0] + '/' + originalname;
 
-              console.log(newPath);
-
               //Create new Resource document
               await Resources.create({
                 name: originalname,
@@ -185,11 +184,12 @@ const usersController = {
                 size: size,
                 path: newPath,
                 userId: foundUser._id,
-                ref: [{ model: 'users', field: fieldname }],
+                ref: [{ model: 'users', field: fieldname, _id: foundUser._id }],
               });
             }
-            //if user did not upload any file, then return any value that match key
-            else foundUser[key] = val;
+
+            //update any value that match key
+            foundUser[key] = val;
             break;
         }
       }
@@ -199,8 +199,15 @@ const usersController = {
     await foundUser.save();
 
     //Send to front
+    const result = Object.keys(foundUser._doc).reduce(
+      (obj, key) =>
+        ['passwordToken', 'refreshToken', 'accessToken', 'password', 'emailVerified'].includes(key)
+          ? obj
+          : Object.assign(obj, { [key]: foundUser._doc[key] }),
+      {}
+    );
     return res.status(200).json({
-      data: { userInfo: foundUser },
+      data: { userInfo: result },
       message: `user ${foundUser.username} update successfully`,
     });
   }),
@@ -310,6 +317,17 @@ const usersController = {
         message: 'invalid token',
       });
   }),
+
+  delete: async (req, res) => {
+    //Config expired date
+    const expDate = new Date(Date.now() - process.env.MAX_RANGE_ACTIVE_ACCOUNT);
+
+    //Delete all users has not verified by their email in 30 days
+    const deleteInactiveUser = await Users.deleteMany({ emailVerified: false, lastUpdateAt: { $lte: expDate } });
+
+    //return result
+    return deleteInactiveUser;
+  },
 };
 
 export default usersController;

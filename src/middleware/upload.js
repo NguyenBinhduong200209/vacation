@@ -10,8 +10,12 @@ const storage = multer.diskStorage({
     const contentType = ['image/png', 'image/jpg', 'image/jpeg', 'video/mp4', 'video/mov'];
     !contentType.includes(file.mimetype) && callback({ code: 400, message: 'server does not support this type of file' });
 
+    //Create random unique Suffix
+    const maxLength = 6;
+    const ranNumber = Math.round(Math.random() * (Math.pow(10, maxLength) - 1));
+    const uniqueSuffix = Date.now() + '-' + String(ranNumber).padStart(6, '0');
+
     //Create folder if it does not exist
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 100000);
     const newFolder = path.join(__publicPath, 'resource', uniqueSuffix);
     !fs.existsSync(newFolder) && fs.mkdirSync(newFolder);
 
