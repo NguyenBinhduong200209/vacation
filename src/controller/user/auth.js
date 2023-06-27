@@ -135,9 +135,28 @@ const usersController = {
     //Find User by username get from accessToken
     const foundUser = req.userInfo;
 
-    //Get schema User
+    //if user does upload a file, then upload to server, and create new Resource document
+    if (req.file) {
+      const { fieldname, destination, originalname, mimetype, size } = req.file;
+
+      //Config path of file uploaded to server
+      const newPath = destination.split(`/`).slice(-1)[0] + '/' + originalname;
+
+      console.log(newPath);
+
+      //Create new Resource document
+      await Resources.create({
+        name: originalname,
+        type: mimetype,
+        size: size,
+        path: newPath,
+        userId: foundUser._id,
+        ref: [{ model: 'users', field: fieldname, _id: foundUser._id }],
+      });
+    }
+
+    //Get schema User and Update User
     const templateUser = await Users.schema.obj;
-    //Update User
     for (const key of Object.keys(templateUser)) {
       const val = req.body[key];
       //Only processing update if has any value
@@ -171,24 +190,6 @@ const usersController = {
             break;
 
           default:
-            //if user does upload a file, then upload to server, and create new Resource document
-            if (req.file) {
-              const { fieldname, destination, originalname, mimetype, size } = req.file;
-
-              //Config path of file uploaded to server
-              const newPath = destination.split(`/`).slice(-1)[0] + '/' + originalname;
-
-              //Create new Resource document
-              await Resources.create({
-                name: originalname,
-                type: mimetype,
-                size: size,
-                path: newPath,
-                userId: foundUser._id,
-                ref: [{ model: 'users', field: fieldname, _id: foundUser._id }],
-              });
-            }
-
             //update any value that match key
             foundUser[key] = val;
             break;
