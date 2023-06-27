@@ -5,7 +5,7 @@ import checkAuthor from '#root/middleware/checkAuthor';
 
 const router = express.Router();
 
-router.get('/:id', usersinforController.getfriendprofile);
 router.delete('/avatar/:id', checkAuthor('avatar'), authController.removeAvatar);
+router.get('/', usersinforController.getfriendprofile);
 
 export default router;
