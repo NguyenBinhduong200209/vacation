@@ -3,8 +3,6 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Likes from '#root/model/interaction/likes';
 import mongoose from 'mongoose';
 import { addTotalPageFields, getUserInfo, facet } from '#root/config/pipeline';
-import checkPermission from '#root/utils/checkForbidden/checkPermission';
-import Posts from '#root/model/vacation/posts';
 
 const likeController = {
   getMany: asyncWrapper(async (req, res) => {
@@ -36,45 +34,31 @@ const likeController = {
     const foundLike = await Likes.findOneAndDelete({ modelType: type, modelId: id, userId: userId });
 
     //If found and deleted successfully, send immedialy to front.
-    if (foundLike) return res.status(200).json({ data: foundLike, message: `user has unliked this ${type}` });
-
-    //Check permission
-    let result;
-    switch (type) {
-      case 'post':
-        //Throw an error if cannot find post
-        const foundPost = await Posts.findById(id);
-        !foundPost &&
-          _throw({
-            code: 404,
-            errors: [{ field: 'postId', message: 'postId not found' }],
-            message: 'post not found',
-          });
-        result = await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: foundPost.vacationId });
-        break;
-
-      default:
-        result = await checkPermission({ crUserId: userId, modelType: type, modelId: id });
-        break;
+    if (foundLike) {
+      return res.status(200).json({ data: foundLike, message: `user has unliked this ${type}` });
     }
-    //Create new Like document
-    const newLike = await Likes.create({ modelType: type, modelId: id, userId: userId });
 
-    //Transfer notiInfo to next middleware
-    req.noti = {
-      modelType: type,
-      modelId: id,
-      receiverId: result.userId,
-      action: 'like',
-    };
+    //If cannot find, meaning user has not liked yet, then create new one and notification
+    else {
+      //Create new Like document
+      const newLike = await Likes.create({ modelType: type, modelId: id, userId: userId });
 
-    //Transfer response to next middleware
-    res.result = {
-      code: 201,
-      data: newLike,
-      message: `user has liked this ${type}`,
-    };
-    next();
+      //Transfer notiInfo to next middleware
+      req.noti = {
+        modelType: type,
+        modelId: id,
+        receiverId: result.userId,
+        action: 'like',
+      };
+
+      //Transfer response to next middleware
+      res.result = {
+        code: 201,
+        data: newLike,
+        message: `user has liked this ${type}`,
+      };
+      next();
+    }
   }),
 };
 

@@ -1,7 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { __publicPath } from '#root/app';
+import { resourcePath } from '#root/config/path';
 import _throw from '#root/utils/_throw';
 
 const storage = multer.diskStorage({
@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
     const uniqueSuffix = Date.now() + '-' + String(ranNumber).padStart(6, '0');
 
     //Create folder if it does not exist
-    const newFolder = path.join(__publicPath, 'resource', uniqueSuffix);
+    const newFolder = path.join(resourcePath, uniqueSuffix);
     !fs.existsSync(newFolder) && fs.mkdirSync(newFolder);
 
     //Config new destination

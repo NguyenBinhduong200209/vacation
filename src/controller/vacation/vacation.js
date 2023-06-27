@@ -3,8 +3,6 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Vacations from '#root/model/vacation/vacations';
 import Posts from '#root/model/vacation/posts';
 import { addTotalPageFields, getUserInfo, getCountInfo, facet } from '#root/config/pipeline';
-import checkPermission from '#root/utils/checkForbidden/checkPermission';
-import checkAuthor from '#root/utils/checkForbidden/checkAuthor';
 import mongoose from 'mongoose';
 import Likes from '#root/model/interaction/likes';
 import Comments from '#root/model/interaction/comments';
@@ -117,9 +115,6 @@ const vacationController = {
     const { id } = req.params,
       userId = req.userInfo._id;
 
-    //Throw an error if user login is not in shareList
-    await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: id });
-
     // Increase view of post by 1
     await viewController.update({ modelType: 'vacation', modelId: id, userId: userId });
 
@@ -129,7 +124,7 @@ const vacationController = {
         { $match: { _id: new mongoose.Types.ObjectId(id) } },
 
         //Get userInfo by looking up to model
-        getUserInfo({ field: ['username', 'avatar'], countFriend: true }),
+        getUserInfo({ field: ['username', 'avatar', 'firstname', 'lastname'], countFriend: true }),
 
         //Get field count total views of vacation
         getCountInfo({ field: ['view', 'memberList'] })
@@ -175,23 +170,14 @@ const vacationController = {
   }),
 
   update: asyncWrapper(async (req, res) => {
-    const { id } = req.params;
-
-    //Check whether user login is author of this vacation, if user is not author, then throw an error Forbidden
-    const foundVacation = await checkAuthor({ modelType: 'vacation', modelId: id, userId: req.userInfo._id });
+    //Get document from previous middleware
+    const foundVacation = req.doc;
 
     //Save new info to foundVacation
     const { memberList, shareStatus, shareList } = req.body;
-    const updateKeys = [
-      'title',
-      'description',
-      'memberList',
-      'shareStatus',
-      'shareList',
-      'startingTime',
-      'endingTime',
-      'cover',
-    ];
+
+    //Update other fields
+    const updateKeys = ['title', 'description', 'memberList', 'shareStatus', 'shareList', 'startingTime', 'endingTime'];
     updateKeys.forEach(key => {
       switch (key) {
         case 'memberList':
@@ -233,14 +219,11 @@ const vacationController = {
     await foundVacation.save();
 
     //Send to front
-    return res.status(201).json({ data: foundVacation, meta: '', message: 'update successfully' });
+    return res.status(201).json({ data: foundVacation, message: 'update successfully' });
   }),
 
   delete: asyncWrapper(async (req, res) => {
     const { id } = req.params;
-
-    //Check whether user login is author of this vacation, if user is not author, then throw an error Forbidden
-    await checkAuthor({ modelType: 'vacation', modelId: id, userId: req.userInfo._id });
 
     //Find Posts in Vacation
     const foundPosts = await Posts.find({ vacationId: id });
@@ -277,7 +260,7 @@ const vacationController = {
     await Promise.all(deletePostPromise.concat(Vacations.findByIdAndDelete(id)));
 
     //Send to front
-    return res.status(202).json({ message: 'delete successfully' });
+    return res.status(200).json({ message: 'delete successfully' });
   }),
 };
 

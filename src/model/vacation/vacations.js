@@ -41,11 +41,11 @@ const vacationSchema = new mongoose.Schema(
       maxlength: 65000,
     },
 
-    cover: {
-      type: String,
-      required: 'cover photo required',
-      trim: true,
-    },
+    // cover: {
+    //   type: String,
+    //   required: 'cover photo required',
+    //   trim: true,
+    // },
 
     memberList: [
       {

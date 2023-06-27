@@ -1,12 +1,12 @@
-import _throw from '#root/utils/_throw';
-import Users from '#root/model/user/users';
-import Resources from '#root/model/resource';
-import asyncWrapper from '#root/middleware/asyncWrapper';
+import fs from 'fs';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import sendMail from '#root/utils/email/sendEmail';
 import mongoose from 'mongoose';
-import { __publicPath } from '#root/app';
+import { resourcePath } from '#root/config/path';
+import Users from '#root/model/user/users';
+import asyncWrapper from '#root/middleware/asyncWrapper';
+import _throw from '#root/utils/_throw';
+import sendMail from '#root/utils/email/sendEmail';
 
 const usersController = {
   logIn: asyncWrapper(async (req, res) => {
@@ -134,26 +134,6 @@ const usersController = {
   update: asyncWrapper(async (req, res) => {
     //Find User by username get from accessToken
     const foundUser = req.userInfo;
-
-    //if user does upload a file, then upload to server, and create new Resource document
-    if (req.file) {
-      const { fieldname, destination, originalname, mimetype, size } = req.file;
-
-      //Config path of file uploaded to server
-      const newPath = destination.split(`/`).slice(-1)[0] + '/' + originalname;
-
-      console.log(newPath);
-
-      //Create new Resource document
-      await Resources.create({
-        name: originalname,
-        type: mimetype,
-        size: size,
-        path: newPath,
-        userId: foundUser._id,
-        ref: [{ model: 'users', field: fieldname, _id: foundUser._id }],
-      });
-    }
 
     //Get schema User and Update User
     const templateUser = await Users.schema.obj;
@@ -318,6 +298,18 @@ const usersController = {
         errrors: [{ field: 'refreshToken', message: 'invalid' }],
         message: 'invalid token',
       });
+  }),
+
+  removeAvatar: asyncWrapper(async (req, res) => {
+    //Get document from previous middleware
+    const foundAvatar = req.doc;
+
+    //Config path and delete files
+    const path = path.join(resourcePath, foundAvatar.path);
+    fs.unlinkSync(path);
+
+    //Send to front
+    return res.status(200).json({ message: 'delete successfully' });
   }),
 
   delete: async (req, res) => {

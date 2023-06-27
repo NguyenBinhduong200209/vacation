@@ -3,9 +3,6 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Comments from '#root/model/interaction/comments';
 import mongoose from 'mongoose';
 import { addTotalPageFields, getUserInfo, facet } from '#root/config/pipeline';
-import checkAuthor from '#root/utils/checkForbidden/checkAuthor';
-import checkPermission from '#root/utils/checkForbidden/checkPermission';
-import Posts from '#root/model/vacation/posts';
 
 const commentController = {
   getMany: asyncWrapper(async (req, res) => {
@@ -36,27 +33,6 @@ const commentController = {
       { content } = req.body,
       userId = req.userInfo._id;
 
-    let result;
-    switch (type) {
-      case 'post':
-        const foundPost = await Posts.findById(id);
-        //Throw an error if cannot find post
-        !foundPost &&
-          _throw({
-            code: 404,
-            errors: [{ field: 'post', message: `post not found` }],
-            message: `not found`,
-          });
-        //Throw an error if user is unable to see this post
-        result = await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: foundPost.vacationId });
-        break;
-
-      default:
-        //Throw an error if user is unable to see this model Type
-        result = await checkPermission({ crUserId: userId, modelType: type, modelId: id });
-        break;
-    }
-
     //Create new comment
     const newComment = await Comments.create({ modelType: type, modelId: id, userId, content, createdAt: new Date() });
 
@@ -78,12 +54,11 @@ const commentController = {
   }),
 
   update: asyncWrapper(async (req, res) => {
-    const { id } = req.params,
-      { content } = req.body,
-      userId = req.userInfo._id;
+    const { content } = req.body;
+    // userId = req.userInfo._id;
 
-    //Check user is right author or not
-    const foundComment = await checkAuthor({ modelType: 'comment', modelId: id, userId: userId });
+    //Get document from the previous middleware
+    const foundComment = req.doc;
 
     //Save new content to DB
     foundComment.content = content;
@@ -95,11 +70,7 @@ const commentController = {
   }),
 
   delete: asyncWrapper(async (req, res) => {
-    const { id } = req.params,
-      userId = req.userInfo._id;
-
-    //Check user is right author or not
-    await checkAuthor({ modelType: 'comment', modelId: id, userId: userId });
+    const { id } = req.params;
 
     //Delete comment from DB
     const deleteComment = await Comments.findByIdAndDelete(id);

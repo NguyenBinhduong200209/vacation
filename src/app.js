@@ -9,8 +9,7 @@ import dbConnect from '#root/config/dbConnect';
 import corsOptions from '#root/config/corsOption';
 import pathArr from '#root/routes/index';
 import internalTasks from '#root/services/internalTasks';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { publicPath } from '#root/config/path';
 
 // create an instance of an Express application
 const app = express();
@@ -18,9 +17,7 @@ const app = express();
 const PORT = 3100;
 
 //build-in middleware for static files
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const __publicPath = path.join(__dirname, '..', 'public');
-app.use('/static', express.static(__publicPath));
+app.use('/static', express.static(publicPath));
 
 //Connect to database
 await dbConnect();

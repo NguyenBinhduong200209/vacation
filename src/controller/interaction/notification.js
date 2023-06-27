@@ -3,13 +3,11 @@ import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Users from '#root/model/user/users';
 import { addTotalPageFields, facet } from '#root/config/pipeline';
-import checkAuthor from '#root/utils/checkForbidden/checkAuthor';
 import mongoose from 'mongoose';
 import Posts from '#root/model/vacation/posts';
 import Vacations from '#root/model/vacation/vacations';
 
 const notiController = {
-  //Normal function, it has its own route
   getMany: asyncWrapper(async (req, res) => {
     const { page, type } = req.query;
     //Get userId from verify JWT middelware
@@ -38,7 +36,6 @@ const notiController = {
     return foundList.length === 0 ? res.sendStatus(204) : res.status(200).json(foundList[0]);
   }),
 
-  //Function used in another controller, this function does not have specific route
   updateContent: asyncWrapper(async (req, res) => {
     const { modelType, modelId, receiverId, action } = req.noti;
 
@@ -123,41 +120,27 @@ const notiController = {
     return res.status(code).json({ data, message });
   }),
 
-  //Normal function, it has its own route
-  updateStatus: asyncWrapper(async (req, res) => {
-    const { type, id } = req.params;
+  updateStatusAll: asyncWrapper(async (req, res) => {
     const userId = req.userInfo._id;
 
-    switch (type) {
-      case 'one':
-        //Throw error if cannot find notification, or user is not author of this noti
-        const foundNoti = await checkAuthor({ modelType: 'notification', modelId: id, userId });
+    const foundNotiList = await Notifications.updateMany({ userId }, { isSeen: true });
 
-        //Change seen Status to true and save to DB
-        foundNoti.isSeen = true;
-        await foundNoti.save();
-
-        //Send to front
-        return res.status(200).json({ data: foundNoti, message: 'update status of one post successfully' });
-
-      case 'all':
-        const foundNotiList = await Notifications.updateMany({ userId }, { isSeen: true });
-
-        //Send to front
-        return foundNotiList.length == 0
-          ? res.sendStatus(204)
-          : res
-              .status(200)
-              .json({ meta: { total: foundNotiList.length }, message: 'update status of all post successfully' });
-
-      //Throw an error if type is not one or all
-      default:
-        _throw({ code: 400, errors: [{ field: 'type', message: 'type must be one or many' }], message: 'invalid type' });
-        break;
-    }
+    //Send to front
+    return foundNotiList.length == 0
+      ? res.sendStatus(204)
+      : res.status(200).json({ meta: { total: foundNotiList.length }, message: 'update status of all post successfully' });
   }),
 
-  //Function used for internal task, this function does not have specific route
+  updateStatusOne: asyncWrapper(async (req, res) => {
+    //Get document from previos middleware, Change seen Status to true and save to DB
+    const foundNoti = req.doc;
+    foundNoti.isSeen = true;
+    await foundNoti.save();
+
+    //Send to front
+    return res.status(200).json({ data: foundNoti, message: 'update status of one post successfully' });
+  }),
+
   delete: async () => {
     //Config expired date
     const expDate = new Date(Date.now() - process.env.MAX_RANGE_NOTI);
