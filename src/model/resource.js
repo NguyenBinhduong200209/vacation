@@ -68,7 +68,6 @@ const resourceSchema = new mongoose.Schema(
       validate: value => {
         value.length === 0 && _throw({ code: 400, errors: [{ field: 'ref', message: 'ref must not be an empty array' }] });
       },
-      index: true,
     },
 
     createdAt: {

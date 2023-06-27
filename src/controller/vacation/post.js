@@ -2,8 +2,6 @@ import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
 import Vacations from '#root/model/vacation/vacations';
-import checkPermission from '#root/utils/checkForbidden/checkPermission';
-import checkAuthor from '#root/utils/checkForbidden/checkAuthor';
 import { addTotalPageFields, getUserInfo, getCountInfo, getLocation, facet } from '#root/config/pipeline';
 import mongoose from 'mongoose';
 
@@ -20,14 +18,6 @@ const postController = {
         errors: [{ field: 'type', message: 'type can only be vacation or location' }],
         message: 'invalid type',
       });
-
-    //Get timeline
-    let timeline;
-    if (isVacation) {
-      //Throw an error if user have no permission to see any post of vacation
-      await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: id });
-      timeline = await Posts.find({ vacationId: id }).distinct('createdAt');
-    }
 
     //Get other data
     const result = await Posts.aggregate(
@@ -75,31 +65,29 @@ const postController = {
       )
     );
 
-    //Restructure Object return
-    result[0].meta.timeline = timeline;
+    //Get timeline
+    if (isVacation) {
+      const timeline = await Posts.find({ vacationId: id }).distinct('createdAt');
+      result[0].meta.timeline = timeline;
+    }
 
-    return res.status(200).json(result[0]);
+    return result.length === 0 ? res.sendStatus(204) : res.status(200).json(result[0]);
   }),
 
   getOne: asyncWrapper(async (req, res) => {
     const { id } = req.params;
 
-    //Get vacationId based on postId and check forbidden of userId login and vacation contain post
-    const foundPost = await Posts.findById(id);
-    !foundPost && _throw({ code: 404, errors: [{ field: 'id', message: 'invalid' }], message: 'post not found' });
-
-    //Check the authorization of user to post
-    await checkPermission({ crUserId: req.userInfo._id, modelType: 'vacation', modelId: foundPost.vacationId });
-
     const result = await Posts.aggregate(
-      //Filter based on id
-      [{ $match: { _id: new mongoose.Types.ObjectId(id) } }].concat(
+      [].concat(
+        //Filter based on id
+        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+
         //Get username, location by looking up to other model
         getUserInfo({ field: ['username', 'avatar'] }),
         getLocation({ localField: 'locationId' }),
 
         //Remove unnecessary fields
-        [{ $project: { vacationId: 0, userId: 0, locationId: 0, __v: 0 } }]
+        { $project: { vacationId: 0, userId: 0, locationId: 0, __v: 0 } }
       )
     );
 
@@ -132,15 +120,14 @@ const postController = {
   }),
 
   update: asyncWrapper(async (req, res) => {
-    const { id } = req.params;
-
-    //Throw an error if user login is not author of this post
-    const foundPost = await checkAuthor({ modelType: 'post', modelId: id, userId: req.userInfo._id });
+    //Get document from previous middleware
+    const foundPost = req.doc;
 
     //Config updatable key and update based on req.body value
-    const updateKeys = ['vacationId', 'locationId', 'content', 'resource'];
+    const updateKeys = ['locationId', 'content'];
     updateKeys.forEach(key => {
-      foundPost[key] = req.body[key];
+      const val = req.body[key];
+      val && (foundPost[key] = req.body[key]);
     });
 
     //Save new value for key lastUpdateAt
@@ -153,9 +140,6 @@ const postController = {
 
   delete: asyncWrapper(async (req, res) => {
     const { id } = req.params;
-
-    //Throw an error if user login is not author of this post
-    await checkAuthor({ modelType: 'post', modelId: id, userId: req.userInfo._id });
 
     //Define deletePost method
     const deletePost = Posts.findByIdAndDelete(id);
@@ -170,7 +154,7 @@ const postController = {
     await Promise.all([deletePost, deleteLikes, deleteComments]);
 
     //Send to front
-    return res.status(202).json({ message: 'delete post successfully' });
+    return res.status(200).json({ message: 'delete post successfully' });
   }),
 };
 

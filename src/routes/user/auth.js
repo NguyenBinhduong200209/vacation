@@ -3,6 +3,7 @@ import usersController from '#root/controller/user/auth';
 import verifyJWT from '#root/middleware/verifyJWT';
 import upload from '#root/middleware/upload';
 import usersinforController from '#root/controller/user/userinfo';
+import resourceController from '#root/controller/resource';
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ router
 
 router.use(verifyJWT);
 router
-  .put('/update', upload.single('avatar'), usersController.update)
+  .put('/update', upload.single('avatar'), resourceController.addNew, usersController.update)
   .get('/info', usersinforController.getprofile)
   .post('/logout', usersController.logOut);
 

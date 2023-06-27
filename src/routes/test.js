@@ -3,13 +3,13 @@ const router = express.Router();
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import fs from 'fs';
 import path from 'path';
-import { __publicPath } from '#root/app';
+import { resourcePath } from '#root/config/path';
 
-const test2 = asyncWrapper(async (req, res) => {
-  const files = await fs.readdirSync(path.join(__publicPath, 'resource'));
+const test = asyncWrapper(async (req, res) => {
+  const files = await fs.promises.readdir(resourcePath);
   return res.json(files);
 });
 
-router.get('/', test2);
+router.get('/', test);
 
 export default router;
