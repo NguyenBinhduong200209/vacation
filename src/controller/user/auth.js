@@ -174,8 +174,9 @@ const usersController = {
             //if user does upload a file, then upload to server, and create new Resource document
             if (req.file) {
               const { fieldname, destination, originalname, mimetype, size } = req.file;
+
               //Config path of file uploaded to server
-              const newPath = destination.split(`\\`).slice(-1)[0] + '/' + originalname;
+              const newPath = destination.split(`/`).slice(-1)[0] + '/' + originalname;
 
               //Create new Resource document
               await Resources.create({
