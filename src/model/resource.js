@@ -53,10 +53,16 @@ const resourceSchema = new mongoose.Schema(
             trim: true,
             enum: Object.keys(mongoose.connection.models).map(item => item.toLowerCase()),
           },
-          field: {
-            type: String,
-            required: 'field ref required',
+          _id: {
+            type: mongoose.ObjectId,
+            required: 'modelId required',
+            validate: async value => {
+              const foundUser = await Users.findById(value);
+              !foundUser && _throw({ code: 404, errors: [{ field: 'userId', message: 'modelId not found' }] });
+            },
           },
+          field: { type: String, trim: true },
+          index: { type: Number, min: 0 },
         },
       ],
       validate: value => {

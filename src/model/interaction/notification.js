@@ -16,12 +16,6 @@ const notiSchema = new mongoose.Schema(
       required: 'modelId required',
     },
 
-    action: {
-      type: String,
-      required: 'action required',
-      enum: ['like', 'comment', 'addFriend'],
-    },
-
     userId: {
       type: mongoose.ObjectId,
       required: 'UserId required',
@@ -34,6 +28,12 @@ const notiSchema = new mongoose.Schema(
             message: 'invalid userId',
           });
       },
+    },
+
+    action: {
+      type: String,
+      required: 'action required',
+      enum: ['like', 'comment', 'addFriend'],
     },
 
     content: {

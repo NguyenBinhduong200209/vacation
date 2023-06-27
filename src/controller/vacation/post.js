@@ -1,6 +1,7 @@
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
+import Vacations from '#root/model/vacation/vacations';
 import checkPermission from '#root/utils/checkForbidden/checkPermission';
 import checkAuthor from '#root/utils/checkForbidden/checkAuthor';
 import { addTotalPageFields, getUserInfo, getCountInfo, getLocation, facet } from '#root/config/pipeline';
@@ -69,17 +70,7 @@ const postController = {
         //Set up new array with total field is length of array and list field is array without __v field
         facet({
           meta: ['total', 'page', 'pages'],
-          data: [
-            'content',
-            'lastUpdateAt',
-            'resource',
-            'location',
-            'createdAt',
-            'authorInfo',
-            'likes',
-            'comments',
-            'timeline',
-          ],
+          data: ['content', 'lastUpdateAt', 'resource', 'location', 'createdAt', 'authorInfo', 'likes', 'comments'],
         })
       )
     );
@@ -132,6 +123,9 @@ const postController = {
       resource,
       createdAt: new Date(),
     });
+
+    //Update lastUpdateAt in vacation
+    await Vacations.findByIdAndUpdate(vacationId, { lastUpdateAt: new Date() });
 
     //Send to front
     return res.status(201).json({ data: newPost, message: 'post created successfully' });
