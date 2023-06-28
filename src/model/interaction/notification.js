@@ -30,17 +30,24 @@ const notiSchema = new mongoose.Schema(
       },
     },
 
+    userActionId: {
+      type: mongoose.ObjectId,
+      required: 'userActionId required',
+      validate: async value => {
+        const foundUser = await Users.findById(value);
+        !foundUser &&
+          _throw({
+            code: 400,
+            errors: [{ field: 'userId', message: 'invalid userId' }],
+            message: 'invalid userId',
+          });
+      },
+    },
+
     action: {
       type: String,
       required: 'action required',
       enum: ['like', 'comment', 'addFriend'],
-    },
-
-    content: {
-      type: String,
-      required: 'content required',
-      trim: true,
-      maxlength: 65000,
     },
 
     isSeen: {
@@ -59,10 +66,11 @@ const notiSchema = new mongoose.Schema(
     },
   },
   {
-    versionKey: false,
-    toObject: { getters: true, setters: true },
-    toJSON: { getters: true, setters: true },
-    runSettersOnQuery: true,
+    optimisticConcurrency: true,
+    //   versionKey: '__v',
+    //   toObject: { getters: true, setters: true },
+    //   toJSON: { getters: true, setters: true },
+    //   runSettersOnQuery: true,
   }
 );
 

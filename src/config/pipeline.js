@@ -78,13 +78,16 @@ export function getCountInfo({ field }) {
   }, []);
 }
 
-export function getUserInfo({ field, countFriend }) {
+export function getUserInfo({ localField, as, field, countFriend }) {
   const isGetAvatar = field.includes('avatar');
+  const localFieldUsed = localField || 'userId',
+    saveAs = as || 'authorInfo';
+
   return [].concat(
     {
       $lookup: {
         from: 'users',
-        localField: 'userId',
+        localField: localFieldUsed,
         foreignField: '_id',
         pipeline: [].concat(
           //Get avatar link if field params contain avatar
@@ -117,11 +120,11 @@ export function getUserInfo({ field, countFriend }) {
           //Get totalFiend based on countTotalFriend params
           countFriend ? getCountInfo({ field: ['friend'] }) : []
         ),
-        as: 'authorInfo',
+        as: saveAs,
       },
     },
     { $unset: 'userId' },
-    { $unwind: '$authorInfo' }
+    { $unwind: `$${saveAs}` }
   );
 }
 

@@ -40,14 +40,14 @@ const likeController = {
 
     //If cannot find, meaning user has not liked yet, then create new one and notification
     else {
-      //Create new Like document
       const newLike = await Likes.create({ modelType: type, modelId: id, userId: userId });
 
       //Transfer notiInfo to next middleware
       req.noti = {
         modelType: type,
         modelId: id,
-        receiverId: result.userId,
+        receiverId: req.doc.userId,
+        senderId: userId,
         action: 'like',
       };
 
