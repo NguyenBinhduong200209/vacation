@@ -1,11 +1,8 @@
 import Notifications from '#root/model/interaction/notification';
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
-import Users from '#root/model/user/users';
-import { addTotalPageFields, facet } from '#root/config/pipeline';
+import { addTotalPageFields, facet, getUserInfo } from '#root/config/pipeline';
 import mongoose from 'mongoose';
-import Posts from '#root/model/vacation/posts';
-import Vacations from '#root/model/vacation/vacations';
 
 const notiController = {
   getMany: asyncWrapper(async (req, res) => {
@@ -26,9 +23,13 @@ const notiController = {
 
         //Add 3 fields total, page and pages to docs
         addTotalPageFields({ page }),
+        getUserInfo({ localField: 'userActionId', as: 'userInfo', field: ['username', 'avatar'] }),
 
         //Restructure the docs
-        facet({ meta: ['total', 'page', 'pages'], data: ['content', 'lastUpdateAt', 'isSeen', 'modelType', 'modelId'] })
+        facet({
+          meta: ['total', 'page', 'pages'],
+          data: ['lastUpdateAt', 'isSeen', 'modelType', 'modelId', 'userInfo', '__v', 'action'],
+        })
       )
     );
 
@@ -37,82 +38,30 @@ const notiController = {
   }),
 
   updateContent: asyncWrapper(async (req, res) => {
-    const { modelType, modelId, receiverId, action } = req.noti;
+    const { modelType, modelId, senderId, receiverId, action } = req.noti;
 
     //Do not create new Noti if author like his/her own modelType
-    const senderId = req.userInfo._id;
     if (receiverId.toString() !== senderId.toString()) {
-      //Get username of user start action in modelType
-      const username = req.userInfo.username;
-
       //Find Notification that has modelType, modelId, userId and has not been seen by user
       const foundNoti = await Notifications.findOne({ modelType, modelId, userId: receiverId, action, isSeen: false });
 
       //If Noti found
       if (foundNoti) {
-        //Update content based on modelType
-        switch (modelType) {
-          case 'post':
-            //Find title of vacation containing this post
-            const { vacationId } = await Posts.findById(modelId);
-            const vacationTitle = (await Vacations.findById(vacationId))?.title;
-            foundNoti.content = `${username} and others ${action} your ${modelType} in vacation ${vacationTitle}`;
-            break;
-
-          case 'friend':
-            foundNoti.content = `${username} and others ${action}`;
-            break;
-
-          default:
-            //Throw an error if model is undefined
-            const model = modelType === 'vacation' ? 'Vacations' : modelType === 'album' ? 'Albums' : undefined;
-            !model && _throw({ code: 400, message: 'invalid modelType' });
-
-            //Find title
-            const { title } = await mongoose.model(model).findById(modelId);
-            foundNoti.content = `${username} and others ${action} your ${modelType} ${title}`;
-            break;
-        }
+        foundNoti.userActionId = senderId;
         foundNoti.isSeen = false;
         await foundNoti.save();
       }
 
-      //If Noti not found
-      else {
-        //Update content based on modelType
-        let content;
-        switch (modelType) {
-          case 'post':
-            //Find title of vacation containing this post
-            const { vacationId } = await Posts.findById(modelId);
-            const vacationTitle = (await Vacations.findById(vacationId))?.title;
-            content = `${username} ${action} your post in vacation ${vacationTitle}`;
-            break;
-
-          case 'friend':
-            content = `${username} ${action}`;
-            break;
-
-          default:
-            //Throw an error if model is undefined
-            const model = modelType === 'vacation' ? 'Vacations' : modelType === 'album' ? 'Albums' : undefined;
-            !model && _throw({ code: 400, message: 'invalid modelType' });
-            //Get title of vacation or album
-            const { title } = await mongoose.model(model).findById(modelId);
-            content = `${username} ${action} your ${modelType} ${title}`;
-            break;
-        }
-
-        //Create new Notification
+      //If Noti not found, create new Notification
+      else
         await Notifications.create({
           modelType,
           modelId,
           action,
           userId: receiverId,
-          content: content,
+          userActionId: senderId,
           createAt: new Date(),
         });
-      }
     }
 
     //Send to front
@@ -126,9 +75,9 @@ const notiController = {
     const foundNotiList = await Notifications.updateMany({ userId }, { isSeen: true });
 
     //Send to front
-    return foundNotiList.length == 0
-      ? res.sendStatus(204)
-      : res.status(200).json({ meta: { total: foundNotiList.length }, message: 'update status of all post successfully' });
+    return res
+      .status(200)
+      .json({ meta: { total: foundNotiList.modifiedCount }, message: 'update status of all post successfully' });
   }),
 
   updateStatusOne: asyncWrapper(async (req, res) => {

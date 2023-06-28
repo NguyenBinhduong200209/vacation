@@ -40,7 +40,8 @@ const commentController = {
     req.noti = {
       modelType: type,
       modelId: id,
-      receiverId: result.userId,
+      receiverId: req.doc.userId,
+      senderId: userId,
       action: 'comment',
     };
 

@@ -7,40 +7,30 @@ function checkAuthor(type) {
     const userId = req.userInfo._id;
     const { id } = req.params;
 
-    let model;
-    switch (type) {
-      case 'vacation':
-        model = 'Vacations';
-        break;
+    const modelType = type || req.query.type;
 
-      case 'post':
-        model = 'Posts';
-        break;
+    const model =
+      modelType === 'vacation'
+        ? 'Vacations'
+        : modelType === 'post'
+        ? 'Posts'
+        : modelType === 'comment'
+        ? 'Comments'
+        : modelType === 'notification'
+        ? 'Notifications'
+        : modelType === 'avatar'
+        ? 'Resources'
+        : undefined;
 
-      case 'comment':
-        model = 'Comments';
-        break;
-
-      case 'notification':
-        model = 'Notifications';
-        break;
-
-      case 'avatar':
-        model = 'Resources';
-        break;
-
-      default:
-        _throw({
-          code: 400,
-          errors: [{ field: 'modelType', message: `invalid` }],
-          message: 'invalid modelType',
-        });
-        break;
-    }
-
-    const foundDoc = await mongoose.model(model).findById(id);
+    !model &&
+      _throw({
+        code: 400,
+        errors: [{ field: 'modelType', message: `invalid` }],
+        message: 'invalid modelType',
+      });
 
     //Throw an error if cannot find post based on id params
+    const foundDoc = await mongoose.model(model).findById(id);
     !foundDoc &&
       _throw({
         code: 404,
