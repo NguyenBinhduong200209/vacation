@@ -11,8 +11,6 @@ const storage = multer.diskStorage({
     const ranNumber = Math.round(Math.random() * (Math.pow(10, maxLength) - 1));
     const uniqueSuffix = Date.now() + '-' + String(ranNumber).padStart(6, '0');
 
-    console.log(resourcePath);
-
     //Create folder if it does not exist
     const newFolder = path.join(resourcePath, uniqueSuffix);
     !fs.existsSync(newFolder) && fs.mkdirSync(newFolder);

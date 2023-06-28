@@ -9,8 +9,6 @@ import Users from '#root/model/user/users';
 import Resources from '#root/model/resource';
 
 const monitor = asyncWrapper(async (req, res) => {
-  const { id } = req.query;
-  console.log(resourcePath);
   const files = await fs.promises.readdir(path.join(resourcePath, id || ''));
   return res.status(200).json(files);
 });
