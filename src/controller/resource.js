@@ -38,7 +38,7 @@ const resourceController = {
         size: size,
         path: newPath,
         userId: req.userInfo._id,
-        ref: [{ model: model, field: fieldname, _id: foundUser._id }],
+        ref: [{ model: model, field: fieldname, _id: req.userInfo._id }],
       });
       return res.status(201).json({ data: newResource, message: 'add successfully' });
     }
