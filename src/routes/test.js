@@ -18,7 +18,7 @@ const test = asyncWrapper(async (req, res) => {
   const { destination, originalname, mimetype, size } = req.file;
 
   //Config path of file uploaded to server
-  const newPath = destination.split(`\\`).slice(-1)[0] + '/' + originalname;
+  const newPath = destination.split(`/`).slice(-1)[0] + '/' + originalname;
   console.log(newPath);
 
   const foundUsers = await Users.find({});
@@ -47,6 +47,6 @@ const clean = asyncWrapper(async (req, res) => {
   return res.status(200).json(deleteAll);
 });
 
-router.route('/').get(upload.single('avatar'), test).delete(clean);
+router.route('/').get(monitor).post(upload.single('avatar'), test).delete(clean);
 
 export default router;
