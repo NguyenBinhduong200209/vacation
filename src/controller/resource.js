@@ -37,7 +37,7 @@ const resourceController = {
         type: mimetype,
         size: size,
         path: newPath,
-        userId: foundUser._id,
+        userId: req.userInfo._id,
         ref: [{ model: model, field: fieldname, _id: foundUser._id }],
       });
       return res.status(201).json({ data: newResource, message: 'add successfully' });
