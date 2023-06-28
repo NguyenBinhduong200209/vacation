@@ -10,11 +10,13 @@ import Resources from '#root/model/resource';
 
 const monitor = asyncWrapper(async (req, res) => {
   const { id } = req.query;
+  console.log(resourcePath);
   const files = await fs.promises.readdir(path.join(resourcePath, id || ''));
   return res.status(200).json(files);
 });
 
 const test = asyncWrapper(async (req, res) => {
+  const { quantity } = req.query;
   const { destination, originalname, mimetype, size } = req.file;
 
   //Config path of file uploaded to server
@@ -23,7 +25,7 @@ const test = asyncWrapper(async (req, res) => {
 
   const foundUsers = await Users.find({});
 
-  for (let index = 0; index < 9; index++) {
+  for (let index = 0; index < quantity; index++) {
     const randomNumber = Math.ceil(Math.random() * (foundUsers.length - 1));
     const foundUser = foundUsers[randomNumber];
 
