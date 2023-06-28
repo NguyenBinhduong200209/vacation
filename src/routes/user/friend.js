@@ -6,7 +6,9 @@ const router = express.Router();
 
 router
   .post('/', verifyJWT, friendsController.addFriend)
+  .put('/', verifyJWT, friendsController.acceptFriend)
   .get('/', verifyJWT, friendsController.getFriendList)
+  .get('/resfriend', verifyJWT, friendsController.getResquestFriendList)
   .delete('/:id', verifyJWT, friendsController.removeFriend);
 
 export default router;

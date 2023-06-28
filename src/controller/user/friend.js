@@ -6,8 +6,6 @@ import _throw from '#root/utils/_throw';
 const friendsController = {
   addFriend: asyncWrapper(async (req, res) => {
     const { userId2 } = req.body;
-
-    // Lấy ID của người dùng đăng nhập từ đối tượng req.userInfo
     const userId1 = req.userInfo._id;
 
     // Kiểm tra xem cả hai người dùng tồn tại trong hệ thống
@@ -21,32 +19,83 @@ const friendsController = {
     const existingFriendship = await Friends.findOne({
       $or: [
         { userId1, userId2 },
-        { userId1: userId2, userId2 },
+        { userId1: userId2, userId2: userId1 },
       ],
     });
 
     if (existingFriendship) {
-      return res.status(400).json({ message: 'Already friends' });
+      return res.status(400).json({ message: 'Friend request already sent' });
     }
 
     // Tạo yêu cầu kết bạn mới
-    const newFriendship = new Friends({
+    const newFriendRequest = new Friends({
       userId1,
       userId2,
     });
 
     // Lưu yêu cầu kết bạn
-    await newFriendship.save();
-    const populatedFriendship = await Friends.findById(newFriendship._id)
-      .populate('userId1', 'firstname lastname avatar dateOfBirth gender description')
-      .populate('userId2', 'firstname lastname avatar dateOfBirth gender description')
-      .exec();
+    await newFriendRequest.save();
 
     return res.status(200).json({
       message: 'Friend request sent',
-      friendship: populatedFriendship,
+      friendRequest: newFriendRequest,
     });
   }),
+  acceptFriend: asyncWrapper(async (req, res) => {
+    const { friendRequestId, status } = req.body;
+    const userId2 = req.userInfo._id;
+    console.log(userId2);
+
+    // Kiểm tra xem yêu cầu kết bạn tồn tại
+    const friendRequest = await Friends.findById(friendRequestId);
+
+    if (!friendRequest) {
+      return res.status(404).json({ message: 'Friend request not found' });
+    }
+
+    // Kiểm tra xem người dùng hiện tại có quyền chấp nhận hoặc từ chối yêu cầu này
+
+    if (!friendRequest.userId2.equals(userId2)) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    // Cập nhật trạng thái của yêu cầu kết bạn
+    switch (status) {
+      case 'accepted': {
+        // Chấp nhận yêu cầu kết bạn
+        await Friends.findOneAndUpdate({ _id: friendRequestId }, { $set: { status: 'accepted' } });
+        return res.status(200).json({
+          message: 'Friend request accepted',
+        });
+      }
+      case 'rejected':
+        // Từ chối yêu cầu kết bạn và xóa bản ghi
+        await Friends.findOneAndDelete({ _id: friendRequestId });
+        return res.status(200).json({
+          message: 'Friend request rejected and deleted',
+        });
+    }
+  }),
+  getResquestFriendList: asyncWrapper(async (req, res) => {
+    const userId = req.userInfo._id;
+
+    // Tìm các yêu cầu kết bạn đối với người dùng hiện tại
+    const friendRequests = await Friends.find({ userId2: userId, status: 'pending' });
+    const friendRequestsCount = friendRequests.length;
+
+    const friendRequestsData = friendRequests.map(request => ({
+      friendRequestId: request._id,
+      status: request.status,
+      userId1: request.userId1,
+    }));
+
+    return res.status(200).json({
+      message: 'get friendRequests sucssecs ! ',
+      friendRequests: friendRequestsData,
+      friendRequeststotal: friendRequestsCount,
+    });
+  }),
+
   getFriendList: asyncWrapper(async (req, res) => {
     const userId = req.userInfo._id;
 

@@ -12,6 +12,15 @@ const friendSchema = new mongoose.Schema({
     ref: 'Users',
     required: 'UserId required',
   },
+  status: {
+    type: String,
+    enum: ['pending', 'accepted', 'rejected'],
+    default: 'pending',
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 const Friends = mongoose.model('Friends', friendSchema);

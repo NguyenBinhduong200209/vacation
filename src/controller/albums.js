@@ -225,18 +225,32 @@ const albumsController = {
   getablumsuser: asyncWrapper(async (req, res) => {
     // Get the user ID from the request
     const userId = req.userInfo._id;
+    const userIds = req.params;
 
     // Retrieve the albums associated with the user ID
-    const albums = await Albums.find({ userId });
-    const albumList = albums.map(album => album.toObject()); // Convert each album to a plain JavaScript object
-    // Count the total number of albums
-    const totalAlbums = albums.length;
-    // Return the list of albums
-    res.json({
-      message: 'get infor albums sucsses',
-      totalAlbums: totalAlbums,
-      data: albumList,
-    });
+    if (userIds && userId) {
+      const albums = await Albums.find(userIds);
+      const albumList = albums.map(album => album.toObject()); // Convert each album to a plain JavaScript object
+      // Count the total number of albums
+      const totalAlbums = albums.length;
+      // Return the list of albums
+      res.json({
+        message: 'get infor albums sucsses',
+        totalAlbums: totalAlbums,
+        data: albumList,
+      });
+    } else if (userId) {
+      const albums = await Albums.find({ userId });
+      const albumList = albums.map(album => album.toObject()); // Convert each album to a plain JavaScript object
+      // Count the total number of albums
+      const totalAlbums = albums.length;
+      // Return the list of albums
+      res.json({
+        message: 'get infor albums sucsses',
+        totalAlbums: totalAlbums,
+        data: albumList,
+      });
+    } else _throw({ code: 400, message: 'UserID not provided' });
   }),
   getablumsfriend: asyncWrapper(async (req, res) => {
     // Get the user ID from the request
