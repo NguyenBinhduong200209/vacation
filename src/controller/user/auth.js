@@ -188,6 +188,7 @@ const usersController = {
           : Object.assign(obj, { [key]: foundUser._doc[key] }),
       {}
     );
+
     return res.status(200).json({
       data: { userInfo: result },
       message: `user ${foundUser.username} update successfully`,
@@ -298,18 +299,6 @@ const usersController = {
         errrors: [{ field: 'refreshToken', message: 'invalid' }],
         message: 'invalid token',
       });
-  }),
-
-  removeAvatar: asyncWrapper(async (req, res) => {
-    //Get document from previous middleware
-    const foundAvatar = req.doc;
-
-    //Config path and delete files
-    const path = path.join(resourcePath, foundAvatar.path);
-    fs.unlinkSync(path);
-
-    //Send to front
-    return res.status(200).json({ message: 'delete successfully' });
   }),
 
   delete: async (req, res) => {
