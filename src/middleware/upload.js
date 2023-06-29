@@ -4,7 +4,7 @@ import fs from 'fs';
 import { resourcePath } from '#root/config/path';
 import _throw from '#root/utils/_throw';
 
-const storage = multer.diskStorage({
+const storage = multer.memoryStorage({
   destination: (req, file, callback) => {
     //Create random unique Suffix
     const maxLength = 6;

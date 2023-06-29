@@ -66,7 +66,7 @@ const postController = {
     );
 
     //Get timeline
-    if (isVacation) {
+    if (isVacation && result.length > 0) {
       const timeline = await Posts.find({ vacationId: id }).distinct('createdAt');
       result[0].meta.timeline = timeline;
     }

@@ -15,17 +15,24 @@ import resourceRoute from '#root/routes/resource';
 import notiRoute from '#root/routes/interaction/notification';
 
 const pathArr = [
+  //Path related to user
   { path: '/auth', route: authRoute },
+  { path: '/userinfor', route: userinforRoute },
+  { path: '/friend', route: friendRoute },
+
+  //Path related to vacation
   { path: '/vacation', route: vacationRoute },
   { path: '/location', route: locationRoute },
   { path: '/post', route: postRoute },
+
+  //Path related to interaction
   { path: '/like', route: likeRoute },
   { path: '/comment', route: commentRoute },
   { path: '/notification', route: notiRoute },
+
+  //Other path
   { path: '/search', route: searchRoute },
   { path: '/resource', route: resourceRoute },
-  { path: '/userinfor', route: userinforRoute },
-  { path: '/friend', route: friendRoute },
   { path: '/album', route: albumsRoute },
   { path: '/test', route: testRoute },
 ];
