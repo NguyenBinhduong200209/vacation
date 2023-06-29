@@ -7,6 +7,7 @@ import path from 'path';
 import upload from '#root/middleware/upload';
 import Users from '#root/model/user/users';
 import Resources from '#root/model/resource';
+import { bucket } from '#root/services/firebase';
 
 const monitor = asyncWrapper(async (req, res) => {
   const { id } = req.query;
@@ -49,6 +50,32 @@ const clean = asyncWrapper(async (req, res) => {
   return res.status(200).json(deleteAll);
 });
 
-router.route('/').get(monitor).post(upload.single('avatar'), test).delete(clean);
+router
+  .route('/')
+  .get(monitor)
+  .post(upload.single('avatar'), (req, res) => {
+    if (!req.file) {
+      res.status(400).send('Error: No files found');
+    }
+
+    const blob = bucket.file(req.file.originalname);
+
+    const blobWriter = blob.createWriteStream({
+      metadata: {
+        contentType: req.file.mimetype,
+      },
+    });
+
+    blobWriter.on('error', err => {
+      console.log(err);
+    });
+
+    blobWriter.on('finish', () => {
+      res.status(200).send('File uploaded.');
+    });
+
+    blobWriter.end(req.file.buffer);
+  })
+  .delete(clean);
 
 export default router;

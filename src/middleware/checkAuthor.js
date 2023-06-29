@@ -18,7 +18,7 @@ function checkAuthor(type) {
         ? 'Comments'
         : modelType === 'notification'
         ? 'Notifications'
-        : modelType === 'avatar'
+        : modelType === 'resource'
         ? 'Resources'
         : undefined;
 
