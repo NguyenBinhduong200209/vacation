@@ -1,10 +1,17 @@
-import admin from 'firebase-admin';
-import path from 'path';
-import { __dirname } from '#root/config/path';
+import { initializeApp } from 'firebase/app';
+import { getStorage } from 'firebase/storage';
 
-admin.initializeApp({
-  credential: admin.credential.cert(path.join(__dirname, 'config', 'firebase.json')),
-  storageBucket: 'vacation-d50de.appspot.com',
-});
+const firebaseConfig = {
+  apiKey: 'AIzaSyB8JHwvoLBqbVykDW6IxejPKrA3aYts20s',
+  authDomain: 'vacation-social-media.firebaseapp.com',
+  projectId: 'vacation-social-media',
+  storageBucket: 'vacation-social-media.appspot.com',
+  messagingSenderId: '136338690513',
+  appId: '1:136338690513:web:51dc665792f7d7d97050f0',
+  measurementId: 'G-38Z6R9PQDP',
+};
 
-export const bucket = admin.storage().bucket();
+// Initialize Firebase
+const firebase = () => initializeApp(firebaseConfig);
+
+export default firebase;

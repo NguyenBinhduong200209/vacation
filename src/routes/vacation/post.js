@@ -7,7 +7,9 @@ import checkPermission from '#root/middleware/checkPermission';
 const router = express.Router();
 
 router.use(verifyJWT);
-router.route('/').post(postController.addNew).get(checkPermission(), postController.getMany);
+router.route('/').get(checkPermission(), postController.getManyByVacation).post(postController.addNew);
+
+router.route('/location').get(postController.getManyByLocation);
 router
   .route('/:id')
   .get(checkPermission('post'), postController.getOne)

@@ -78,7 +78,54 @@ export function getCountInfo({ field }) {
   }, []);
 }
 
-export function getUserInfo({ localField, as, field, countFriend }) {
+export function checkFriend({ userId }) {
+  return [
+    {
+      $lookup: {
+        from: 'friends',
+        let: { userId: { $toObjectId: userId }, authorId: { $toObjectId: '$userId' } },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $or: [
+                  { $and: [{ $eq: ['$userId1', '$$userId'] }, { $eq: ['$userId2', '$$authorId'] }] },
+                  { $and: [{ $eq: ['$userId2', '$$userId'] }, { $eq: ['$userId1', '$$authorId'] }] },
+                ],
+              },
+            },
+          },
+        ],
+        as: 'isFriend',
+      },
+    },
+    { $addFields: { isFriend: { $toBool: { $size: '$isFriend' } } } },
+  ];
+}
+
+export function getResourcePath({ localField, as }) {
+  return [
+    {
+      $lookup: {
+        from: 'resources',
+        let: { id: { $toObjectId: `$${localField}` } },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $in: ['$$id', '$ref._id'] },
+            },
+          },
+          { $sort: { createdAt: -1 } },
+        ],
+        as: as,
+      },
+    },
+    //Get the first element in array
+    { $addFields: { [as]: { $first: `$${as}.path` } } },
+  ];
+}
+
+export function getUserInfo({ localField, as, field, countFriend, checkFriend }) {
   const isGetAvatar = field.includes('avatar');
   const localFieldUsed = localField || 'userId',
     saveAs = as || 'authorInfo';
@@ -91,31 +138,13 @@ export function getUserInfo({ localField, as, field, countFriend }) {
         foreignField: '_id',
         pipeline: [].concat(
           //Get avatar link if field params contain avatar
-          isGetAvatar
-            ? [
-                {
-                  $lookup: {
-                    from: 'resources',
-                    let: { userId: { $toObjectId: '$_id' } },
-                    pipeline: [
-                      {
-                        $match: {
-                          $expr: { $eq: ['$userId', '$$userId'] },
-                          ref: { $elemMatch: { model: 'users', field: 'avatar' } },
-                        },
-                      },
-                      { $sort: { createdAt: -1 } },
-                    ],
-                    as: 'avatar',
-                  },
-                },
-                //Get the first element in array
-                { $addFields: { avatar: { $first: '$avatar.path' } } },
-              ]
-            : {},
+          isGetAvatar ? getResourcePath({ localField: '_id', as: 'avatar' }) : [],
 
           //Limit field pass to next stage based on field params
           { $project: field.reduce((obj, item) => Object.assign(obj, { [item]: 1 }), {}) },
+
+          //Check author is friend of userlogin or not
+          checkFriend ? checkFriend({ userId: checkFriend }) : [],
 
           //Get totalFiend based on countTotalFriend params
           countFriend ? getCountInfo({ field: ['friend'] }) : []
@@ -193,25 +222,30 @@ export function addTotalPageFields({ page }) {
 }
 
 export function facet({ meta, data }) {
-  return [
+  return [].concat(
     {
-      $facet: {
-        meta: [
-          {
-            $group: Object.assign(
-              { _id: null },
-              meta.reduce((obj, item) => Object.assign(obj, { [item]: { $first: `$${item}` } }), {})
-            ),
-          },
-          { $unset: '_id' },
-        ],
-        data: [{ $project: data.reduce((obj, item) => Object.assign(obj, { [item]: 1 }), {}) }],
-      },
+      $facet: Object.assign(
+        {},
+        meta
+          ? {
+              meta: [
+                {
+                  $group: Object.assign(
+                    { _id: null },
+                    meta.reduce((obj, item) => Object.assign(obj, { [item]: { $first: `$${item}` } }), {})
+                  ),
+                },
+                { $unset: '_id' },
+              ],
+            }
+          : {},
+        data ? { data: [{ $project: data.reduce((obj, item) => Object.assign(obj, { [item]: 1 }), {}) }] } : {}
+      ),
     },
 
     // Destructuring field
-    { $unwind: '$meta' },
-  ];
+    meta ? { $unwind: '$meta' } : []
+  );
 }
 
 export async function search({ models, searchValue, page }) {

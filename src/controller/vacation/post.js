@@ -6,48 +6,14 @@ import { addTotalPageFields, getUserInfo, getCountInfo, getLocation, facet } fro
 import mongoose from 'mongoose';
 
 const postController = {
-  getMany: asyncWrapper(async (req, res) => {
-    const { type, id, page } = req.query,
-      isVacation = type === 'vacation',
-      userId = req.userInfo._id;
-
-    //Throw an error if type is not vacation and location
-    !['vacation', 'location'].includes(type) &&
-      _throw({
-        code: 400,
-        errors: [{ field: 'type', message: 'type can only be vacation or location' }],
-        message: 'invalid type',
-      });
+  getManyByVacation: asyncWrapper(async (req, res) => {
+    const { id, page, prevPage, timeline } = req.query;
 
     //Get other data
     const result = await Posts.aggregate(
       [].concat(
         //Get all posts belong to vacationId
-        isVacation
-          ? { $match: { vacationId: new mongoose.Types.ObjectId(id) } }
-          : [
-              {
-                $lookup: {
-                  from: 'vacations',
-                  localField: 'vacationId',
-                  foreignField: '_id',
-                  pipeline: [{ $project: { shareStatus: 1, shareList: 1, userId: 1, _id: 0 } }],
-                  as: 'vacation',
-                },
-              },
-              { $unwind: '$vacation' },
-              {
-                $match: {
-                  locationId: new mongoose.Types.ObjectId(id),
-                  $or: [
-                    { 'vacation.shareStatus': 'public' },
-                    { 'vacation.shareStatus': 'protected', 'vacation.shareList': { $in: [userId] } },
-                    { 'vacation.shareStatus': 'onlyme', 'vacation.userId': userId },
-                  ],
-                },
-              },
-            ],
-
+        { $match: { vacationId: new mongoose.Types.ObjectId(id) } },
         //Sort in order to push the newest updated post to top
         { $sort: { lastUpdateAt: -1, createdAt: -1 } },
 
@@ -55,7 +21,7 @@ const postController = {
         addTotalPageFields({ page }),
         getUserInfo({ field: ['username', 'avatar'] }),
         getCountInfo({ field: ['like', 'comment'] }),
-        isVacation ? getLocation({ localField: 'locationId' }) : [],
+        getLocation({ localField: 'locationId' }),
 
         //Set up new array with total field is length of array and list field is array without __v field
         facet({
@@ -66,10 +32,59 @@ const postController = {
     );
 
     //Get timeline
-    if (isVacation && result.length > 0) {
+    if (result.length > 0) {
       const timeline = await Posts.find({ vacationId: id }).distinct('createdAt');
       result[0].meta.timeline = timeline;
-    }
+      return res.status(200).json(result[0]);
+    } else return res.sendStatus(204);
+  }),
+
+  getManyByLocation: asyncWrapper(async (req, res) => {
+    const { id, page } = req.query,
+      userId = req.userInfo._id;
+
+    //Get other data
+    const result = await Posts.aggregate(
+      [].concat(
+        //Get all posts belong to vacationId
+        [
+          {
+            $lookup: {
+              from: 'vacations',
+              localField: 'vacationId',
+              foreignField: '_id',
+              pipeline: [{ $project: { shareStatus: 1, shareList: 1, userId: 1, _id: 0 } }],
+              as: 'vacation',
+            },
+          },
+          { $unwind: '$vacation' },
+          {
+            $match: {
+              locationId: new mongoose.Types.ObjectId(id),
+              $or: [
+                { 'vacation.shareStatus': 'public' },
+                { 'vacation.shareStatus': 'protected', 'vacation.shareList': { $in: [userId] } },
+                { 'vacation.shareStatus': 'onlyme', 'vacation.userId': userId },
+              ],
+            },
+          },
+        ],
+
+        //Sort in order to push the newest updated post to top
+        { $sort: { lastUpdateAt: -1, createdAt: -1 } },
+
+        //Add 3 new fields (total, page, pages) and then Get username, location by looking up to other model
+        addTotalPageFields({ page }),
+        getUserInfo({ field: ['username', 'avatar'] }),
+        getCountInfo({ field: ['like', 'comment'] }),
+
+        //Set up new array with total field is length of array and list field is array without __v field
+        facet({
+          meta: ['total', 'page', 'pages'],
+          data: ['content', 'lastUpdateAt', 'resource', 'location', 'createdAt', 'authorInfo', 'likes', 'comments'],
+        })
+      )
+    );
 
     return result.length === 0 ? res.sendStatus(204) : res.status(200).json(result[0]);
   }),

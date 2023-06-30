@@ -56,10 +56,6 @@ const resourceSchema = new mongoose.Schema(
           _id: {
             type: mongoose.ObjectId,
             required: 'modelId required',
-            validate: async value => {
-              const foundUser = await Users.findById(value);
-              !foundUser && _throw({ code: 404, errors: [{ field: 'userId', message: 'modelId not found' }] });
-            },
           },
           field: { type: String, trim: true },
           index: { type: Number, min: 0 },
@@ -74,13 +70,13 @@ const resourceSchema = new mongoose.Schema(
       type: Date,
       default: new Date(),
     },
-  },
-  {
-    versionKey: false,
-    toObject: { getters: true, setters: true },
-    toJSON: { getters: true, setters: true },
-    runSettersOnQuery: true,
   }
+  // {
+  //   versionKey: false,
+  //   toObject: { getters: true, setters: true },
+  //   toJSON: { getters: true, setters: true },
+  //   runSettersOnQuery: true,
+  // }
 );
 
 const Resources = mongoose.model('Resources', resourceSchema);

@@ -10,7 +10,7 @@ import corsOptions from '#root/config/corsOption';
 import pathArr from '#root/routes/index';
 import internalTasks from '#root/services/internalTasks';
 import { publicPath } from '#root/config/path';
-
+import firebase from '#root/services/firebase';
 // create an instance of an Express application
 const app = express();
 // set the port number for the server to listen on
@@ -21,6 +21,8 @@ app.use('/static', express.static(publicPath));
 
 //Connect to database
 await dbConnect();
+
+await firebase();
 
 //Run internal Task
 internalTasks();
