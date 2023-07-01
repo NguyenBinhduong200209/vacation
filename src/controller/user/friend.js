@@ -2,6 +2,7 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Friends from '#root/model/user/friend';
 import Users from '#root/model//user/users';
 import _throw from '#root/utils/_throw';
+import { addTotalPageFields, getUserInfo, getCountInfo, facet } from '#root/config/pipeline';
 
 const friendsController = {
   addFriend: asyncWrapper(async (req, res) => {
@@ -78,21 +79,43 @@ const friendsController = {
   }),
   getResquestFriendList: asyncWrapper(async (req, res) => {
     const userId = req.userInfo._id;
-
+    const foundUser = await Users.findById(userId);
     // Tìm các yêu cầu kết bạn đối với người dùng hiện tại
-    const friendRequests = await Friends.find({ userId2: userId, status: 'pending' });
+    const friendRequests = await Friends.find({ userId2: userId, status: 'pending' })
+      .populate('userId1', 'avatar firstname lastname dateOfBirth')
+      .populate('userId2', 'avatar firstname lastname dateOfBirth')
+      .exec();
+    const filteredfriendRequests = friendRequests.map(friend => {
+      if (friend.userId1._id.toString() === foundUser._id.toString()) {
+        return friend.userId2;
+      }
+    });
+
+    const page = req.query.page ? parseInt(req.query.page) : 1; // Trang hiện tại từ yêu cầu
+    const itemOfPage = Number(process.env.ITEM_OF_PAGE);
+    const pipeline = addTotalPageFields({ page });
+    const aggregateResult = await Friends.aggregate(pipeline);
+
+    const total = aggregateResult.length > 0 ? aggregateResult[0].total : 0;
+    const totalPages = Math.ceil(total / itemOfPage);
+
+    if (page > totalPages) {
+      return res.status(400).json({ message: 'Invalid page number' });
+    }
+
+    const startIndex = (page - 1) * itemOfPage;
+    const endIndex = startIndex + itemOfPage;
+
+    const paginatedFriendRequests = friendRequests.slice(startIndex, endIndex);
     const friendRequestsCount = friendRequests.length;
 
-    const friendRequestsData = friendRequests.map(request => ({
-      friendRequestId: request._id,
-      status: request.status,
-      userId1: request.userId1,
-    }));
-
     return res.status(200).json({
-      message: 'get friendRequests sucssecs ! ',
-      friendRequests: friendRequestsData,
-      friendRequeststotal: friendRequestsCount,
+      message: 'Friend list retrieved',
+      data: paginatedFriendRequests,
+
+      currentPage: page,
+      totalPages: totalPages,
+      friendListcount: friendRequestsCount,
     });
   }),
 
@@ -108,11 +131,15 @@ const friendsController = {
 
     // Tìm danh sách bạn bè của người dùng
     const friendList = await Friends.find({
-      $or: [{ userId1: foundUser._id }, { userId2: foundUser._id }],
+      $or: [
+        { userId1: foundUser._id, status: 'accepted' },
+        { userId2: foundUser._id, status: 'accepted' },
+      ],
     })
       .populate('userId1', 'firstname lastname avatar dateOfBirth gender description')
       .populate('userId2', 'firstname lastname avatar dateOfBirth gender description')
       .exec();
+
     const filteredFriendList = friendList.map(friend => {
       if (friend.userId1._id.toString() === foundUser._id.toString()) {
         return friend.userId2;
@@ -120,10 +147,31 @@ const friendsController = {
         return friend.userId1;
       }
     });
+    const page = req.query.page ? parseInt(req.query.page) : 1; // Trang hiện tại từ yêu cầu
+    const itemOfPage = Number(process.env.ITEM_OF_PAGE);
+    const pipeline = addTotalPageFields({ page });
+    const aggregateResult = await Friends.aggregate(pipeline);
+
+    const total = aggregateResult.length > 0 ? aggregateResult[0].total : 0;
+    const totalPages = Math.ceil(total / itemOfPage);
+
+    if (page > totalPages) {
+      return res.status(400).json({ message: 'Invalid page number' });
+    }
+
+    const startIndex = (page - 1) * itemOfPage;
+    const endIndex = startIndex + itemOfPage;
+
+    const paginatedFriendList = filteredFriendList.slice(startIndex, endIndex);
+    const friendListcount = friendList.length;
 
     return res.status(200).json({
       message: 'Friend list retrieved',
-      data: filteredFriendList,
+      data: paginatedFriendList,
+
+      currentPage: page,
+      totalPages: totalPages,
+      friendListcount: friendListcount,
     });
   }),
   removeFriend: asyncWrapper(async (req, res) => {
