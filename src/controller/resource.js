@@ -43,7 +43,7 @@ const resourceController = {
     return foundResource.length === 0 ? res.sendStatus(204) : res.status(200).json(foundResource[0]);
   }),
 
-  //Only apply when upload avatar user of cover vacation
+  //Only apply when upload avatar user or cover vacation
   addNewOne: asyncWrapper(async (req, res) => {
     const { fieldname, originalname, mimetype, size } = req.file;
 
@@ -55,7 +55,7 @@ const resourceController = {
           name: originalname,
           type: mimetype,
           size: size,
-          path: req.url,
+          path: req.url[0],
           userId: req.userInfo._id,
           ref: [{ model: 'users', field: fieldname, _id: req.userInfo._id }],
         });

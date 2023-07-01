@@ -9,7 +9,7 @@ const resourceSchema = new mongoose.Schema(
       type: String,
       trim: true,
       required: 'name required',
-      maxlength: 50,
+      maxlength: 100,
       validate: value => {
         !validator.isAlphanumeric(value, 'vi-VN', { ignore: " -_',()." }) &&
           _throw({ code: 400, errors: [{ field: 'name', message: 'invalid name' }] });

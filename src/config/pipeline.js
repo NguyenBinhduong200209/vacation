@@ -103,8 +103,8 @@ export function checkFriend({ userId }) {
   ];
 }
 
-export function getResourcePath({ localField, as }) {
-  return [
+export function getResourcePath({ localField, as, returnAsArray }) {
+  return [].concat(
     {
       $lookup: {
         from: 'resources',
@@ -115,14 +115,16 @@ export function getResourcePath({ localField, as }) {
               $expr: { $in: ['$$id', '$ref._id'] },
             },
           },
+          { $project: { path: 1, createdAt: 1 } },
           { $sort: { createdAt: -1 } },
         ],
         as: as,
       },
     },
+
     //Get the first element in array
-    { $addFields: { [as]: { $first: `$${as}.path` } } },
-  ];
+    returnAsArray ? [] : { $addFields: { [as]: { $first: `$${as}` } } }
+  );
 }
 
 export function getUserInfo({ localField, as, field, countFriend, checkFriend }) {
@@ -225,7 +227,6 @@ export function facet({ meta, data }) {
   return [].concat(
     {
       $facet: Object.assign(
-        {},
         meta
           ? {
               meta: [

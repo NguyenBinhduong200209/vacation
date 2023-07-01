@@ -2,7 +2,7 @@ import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
 import Vacations from '#root/model/vacation/vacations';
-import { addTotalPageFields, getUserInfo, getCountInfo, getLocation, facet } from '#root/config/pipeline';
+import { addTotalPageFields, getUserInfo, getCountInfo, getLocation, facet, getResourcePath } from '#root/config/pipeline';
 import getDate from '#root/utils/getDate';
 import mongoose from 'mongoose';
 
@@ -30,7 +30,7 @@ const postController = {
         getUserInfo({ field: ['username', 'avatar'] }),
         getCountInfo({ field: ['like', 'comment'] }),
         getLocation({ localField: 'locationId' }),
-
+        getResourcePath({ localField: '_id', as: 'resource', returnAsArray: true }),
         //Set up new array with total field is length of array and list field is array without __v field
         facet(
           Object.assign(timeline ? {} : { meta: ['total', 'page', 'pages'] }, {
@@ -115,6 +115,7 @@ const postController = {
         //Get username, location by looking up to other model
         getUserInfo({ field: ['username', 'avatar'] }),
         getLocation({ localField: 'locationId' }),
+        getResourcePath({ localField: '_id', as: 'resource', returnAsArray: true }),
 
         //Remove unnecessary fields
         { $project: { vacationId: 0, userId: 0, locationId: 0, __v: 0 } }
