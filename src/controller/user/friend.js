@@ -80,14 +80,15 @@ const friendsController = {
   getResquestFriendList: asyncWrapper(async (req, res) => {
     const userId = req.userInfo._id;
     const foundUser = await Users.findById(userId);
+    console.log(userId);
     // Tìm các yêu cầu kết bạn đối với người dùng hiện tại
     const friendRequests = await Friends.find({ userId2: userId, status: 'pending' })
       .populate('userId1', 'avatar firstname lastname dateOfBirth')
       .populate('userId2', 'avatar firstname lastname dateOfBirth')
       .exec();
-    const filteredfriendRequests = friendRequests.map(friend => {
-      if (friend.userId1._id.toString() === foundUser._id.toString()) {
-        return friend.userId2;
+    const filteredFriendRequests = friendRequests.map(friend => {
+      if (friend.userId2._id.toString() === foundUser._id.toString()) {
+        return friend.userId1;
       }
     });
 
@@ -106,16 +107,17 @@ const friendsController = {
     const startIndex = (page - 1) * itemOfPage;
     const endIndex = startIndex + itemOfPage;
 
-    const paginatedFriendRequests = friendRequests.slice(startIndex, endIndex);
+    const paginatedFriendRequests = filteredFriendRequests.slice(startIndex, endIndex);
     const friendRequestsCount = friendRequests.length;
 
     return res.status(200).json({
-      message: 'Friend list retrieved',
+      message: 'Friend Request list retrieved',
+      meta: {
+        page: page,
+        pages: totalPages,
+        total: friendRequestsCount,
+      },
       data: paginatedFriendRequests,
-
-      currentPage: page,
-      totalPages: totalPages,
-      friendListcount: friendRequestsCount,
     });
   }),
 
@@ -167,11 +169,12 @@ const friendsController = {
 
     return res.status(200).json({
       message: 'Friend list retrieved',
+      meta: {
+        page: page,
+        pages: totalPages,
+        total: friendListcount,
+      },
       data: paginatedFriendList,
-
-      currentPage: page,
-      totalPages: totalPages,
-      friendListcount: friendListcount,
     });
   }),
   removeFriend: asyncWrapper(async (req, res) => {
@@ -195,7 +198,7 @@ const friendsController = {
     // Xóa bạn bè khỏi danh sách bạn bè của người dùng
     await Friends.findByIdAndDelete(existingFriendship._id);
 
-    return res.status(200).json({ success: true, message: 'Friend removed' });
+    return res.status(200).json({ message: 'Friend removed' });
   }),
 };
 
