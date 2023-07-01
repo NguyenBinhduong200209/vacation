@@ -1,15 +1,15 @@
 import express from 'express';
 import postController from '#root/controller/vacation/post';
 import verifyJWT from '#root/middleware/verifyJWT';
-import checkAuthor from '#root/middleware/checkAuthor';
-import checkPermission from '#root/middleware/checkPermission';
+import checkAuthor from '#root/middleware/checkForbidden/checkAuthor';
+import checkPermission from '#root/middleware/checkForbidden/checkPermission';
 
 const router = express.Router();
 
 router.use(verifyJWT);
-router.route('/').get(checkPermission(), postController.getManyByVacation).post(postController.addNew);
+router.route('/vacation/:id').get(checkPermission('vacation'), postController.getManyByVacation).post(postController.addNew);
+router.route('/location/:id').get(postController.getManyByLocation);
 
-router.route('/location').get(postController.getManyByLocation);
 router
   .route('/:id')
   .get(checkPermission('post'), postController.getOne)

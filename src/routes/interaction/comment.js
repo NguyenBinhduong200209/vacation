@@ -2,8 +2,8 @@ import express from 'express';
 import commentController from '#root/controller/interaction/comments';
 import notiController from '#root/controller/interaction/notification';
 import verifyJWT from '#root/middleware/verifyJWT';
-import checkAuthor from '#root/middleware/checkAuthor';
-import checkPermission from '#root/middleware/checkPermission';
+import checkAuthor from '#root/middleware/checkForbidden/checkAuthor';
+import checkPermission from '#root/middleware/checkForbidden/checkPermission';
 const router = express.Router();
 
 router.use(verifyJWT);

@@ -1,6 +1,5 @@
 import multer from 'multer';
 import _throw from '#root/utils/_throw';
-import asyncWrapper from '#root/middleware/asyncWrapper';
 
 const storage = multer.memoryStorage();
 
@@ -34,8 +33,8 @@ const upload = multer({
 });
 
 const getFileUpload = {
-  single: field => upload.single(field),
-  multiple: () => upload.array('post'),
+  single: field => upload.single(field || 'file'),
+  multiple: () => upload.array('files'),
 };
 
 export default getFileUpload;

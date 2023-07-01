@@ -4,9 +4,9 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import fs from 'fs';
 import { resourcePath } from '#root/config/path';
 import path from 'path';
-import getFileUpload from '#root/middleware/getFileUpload';
+import getFileUpload from '#root/middleware/uploadFiles/getFileUpload';
+import upload from '#root/middleware/uploadFiles/upload';
 import Resources from '#root/model/resource';
-import upload from '#root/middleware/upload';
 import Vacations from '#root/model/vacation/vacations';
 
 const monitor = asyncWrapper(async (req, res) => {

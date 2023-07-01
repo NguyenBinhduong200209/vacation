@@ -3,44 +3,59 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
 import Vacations from '#root/model/vacation/vacations';
 import { addTotalPageFields, getUserInfo, getCountInfo, getLocation, facet } from '#root/config/pipeline';
+import getDate from '#root/utils/getDate';
 import mongoose from 'mongoose';
 
 const postController = {
   getManyByVacation: asyncWrapper(async (req, res) => {
-    const { id, page, prevPage, timeline } = req.query;
+    const { id } = req.params;
+    const { page, timeline } = req.query;
 
     //Get other data
     const result = await Posts.aggregate(
       [].concat(
         //Get all posts belong to vacationId
-        { $match: { vacationId: new mongoose.Types.ObjectId(id) } },
+        {
+          $match: Object.assign(
+            { vacationId: new mongoose.Types.ObjectId(id) },
+            timeline ? { createdAt: { $gte: new Date(timeline) } } : {}
+          ),
+        },
+
         //Sort in order to push the newest updated post to top
         { $sort: { lastUpdateAt: -1, createdAt: -1 } },
 
         //Add 3 new fields (total, page, pages) and then Get username, location by looking up to other model
-        addTotalPageFields({ page }),
+        timeline ? [{ $skip: (page || 1) * process.env.ITEM_OF_PAGE }] : addTotalPageFields({ page }),
         getUserInfo({ field: ['username', 'avatar'] }),
         getCountInfo({ field: ['like', 'comment'] }),
         getLocation({ localField: 'locationId' }),
 
         //Set up new array with total field is length of array and list field is array without __v field
-        facet({
-          meta: ['total', 'page', 'pages'],
-          data: ['content', 'lastUpdateAt', 'resource', 'location', 'createdAt', 'authorInfo', 'likes', 'comments'],
-        })
+        facet(
+          Object.assign(timeline ? {} : { meta: ['total', 'page', 'pages'] }, {
+            data: ['content', 'lastUpdateAt', 'resource', 'location', 'createdAt', 'authorInfo', 'likes', 'comments'],
+          })
+        )
       )
     );
 
-    //Get timeline
-    if (result.length > 0) {
-      const timeline = await Posts.find({ vacationId: id }).distinct('createdAt');
-      result[0].meta.timeline = timeline;
+    // Get timeline
+    if (result.length === 0) return res.sendStatus(204);
+    else {
+      if (!timeline) {
+        const timeline = (await Posts.find({ vacationId: id }).sort({ createdAt: -1 }))
+          .map(value => getDate(value.createdAt))
+          .filter((value, index, array) => array.indexOf(value) === index);
+        result[0].meta.timeline = timeline;
+      }
       return res.status(200).json(result[0]);
-    } else return res.sendStatus(204);
+    }
   }),
 
   getManyByLocation: asyncWrapper(async (req, res) => {
-    const { id, page } = req.query,
+    const { id } = req.params,
+      { page } = req.query,
       userId = req.userInfo._id;
 
     //Get other data
