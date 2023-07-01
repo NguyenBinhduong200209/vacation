@@ -1,28 +1,7 @@
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { resourcePath } from '#root/config/path';
 import _throw from '#root/utils/_throw';
 
-const storage = multer.memoryStorage({
-  destination: (req, file, callback) => {
-    //Create random unique Suffix
-    const maxLength = 6;
-    const ranNumber = Math.round(Math.random() * (Math.pow(10, maxLength) - 1));
-    const uniqueSuffix = Date.now() + '-' + String(ranNumber).padStart(6, '0');
-
-    //Create folder if it does not exist
-    const newFolder = path.join(resourcePath, uniqueSuffix);
-    !fs.existsSync(newFolder) && fs.mkdirSync(newFolder);
-
-    //Config new destination
-    callback(null, newFolder);
-  },
-
-  filename: (req, file, callback) => {
-    callback(null, file.originalname);
-  },
-});
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -53,4 +32,9 @@ const upload = multer({
   },
 });
 
-export default upload;
+const getFileUpload = {
+  single: field => upload.single(field || 'file'),
+  multiple: () => upload.array('files'),
+};
+
+export default getFileUpload;

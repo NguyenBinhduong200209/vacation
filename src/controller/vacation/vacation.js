@@ -2,7 +2,7 @@ import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Vacations from '#root/model/vacation/vacations';
 import Posts from '#root/model/vacation/posts';
-import { addTotalPageFields, getUserInfo, getCountInfo, facet } from '#root/config/pipeline';
+import { addTotalPageFields, getUserInfo, getCountInfo, facet, checkFriend, getResourcePath } from '#root/config/pipeline';
 import mongoose from 'mongoose';
 import Likes from '#root/model/interaction/likes';
 import Comments from '#root/model/interaction/comments';
@@ -11,16 +11,11 @@ import viewController from '#root/controller/interaction/views';
 
 const vacationController = {
   getMany: asyncWrapper(async (req, res) => {
-    const { type, page } = req.query;
-    const userId = req.userInfo._id;
+    const { page } = req.query,
+      userId = req.userInfo._id;
 
-    //Throw an error if type query is not newFeed or userProfile
-    !['newFeed', 'userProfile'].includes(type) &&
-      _throw({
-        code: 400,
-        errors: [{ field: 'type', message: 'type query can only be newFeed or userProfile' }],
-        message: 'invalid type query',
-      });
+    //Set type default value is newFeed
+    const type = ['newFeed', 'userProfile'].includes(req.query.type) ? req.query.type : 'newFeed';
 
     const result = await Vacations.aggregate(
       [].concat(
@@ -35,26 +30,8 @@ const vacationController = {
           },
         },
 
-        {
-          $lookup: {
-            from: 'friends',
-            let: { userId: { $toObjectId: userId }, authorId: { $toObjectId: '$userId' } },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $or: [
-                      { $and: [{ $eq: ['$userId1', '$$userId'] }, { $eq: ['$userId2', '$$authorId'] }] },
-                      { $and: [{ $eq: ['$userId2', '$$userId'] }, { $eq: ['$userId1', '$$authorId'] }] },
-                    ],
-                  },
-                },
-              },
-            ],
-            as: 'isFriend',
-          },
-        },
-        { $addFields: { isFriend: { $toBool: { $size: '$isFriend' } } } },
+        //Check isFriend to sort
+        checkFriend({ userId }),
 
         //Sort in order to push the newest updated vacation to top
         { $sort: { isFriend: -1, lastUpdateAt: -1, createdAt: -1 } },
@@ -73,7 +50,14 @@ const vacationController = {
           },
         },
 
+        //Get view Count
         getCountInfo({ field: ['view'] }),
+
+        //Get cover photo of vacation
+        getResourcePath({ localField: '_id', as: 'cover' }),
+
+        //Get username of author by lookup to users model by userId
+        type === 'newFeed' ? getUserInfo({ field: ['username', 'avatar'] }) : [],
 
         //Replace field post with total posts, add new field likes and comments with value is total
         {
@@ -81,11 +65,9 @@ const vacationController = {
             likes: { $sum: '$posts.likes' },
             comments: { $sum: '$posts.comments' },
             posts: { $size: '$posts' },
+            'authorInfo.isFriend': '$isFriend',
           },
         },
-
-        //Get username of author by lookup to users model by userId
-        type === 'newFeed' ? getUserInfo({ field: ['username', 'avatar'] }) : [],
 
         //Set up new array with total field is length of array and list field is array without __v field
         facet({
@@ -102,7 +84,6 @@ const vacationController = {
             'startingTime',
             'endingTime',
             'lastUpdateAt',
-            'isFriend',
           ],
         })
       )

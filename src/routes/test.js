@@ -4,10 +4,10 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import fs from 'fs';
 import { resourcePath } from '#root/config/path';
 import path from 'path';
-import upload from '#root/middleware/upload';
-import Users from '#root/model/user/users';
+import getFileUpload from '#root/middleware/uploadFiles/getFileUpload';
+import upload from '#root/middleware/uploadFiles/upload';
 import Resources from '#root/model/resource';
-import { bucket } from '#root/services/firebase';
+import Vacations from '#root/model/vacation/vacations';
 
 const monitor = asyncWrapper(async (req, res) => {
   const { id } = req.query;
@@ -18,31 +18,50 @@ const monitor = asyncWrapper(async (req, res) => {
 
 const test = asyncWrapper(async (req, res) => {
   const { quantity } = req.query;
-  const { destination, originalname, mimetype, size } = req.file;
+  const { originalname, mimetype, size } = req.file;
+  const url = req.url;
 
-  //Config path of file uploaded to server
-  const newPath = destination.split(`/`).slice(-1)[0] + '/' + originalname;
-  console.log(newPath);
+  const foundVacations = await Vacations.aggregate([
+    {
+      $lookup: {
+        from: 'resources',
+        let: { vacationId: { $toObjectId: '$_id' } },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $in: ['$$vacationId', '$ref._id'] },
+              ref: { $elemMatch: { model: 'vacations', field: 'cover' } },
+            },
+          },
+          { $sort: { createdAt: -1 } },
+        ],
+        as: 'cover',
+      },
+    },
+    { $match: { cover: [] } },
+  ]);
 
-  const foundUsers = await Users.find({});
+  for (let index = 0; index < foundVacations.length; index++) {
+    const foundVacation = foundVacations[index];
 
-  for (let index = 0; index < quantity; index++) {
-    const randomNumber = Math.ceil(Math.random() * (foundUsers.length - 1));
-    const foundUser = foundUsers[randomNumber];
+    const foundCover = await Resources.findOne({
+      userId: foundVacation.userId,
+      'ref.field': 'cover',
+      _id: foundVacation._id,
+    });
 
-    const foundAvatar = await Resources.findOne({ userId: foundUser._id });
     //Create new Resource document
-    !foundAvatar &&
+    !foundCover &&
       (await Resources.create({
         name: originalname,
         type: mimetype,
         size: size,
-        path: newPath,
-        userId: foundUser._id,
-        ref: [{ model: 'users', field: 'avatar', _id: foundUser._id }],
+        path: url,
+        userId: foundVacation.userId,
+        ref: [{ model: 'vacations', field: 'cover', _id: foundVacation._id }],
       }));
   }
-  return res.status(200).json('Done');
+  return res.status(200).json('done');
 });
 
 const clean = asyncWrapper(async (req, res) => {
@@ -50,32 +69,6 @@ const clean = asyncWrapper(async (req, res) => {
   return res.status(200).json(deleteAll);
 });
 
-router
-  .route('/')
-  .get(monitor)
-  .post(upload.single('avatar'), (req, res) => {
-    if (!req.file) {
-      res.status(400).send('Error: No files found');
-    }
-
-    const blob = bucket.file(req.file.originalname);
-
-    const blobWriter = blob.createWriteStream({
-      metadata: {
-        contentType: req.file.mimetype,
-      },
-    });
-
-    blobWriter.on('error', err => {
-      console.log(err);
-    });
-
-    blobWriter.on('finish', () => {
-      res.status(200).send('File uploaded.');
-    });
-
-    blobWriter.end(req.file.buffer);
-  })
-  .delete(clean);
+// router.route('/').get(monitor).post(getFileUpload('cover'), upload, test).delete(clean);
 
 export default router;

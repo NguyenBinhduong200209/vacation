@@ -3,50 +3,87 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
 import Vacations from '#root/model/vacation/vacations';
 import { addTotalPageFields, getUserInfo, getCountInfo, getLocation, facet } from '#root/config/pipeline';
+import getDate from '#root/utils/getDate';
 import mongoose from 'mongoose';
 
 const postController = {
-  getMany: asyncWrapper(async (req, res) => {
-    const { type, id, page } = req.query,
-      isVacation = type === 'vacation',
-      userId = req.userInfo._id;
-
-    //Throw an error if type is not vacation and location
-    !['vacation', 'location'].includes(type) &&
-      _throw({
-        code: 400,
-        errors: [{ field: 'type', message: 'type can only be vacation or location' }],
-        message: 'invalid type',
-      });
+  getManyByVacation: asyncWrapper(async (req, res) => {
+    const { id } = req.params;
+    const { page, timeline } = req.query;
 
     //Get other data
     const result = await Posts.aggregate(
       [].concat(
         //Get all posts belong to vacationId
-        isVacation
-          ? { $match: { vacationId: new mongoose.Types.ObjectId(id) } }
-          : [
-              {
-                $lookup: {
-                  from: 'vacations',
-                  localField: 'vacationId',
-                  foreignField: '_id',
-                  pipeline: [{ $project: { shareStatus: 1, shareList: 1, userId: 1, _id: 0 } }],
-                  as: 'vacation',
-                },
-              },
-              { $unwind: '$vacation' },
-              {
-                $match: {
-                  locationId: new mongoose.Types.ObjectId(id),
-                  $or: [
-                    { 'vacation.shareStatus': 'public' },
-                    { 'vacation.shareStatus': 'protected', 'vacation.shareList': { $in: [userId] } },
-                    { 'vacation.shareStatus': 'onlyme', 'vacation.userId': userId },
-                  ],
-                },
-              },
-            ],
+        {
+          $match: Object.assign(
+            { vacationId: new mongoose.Types.ObjectId(id) },
+            timeline ? { createdAt: { $gte: new Date(timeline) } } : {}
+          ),
+        },
+
+        //Sort in order to push the newest updated post to top
+        { $sort: { lastUpdateAt: -1, createdAt: -1 } },
+
+        //Add 3 new fields (total, page, pages) and then Get username, location by looking up to other model
+        timeline ? [{ $skip: (page || 1) * process.env.ITEM_OF_PAGE }] : addTotalPageFields({ page }),
+        getUserInfo({ field: ['username', 'avatar'] }),
+        getCountInfo({ field: ['like', 'comment'] }),
+        getLocation({ localField: 'locationId' }),
+
+        //Set up new array with total field is length of array and list field is array without __v field
+        facet(
+          Object.assign(timeline ? {} : { meta: ['total', 'page', 'pages'] }, {
+            data: ['content', 'lastUpdateAt', 'resource', 'location', 'createdAt', 'authorInfo', 'likes', 'comments'],
+          })
+        )
+      )
+    );
+
+    // Get timeline
+    if (result.length === 0) return res.sendStatus(204);
+    else {
+      if (!timeline) {
+        const timeline = (await Posts.find({ vacationId: id }).sort({ createdAt: -1 }))
+          .map(value => getDate(value.createdAt))
+          .filter((value, index, array) => array.indexOf(value) === index);
+        result[0].meta.timeline = timeline;
+      }
+      return res.status(200).json(result[0]);
+    }
+  }),
+
+  getManyByLocation: asyncWrapper(async (req, res) => {
+    const { id } = req.params,
+      { page } = req.query,
+      userId = req.userInfo._id;
+
+    //Get other data
+    const result = await Posts.aggregate(
+      [].concat(
+        //Get all posts belong to vacationId
+        [
+          {
+            $lookup: {
+              from: 'vacations',
+              localField: 'vacationId',
+              foreignField: '_id',
+              pipeline: [{ $project: { shareStatus: 1, shareList: 1, userId: 1, _id: 0 } }],
+              as: 'vacation',
+            },
+          },
+          { $unwind: '$vacation' },
+          {
+            $match: {
+              locationId: new mongoose.Types.ObjectId(id),
+              $or: [
+                { 'vacation.shareStatus': 'public' },
+                { 'vacation.shareStatus': 'protected', 'vacation.shareList': { $in: [userId] } },
+                { 'vacation.shareStatus': 'onlyme', 'vacation.userId': userId },
+              ],
+            },
+          },
+        ],
 
         //Sort in order to push the newest updated post to top
         { $sort: { lastUpdateAt: -1, createdAt: -1 } },
@@ -55,7 +92,6 @@ const postController = {
         addTotalPageFields({ page }),
         getUserInfo({ field: ['username', 'avatar'] }),
         getCountInfo({ field: ['like', 'comment'] }),
-        isVacation ? getLocation({ localField: 'locationId' }) : [],
 
         //Set up new array with total field is length of array and list field is array without __v field
         facet({
@@ -64,12 +100,6 @@ const postController = {
         })
       )
     );
-
-    //Get timeline
-    if (isVacation && result.length > 0) {
-      const timeline = await Posts.find({ vacationId: id }).distinct('createdAt');
-      result[0].meta.timeline = timeline;
-    }
 
     return result.length === 0 ? res.sendStatus(204) : res.status(200).json(result[0]);
   }),

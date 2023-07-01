@@ -1,7 +1,7 @@
 import express from 'express';
 import notiController from '#root/controller/interaction/notification';
 import verifyJWT from '#root/middleware/verifyJWT';
-import checkAuthor from '#root/middleware/checkAuthor';
+import checkAuthor from '#root/middleware/checkForbidden/checkAuthor';
 
 const router = express.Router();
 
