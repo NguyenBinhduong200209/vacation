@@ -18,9 +18,9 @@ const upload = multer({
     //field name is post only support image and video contentType
     else if (file.fieldname === 'post') {
       const contentType = ['image/png', 'image/jpg', 'image/jpeg', 'video/mp4', 'video/mov'];
-      !contentType.includes(file.mimetype)
+      contentType.includes(file.mimetype)
         ? callback(null, true)
-        : callback({ code: 400, message: 'server does not support this type of file' });
+        : callback({ code: 400, message: 'server does not support this type of files' });
     }
 
     //Throw an error due to invalid fieldname support
@@ -33,8 +33,8 @@ const upload = multer({
 });
 
 const getFileUpload = {
-  single: field => upload.single(field || 'file'),
-  multiple: () => upload.array('files'),
+  single: field => upload.single(field),
+  multiple: () => upload.array('post'),
 };
 
 export default getFileUpload;
