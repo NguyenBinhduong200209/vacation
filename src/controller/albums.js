@@ -25,7 +25,10 @@ const albumsController = {
       case 'protected':
         // Get friend list of the user
         const friendList = await Friends.find({
-          $or: [{ userId1: foundUser._id }, { userId2: foundUser._id }],
+          $or: [
+            { userId1: foundUser._id, status: 'accepted' },
+            { userId2: foundUser._id, status: 'accepted' },
+          ],
         })
           .populate('userId1', 'firstname lastname')
           .populate('userId2', 'firstname lastname')
@@ -122,7 +125,10 @@ const albumsController = {
       case 'protected':
         // Get friend list of the user
         const friendList = await Friends.find({
-          $or: [{ userId1: foundUser._id }, { userId2: foundUser._id }],
+          $or: [
+            { userId1: foundUser._id, status: 'accepted' },
+            { userId2: foundUser._id, status: 'accepted' },
+          ],
         })
           .populate('userId1', 'firstname lastname')
           .populate('userId2', 'firstname lastname')
@@ -222,32 +228,43 @@ const albumsController = {
       message: 'Albums deleted',
     });
   }),
-  getablumsuser: asyncWrapper(async (req, res) => {
+  getAlbumsUser: asyncWrapper(async (req, res) => {
     // Get the user ID from the request
     const userId = req.userInfo._id;
-    const userIds = req.params;
-
+    const userIds = req.params.id;
+    const page = req.query.page ? parseInt(req.query.page) : 1; // Current page from the request
+    const itemPerPage = 10; // Number of items per page
+    const skip = (page - 1) * itemPerPage;
     // Retrieve the albums associated with the user ID
     if (userIds && userId) {
-      const albums = await Albums.find(userIds);
+      const albums = await Albums.find({ userId: userIds }).skip(skip).limit(itemPerPage);
+
       const albumList = albums.map(album => album.toObject()); // Convert each album to a plain JavaScript object
       // Count the total number of albums
-      const totalAlbums = albums.length;
+      const totalAlbums = await Albums.countDocuments({ userId: userIds });
       // Return the list of albums
       res.json({
         message: 'get infor albums sucsses',
-        totalAlbums: totalAlbums,
+        meta: {
+          totalAlbums: totalAlbums,
+          Page: page,
+          Pages: Math.ceil(totalAlbums / itemPerPage),
+        },
         data: albumList,
       });
     } else if (userId) {
-      const albums = await Albums.find({ userId });
+      const albums = await Albums.find({ userId }).skip(skip).limit(itemPerPage);
       const albumList = albums.map(album => album.toObject()); // Convert each album to a plain JavaScript object
       // Count the total number of albums
-      const totalAlbums = albums.length;
+      const totalAlbums = await Albums.countDocuments({ userId });
       // Return the list of albums
       res.json({
         message: 'get infor albums sucsses',
-        totalAlbums: totalAlbums,
+        meta: {
+          totalAlbums: totalAlbums,
+          Page: page,
+          Pages: Math.ceil(totalAlbums / itemPerPage),
+        },
         data: albumList,
       });
     } else _throw({ code: 400, message: 'UserID not provided' });

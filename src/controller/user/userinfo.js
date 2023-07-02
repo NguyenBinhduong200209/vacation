@@ -10,7 +10,7 @@ const usersinforController = {
   getprofile: asyncWrapper(async (req, res) => {
     const username = req.userInfo.username;
     const value = { username };
-    const { ids } = req.body;
+    const { ids } = req.params;
 
     if (username && ids) {
       if (!Array.isArray(ids) || ids.length === 0) {
