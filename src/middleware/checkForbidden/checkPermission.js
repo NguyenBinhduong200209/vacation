@@ -7,7 +7,7 @@ import Posts from '#root/model/vacation/posts';
 function checkPermission(type) {
   return asyncWrapper(async (req, res, next) => {
     const crUserId = req.userInfo._id;
-    const id = req.params?.id || req.query?.id;
+    const id = req.params?.id || req.query?.id || req.body?.vacationId;
     const modelType = type || req.query?.type;
 
     if (['vacation', 'album', 'post'].includes(modelType)) {

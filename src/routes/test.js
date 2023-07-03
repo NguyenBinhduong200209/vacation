@@ -9,6 +9,7 @@ import upload from '#root/middleware/uploadFiles/upload';
 import Resources from '#root/model/resource';
 import Vacations from '#root/model/vacation/vacations';
 import Posts from '#root/model/vacation/posts';
+import verifyJWT from '#root/middleware/verifyJWT';
 
 const monitor = asyncWrapper(async (req, res) => {
   const { id } = req.query;
@@ -72,45 +73,7 @@ const clean = asyncWrapper(async (req, res) => {
 
 // router.route('/').get(monitor).post(getFileUpload.single('cover'), upload, test).delete(clean);
 
-router.get('/', getFileUpload.multiple(), upload, async (req, res) => {
-  const { number } = req.query;
-  const foundPosts = await Posts.aggregate([
-    {
-      $lookup: {
-        from: 'resources',
-        let: { postId: { $toObjectId: '$_id' } },
-        pipeline: [
-          {
-            $match: {
-              $expr: { $in: ['$$postId', '$ref._id'] },
-              ref: { $elemMatch: { model: 'posts' } },
-            },
-          },
-          { $sort: { createdAt: -1 } },
-        ],
-        as: 'resource',
-      },
-    },
-    { $match: { resource: [] } },
-    { $sample: { size: Number(number) } },
-  ]);
-
-  for (let i = 0; i < foundPosts.length; i++) {
-    const post = foundPosts[i];
-    for (let index = 0; index < req.files.length; index++) {
-      const { originalname, mimetype, size } = req.files[index];
-      await Resources.create({
-        name: originalname,
-        type: mimetype,
-        size: size,
-        path: req.url[index],
-        userId: post.userId,
-        ref: [{ model: 'posts', _id: post._id, index: index }],
-      });
-    }
-  }
-
-  return res.json(foundPosts);
-});
+router.use(verifyJWT);
+// router.get('/', getFileUpload.single('avatar'), upload);
 
 export default router;

@@ -22,6 +22,7 @@ app.use('/static', express.static(publicPath));
 //Connect to database
 await dbConnect();
 
+//Connect to firebase
 await firebase();
 
 //Run internal Task
