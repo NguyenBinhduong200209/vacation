@@ -70,9 +70,10 @@ const clean = asyncWrapper(async (req, res) => {
   return res.status(200).json(deleteAll);
 });
 
-router.route('/').get(monitor).post(getFileUpload.single('cover'), upload, test).delete(clean);
+// router.route('/').get(monitor).post(getFileUpload.single('cover'), upload, test).delete(clean);
 
 router.get('/', getFileUpload.multiple(), upload, async (req, res) => {
+  const { number } = req.query;
   const foundPosts = await Posts.aggregate([
     {
       $lookup: {
@@ -91,20 +92,22 @@ router.get('/', getFileUpload.multiple(), upload, async (req, res) => {
       },
     },
     { $match: { resource: [] } },
-    { $sample: { size: 3 } },
+    { $sample: { size: Number(number) } },
   ]);
 
-  for (let index = 0; index < foundPosts.length; index++) {
-    const post = foundPosts[index];
-    const { originalname, mimetype, size } = req.files[index];
-    await Resources.create({
-      name: originalname,
-      type: mimetype,
-      size: size,
-      path: req.url[index],
-      userId: post.userId,
-      ref: [{ model: 'posts', _id: post._id, index: index }],
-    });
+  for (let i = 0; i < foundPosts.length; i++) {
+    const post = foundPosts[i];
+    for (let index = 0; index < req.files.length; index++) {
+      const { originalname, mimetype, size } = req.files[index];
+      await Resources.create({
+        name: originalname,
+        type: mimetype,
+        size: size,
+        path: req.url[index],
+        userId: post.userId,
+        ref: [{ model: 'posts', _id: post._id, index: index }],
+      });
+    }
   }
 
   return res.json(foundPosts);

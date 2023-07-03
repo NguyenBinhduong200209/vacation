@@ -4,6 +4,8 @@ import _throw from '#root/utils/_throw';
 import Users from '#root/model/user/users';
 import Vacations from '#root/model/vacation/vacations';
 import Locations from '#root/model/vacation/locations';
+import Likes from '#root/model/interaction/likes';
+import Comments from '#root/model/interaction/comments';
 
 const postSchema = new mongoose.Schema(
   {
@@ -88,5 +90,26 @@ const postSchema = new mongoose.Schema(
 );
 
 const Posts = mongoose.model('Posts', postSchema);
+
+Posts.watch().on('change', async function (data) {
+  switch (data.operationType) {
+    case 'insert':
+      console.log('insert new post');
+      break;
+
+    case 'delete':
+      //Get id of post deleted
+      const { _id } = data.documentKey;
+
+      //Use postId to delete like and comment within post deleted
+      const deleteLike = Likes.deleteMany({ modelType: 'post', modelId: _id });
+      const deleteComment = Comments.deleteMany({ modelType: 'post', modelId: _id });
+      await Promise.all([deleteLike, deleteComment]);
+      break;
+
+    default:
+      break;
+  }
+});
 
 export default Posts;
