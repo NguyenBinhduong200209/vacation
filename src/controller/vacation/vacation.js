@@ -1,12 +1,8 @@
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Vacations from '#root/model/vacation/vacations';
-import Posts from '#root/model/vacation/posts';
 import { addTotalPageFields, getUserInfo, getCountInfo, facet, checkFriend, getResourcePath } from '#root/config/pipeline';
 import mongoose from 'mongoose';
-import Likes from '#root/model/interaction/likes';
-import Comments from '#root/model/interaction/comments';
-import Views from '#root/model/interaction/views';
 import viewController from '#root/controller/interaction/views';
 
 const vacationController = {
@@ -93,11 +89,7 @@ const vacationController = {
   }),
 
   getOne: asyncWrapper(async (req, res) => {
-    const { id } = req.params,
-      userId = req.userInfo._id;
-
-    // Increase view of post by 1
-    await viewController.update({ modelType: 'vacation', modelId: id, userId: userId });
+    const { id } = req.params;
 
     const result = await Vacations.aggregate(
       [].concat(
@@ -111,6 +103,9 @@ const vacationController = {
         getCountInfo({ field: ['view', 'memberList'] })
       )
     );
+
+    // Increase view of post by 1
+    await viewController.update({ modelType: 'vacation', modelId: id, userId: req.userInfo._id });
 
     //Send to front
     return res.status(200).json({ data: result[0], message: 'get detail successfully' });
@@ -206,42 +201,10 @@ const vacationController = {
   delete: asyncWrapper(async (req, res) => {
     const { id } = req.params;
 
-    //Find Posts in Vacation
-    const foundPosts = await Posts.find({ vacationId: id });
-
-    //Define promises for deleting post
-    const deletePostPromise = foundPosts.reduce((arr, post) => {
-      const postId = post._id;
-      //Define deletePost method
-      const deletePost = Posts.findByIdAndDelete(postId);
-
-      //Define deleteLikes method
-      const deleteLikes = Likes.deleteMany({
-        $or: [
-          { modelType: 'post', modelId: postId },
-          { modelType: 'vacation', modelId: id },
-        ],
-      });
-
-      //Define deleteComments method
-      const deleteComments = Comments.deleteMany({
-        $or: [
-          { modelType: 'post', modelId: postId },
-          { modelType: 'vacation', modelId: id },
-        ],
-      });
-
-      //Define deleteViews method
-      const deleteViews = Views.deleteMany({ modelType: 'vacation', modelId: id });
-      arr.push(deletePost, deleteLikes, deleteComments, deleteViews);
-      return arr;
-    }, []);
-
-    //Delete Vacation and posts
-    await Promise.all(deletePostPromise.concat(Vacations.findByIdAndDelete(id)));
+    const deleteVacation = await Vacations.findByIdAndDelete(id);
 
     //Send to front
-    return res.status(200).json({ message: 'delete successfully' });
+    return res.status(200).json({ data: deleteVacation, message: 'delete successfully' });
   }),
 };
 

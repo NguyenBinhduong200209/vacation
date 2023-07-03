@@ -2,7 +2,15 @@ import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
 import Vacations from '#root/model/vacation/vacations';
-import { addTotalPageFields, getUserInfo, getCountInfo, getLocation, facet, getResourcePath } from '#root/config/pipeline';
+import {
+  addTotalPageFields,
+  getUserInfo,
+  getCountInfo,
+  getLocation,
+  facet,
+  getResourcePath,
+  isLiked,
+} from '#root/config/pipeline';
 import getDate from '#root/utils/getDate';
 import mongoose from 'mongoose';
 
@@ -31,10 +39,22 @@ const postController = {
         getCountInfo({ field: ['like', 'comment'] }),
         getLocation({ localField: 'locationId' }),
         getResourcePath({ localField: '_id', as: 'resource', returnAsArray: true }),
+        isLiked({ userId: req.userInfo._id }),
+
         //Set up new array with total field is length of array and list field is array without __v field
         facet(
           Object.assign(timeline ? {} : { meta: ['total', 'page', 'pages'] }, {
-            data: ['content', 'lastUpdateAt', 'resource', 'location', 'createdAt', 'authorInfo', 'likes', 'comments'],
+            data: [
+              'content',
+              'lastUpdateAt',
+              'resource',
+              'location',
+              'createdAt',
+              'authorInfo',
+              'likes',
+              'comments',
+              'isLiked',
+            ],
           })
         )
       )
@@ -128,7 +148,9 @@ const postController = {
 
   addNew: asyncWrapper(async (req, res) => {
     //Get infor from req.body
-    const { vacationId, locationId, content, resource } = req.body;
+    const { vacationId, locationId, content } = req.body;
+
+    console.log(await Vacations.findById(vacationId));
 
     //Get userInfo from verifyJWT middleware
     const foundUser = req.userInfo;
@@ -139,7 +161,6 @@ const postController = {
       locationId,
       userId: foundUser._id,
       content,
-      resource,
       createdAt: new Date(),
     });
 
@@ -173,19 +194,10 @@ const postController = {
     const { id } = req.params;
 
     //Define deletePost method
-    const deletePost = Posts.findByIdAndDelete(id);
-
-    //Define deleteLikes method
-    const deleteLikes = Likes.deleteMany({ modelType: 'post', modelId: id });
-
-    //Define deleteComments method
-    const deleteComments = Comments.deleteMany({ modelType: 'post', modelId: id });
-
-    //Run all methods at once
-    await Promise.all([deletePost, deleteLikes, deleteComments]);
+    const deletePost = await Posts.findByIdAndDelete(id);
 
     //Send to front
-    return res.status(200).json({ message: 'delete post successfully' });
+    return res.status(200).json({ data: deletePost, message: 'delete post successfully' });
   }),
 };
 

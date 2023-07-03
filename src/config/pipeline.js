@@ -78,6 +78,22 @@ export function getCountInfo({ field }) {
   }, []);
 }
 
+export function isLiked({ userId }) {
+  return [
+    {
+      $lookup: {
+        from: 'likes',
+        localField: '_id',
+        foreignField: 'modelId',
+        let: { id: { $toObjectId: '$_id' } },
+        pipeline: [{ $match: { $expr: { modelId: '$$id' }, userId: userId } }],
+        as: 'isLiked',
+      },
+    },
+    { $addFields: { isLiked: { $toBool: { $size: '$isLiked' } } } },
+  ];
+}
+
 export function checkFriend({ userId }) {
   return [
     {

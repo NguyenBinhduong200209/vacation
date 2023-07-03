@@ -20,9 +20,9 @@ const locationController = {
     switch (type) {
       //If type is level, meaning user want to get city List, districtList or
       case 'level':
-        const { parentId } = req.query;
         let list = [];
         switch (number) {
+          //If user want to get Naionality list
           case 4:
             list = await Locations.aggregate([
               { $match: { level: 4 } },
@@ -31,6 +31,7 @@ const locationController = {
             ]);
             break;
 
+          //If user want to get city list
           case 3:
             list = await Locations.aggregate([
               { $match: { level: 3 } },
@@ -39,7 +40,9 @@ const locationController = {
             ]);
             break;
 
+          //If user want to get district list
           case 2:
+            const { parentId } = req.query;
             //Throw an error if there is no parentId
             !parentId &&
               _throw({
@@ -56,7 +59,7 @@ const locationController = {
             ]);
             break;
 
-          //Throw an error if type is level number greater than 3 or lower than 2
+          //Throw an error if type is level number greater than 4 or lower than 2
           default:
             _throw({
               code: 400,
@@ -107,6 +110,8 @@ const locationController = {
           //Only firstN elements in array based on params
           { $limit: number },
         ]);
+
+        //Send to front
         return res
           .status(200)
           .json({ meta: { total: result.length }, data: result, message: 'get trending list successfully' });

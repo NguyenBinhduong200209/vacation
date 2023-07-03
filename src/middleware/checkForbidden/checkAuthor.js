@@ -5,7 +5,7 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 function checkAuthor(type) {
   return asyncWrapper(async (req, res, next) => {
     const userId = req.userInfo._id;
-    const { id } = req.params;
+    const id = req.params?.id || req.query?.id;
 
     const modelType = type || req.query.type;
 

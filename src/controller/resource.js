@@ -3,27 +3,26 @@ import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import { getStorage, ref, deleteObject } from 'firebase/storage';
 import mongoose from 'mongoose';
-import Vacations from '#root/model/vacation/vacations';
 import { addTotalPageFields, facet } from '#root/config/pipeline';
 
 const resourceController = {
   //Use this function to get list picture of avatar, cover of vacation or pictures of album
   getMany: asyncWrapper(async (req, res) => {
-    const { field, id, page } = req.query;
+    const { id, page, type } = req.query;
 
     let searchRef;
-    switch (field) {
-      case 'avatar':
+    switch (type) {
+      case 'user':
         const userId = req.userInfo._id;
-        searchRef = { model: 'users', field: field, _id: new mongoose.Types.ObjectId(userId) };
+        searchRef = { model: 'users', field: 'avatar', _id: new mongoose.Types.ObjectId(userId) };
         break;
 
-      case 'cover':
-        searchRef = { model: 'vacations', field: field, _id: new mongoose.Types.ObjectId(id) };
+      case 'vacation':
+        searchRef = { model: 'vacations', field: 'cover', _id: new mongoose.Types.ObjectId(id) };
         break;
 
       case 'album':
-        searchRef = { model: 'albums', field: field, _id: new mongoose.Types.ObjectId(id) };
+        searchRef = { model: 'albums', _id: new mongoose.Types.ObjectId(id) };
         break;
 
       default:
@@ -46,47 +45,31 @@ const resourceController = {
   //Only apply when upload avatar user or cover vacation
   addNewOne: asyncWrapper(async (req, res) => {
     const { fieldname, originalname, mimetype, size } = req.file;
+    const isAvatar = fieldname === 'avatar';
 
-    let newResource;
-    switch (fieldname) {
-      //If user wanna add new avatar
-      case 'avatar':
-        newResource = await Resources.create({
-          name: originalname,
-          type: mimetype,
-          size: size,
-          path: req.url[0],
-          userId: req.userInfo._id,
-          ref: [{ model: 'users', field: fieldname, _id: req.userInfo._id }],
-        });
-        break;
-
-      //If user wanna add new cover for vacation
-      case 'cover':
-        newResource = await Resources.create({
-          name: originalname,
-          type: mimetype,
-          size: size,
-          path: req.url,
-          userId: req.doc.userId,
-          ref: [{ model: 'vacations', field: fieldname, _id: req.doc._id }],
-        });
-        break;
-
-      default:
-        _throw({
-          code: 400,
-          errors: [{ field: 'fieldname', message: 'invalid' }],
-          message: 'fieldname can only be avatar or cover',
-        });
-        break;
-    }
+    const newResource = await Resources.create(
+      {
+        name: originalname,
+        type: mimetype,
+        size: size,
+        path: req.url[0],
+        userId: isAvatar ? req.userInfo._id : req.doc.userId,
+        ref: [
+          {
+            model: isAvatar ? 'users' : 'vacations',
+            field: fieldname,
+            _id: isAvatar ? req.userInfo._id : req.doc._id,
+          },
+        ],
+      },
+      { validateBeforeSave: false }
+    );
 
     //Send to front
     return res.status(201).json({ data: newResource, message: 'add successfully' });
   }),
 
-  delete: asyncWrapper(async (req, res) => {
+  deleteOne: asyncWrapper(async (req, res) => {
     const { id } = req.params;
 
     //Delete path in DB

@@ -70,18 +70,6 @@ function checkPermission(type) {
       req.doc = result;
     }
 
-    //Skip if type is location
-    else if (modelType === 'location') {
-    }
-
-    //Throw an error if type is invalid
-    else
-      _throw({
-        code: 400,
-        errors: [{ field: modelType, message: `invalid ${modelType}Id` }],
-        message: `invalid ${modelType}Id`,
-      });
-
     next();
   });
 }
