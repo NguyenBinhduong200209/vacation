@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import validator from 'validator';
 import _throw from '#root/utils/_throw';
 import Users from '#root/model/user/users';
+import { getStorage, ref, deleteObject } from 'firebase/storage';
 
 const resourceSchema = new mongoose.Schema(
   {
@@ -10,10 +11,6 @@ const resourceSchema = new mongoose.Schema(
       trim: true,
       required: 'name required',
       maxlength: 100,
-      validate: value => {
-        !validator.isAlphanumeric(value, 'vi-VN', { ignore: " -_',()." }) &&
-          _throw({ code: 400, errors: [{ field: 'name', message: 'invalid name' }] });
-      },
     },
 
     type: {
@@ -51,7 +48,7 @@ const resourceSchema = new mongoose.Schema(
             type: String,
             required: 'model ref required',
             trim: true,
-            enum: Object.keys(mongoose.connection.models).map(item => item.toLowerCase()),
+            enum: ['users', 'vacations', 'posts', 'albums'],
           },
           _id: {
             type: mongoose.ObjectId,
@@ -80,5 +77,26 @@ const resourceSchema = new mongoose.Schema(
 );
 
 const Resources = mongoose.model('Resources', resourceSchema);
+
+// resourceSchema.pre('findByIdAndDelete', function (next) {
+//   console.log(this);
+// });
+
+Resources.watch().on('change', async function (data) {
+  switch (data.operationType) {
+    case 'insert':
+      console.log('insert new resource');
+      break;
+
+    case 'delete':
+      //Get id of resource deleted
+      const { _id } = data.documentKey;
+
+      break;
+
+    default:
+      break;
+  }
+});
 
 export default Resources;

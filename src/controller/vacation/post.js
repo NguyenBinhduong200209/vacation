@@ -150,8 +150,6 @@ const postController = {
     //Get infor from req.body
     const { vacationId, locationId, content } = req.body;
 
-    console.log(await Vacations.findById(vacationId));
-
     //Get userInfo from verifyJWT middleware
     const foundUser = req.userInfo;
 

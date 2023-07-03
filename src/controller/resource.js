@@ -42,28 +42,27 @@ const resourceController = {
     return foundResource.length === 0 ? res.sendStatus(204) : res.status(200).json(foundResource[0]);
   }),
 
-  //Only apply when upload avatar user or cover vacation
   addNewOne: asyncWrapper(async (req, res) => {
-    const { fieldname, originalname, mimetype, size } = req.file;
-    const isAvatar = fieldname === 'avatar';
+    const { type } = req.params,
+      isAvatar = type === 'avatar';
 
-    const newResource = await Resources.create(
-      {
-        name: originalname,
-        type: mimetype,
-        size: size,
-        path: req.url[0],
-        userId: isAvatar ? req.userInfo._id : req.doc.userId,
-        ref: [
-          {
-            model: isAvatar ? 'users' : 'vacations',
-            field: fieldname,
-            _id: isAvatar ? req.userInfo._id : req.doc._id,
-          },
-        ],
-      },
-      { validateBeforeSave: false }
-    );
+    //Create new document and save to DB without validation because validation has run in fileFilter in getFileUpload middleware
+    const { fieldname, originalname, mimetype, size, url } = req.file;
+
+    const newResource = await Resources.create({
+      name: originalname,
+      type: mimetype,
+      size: size,
+      path: url,
+      userId: isAvatar ? req.userInfo._id : req.doc.userId,
+      ref: [
+        {
+          model: isAvatar ? 'users' : type === 'cover' ? 'vacations' : 'posts',
+          field: fieldname,
+          _id: isAvatar ? req.userInfo._id : req.doc._id,
+        },
+      ],
+    });
 
     //Send to front
     return res.status(201).json({ data: newResource, message: 'add successfully' });

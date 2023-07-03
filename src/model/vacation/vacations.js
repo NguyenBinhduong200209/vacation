@@ -130,29 +130,19 @@ const vacationSchema = new mongoose.Schema(
   // }
 );
 
-const Vacations = mongoose.model('Vacations', vacationSchema);
+//Config event after delete one vacation
+vacationSchema.post('findOneAndDelete', async function () {
+  const { _id } = this.getQuery();
 
-Vacations.watch().on('change', async function (data) {
-  switch (data.operationType) {
-    case 'insert':
-      console.log('insert new vacation');
-      break;
-
-    case 'delete':
-      //Get id of vacation deleted
-      const { _id } = data.documentKey;
-
-      //Use vacationId to delete Posts, views, like and comment of vacation deleted
-      const deletePost = Posts.deleteMany({ vacationId: _id });
-      const deleteViews = Views.deleteMany({ modelType: 'vacation', modelId: _id });
-      const deleteLike = Likes.deleteMany({ modelType: 'vacation', modelId: _id });
-      const deleteComment = Comments.deleteMany({ modelType: 'vacation', modelId: _id });
-      await Promise.all([deletePost, deleteViews, deleteLike, deleteComment]);
-      break;
-
-    default:
-      break;
-  }
+  //Use vacationId to delete Posts, views, like and comment of vacation deleted
+  const deletePost = Posts.deleteMany({ vacationId: _id });
+  const deleteViews = Views.deleteMany({ modelType: 'vacation', modelId: _id });
+  const deleteLike = Likes.deleteMany({ modelType: 'vacation', modelId: _id });
+  const deleteComment = Comments.deleteMany({ modelType: 'vacation', modelId: _id });
+  const result = await Promise.all([deletePost, deleteViews, deleteLike, deleteComment]);
+  console.log('deleteVacation', result);
 });
+
+const Vacations = mongoose.model('Vacations', vacationSchema);
 
 export default Vacations;
