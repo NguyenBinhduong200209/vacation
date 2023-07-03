@@ -10,46 +10,35 @@ const usersinforController = {
   getprofile: asyncWrapper(async (req, res) => {
     const username = req.userInfo.username;
     const value = { username };
-    const { ids } = req.params;
+    const ids = req.params.id;
 
     if (username && ids) {
-      if (!Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({ message: 'Invalid IDs provided' });
-      }
-
       const users = [];
 
-      for (const id of ids) {
-        const foundUser = await Users.findById(id);
+      const foundUser = await Users.findById(ids);
+      const totalLikes = await Likes.countDocuments({ userId: foundUser._id });
+      const totalPosts = await Posts.countDocuments({ userId: foundUser._id });
+      const totalFriends = await Friends.countDocuments({
+        $or: [{ userId1: foundUser._id }, { userId2: foundUser._id }],
+      });
+      const totalVacations = await Vacations.countDocuments({
+        $or: [{ userId: foundUser._id }, { memberList: foundUser._id }],
+      });
 
-        if (!foundUser) {
-          continue; // Skip invalid IDs
-        }
-
-        const totalLikes = await Likes.countDocuments({ userId: foundUser._id });
-        const totalPosts = await Posts.countDocuments({ userId: foundUser._id });
-        const totalFriends = await Friends.countDocuments({
-          $or: [{ userId1: foundUser._id }, { userId2: foundUser._id }],
-        });
-        const totalVacations = await Vacations.countDocuments({
-          $or: [{ userId: foundUser._id }, { memberList: foundUser._id }],
-        });
-
-        users.push({
-          id: foundUser._id,
-          avatar: foundUser.avatar,
-          firstname: foundUser.firstname,
-          lastname: foundUser.lastname,
-          dateOfBirth: foundUser.dateOfBirth,
-          gender: foundUser.gender,
-          description: foundUser.description,
-          national: foundUser.national,
-          totalLikes: totalLikes,
-          totalPosts: totalPosts,
-          totalFriends: totalFriends,
-          totalVacations: totalVacations,
-        });
-      }
+      users.push({
+        id: foundUser._id,
+        avatar: foundUser.avatar,
+        firstname: foundUser.firstname,
+        lastname: foundUser.lastname,
+        dateOfBirth: foundUser.dateOfBirth,
+        gender: foundUser.gender,
+        description: foundUser.description,
+        national: foundUser.national,
+        totalLikes: totalLikes,
+        totalPosts: totalPosts,
+        totalFriends: totalFriends,
+        totalVacations: totalVacations,
+      });
 
       const totalUsers = users.length;
 

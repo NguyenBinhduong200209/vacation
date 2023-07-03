@@ -17,7 +17,7 @@ router
 router.use(verifyJWT);
 router
   .put('/update', upload.single('avatar'), usersController.update)
-  .get('/info', usersinforController.getprofile)
+  .get('/info/:id?', usersinforController.getprofile)
   .post('/logout', usersController.logOut);
 
 export default router;
