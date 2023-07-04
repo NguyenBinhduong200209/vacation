@@ -70,6 +70,25 @@ const albumSchema = new mongoose.Schema(
         },
       },
     ],
+    image: [
+      {
+        id: {
+          type: mongoose.ObjectId,
+          ref: 'Resource', // Sử dụng tham chiếu đến mô hình Resource
+          required: 'resourceID',
+          validate: async value => {
+            const foundimage = await Resource.findById(value).select('path');
+            // Tìm ảnh theo đường dẫn
+            !foundimage &&
+              _throw({
+                code: 400,
+                errors: [{ field: 'resourceID', message: 'invalid resourceID' }],
+                message: 'invalid resourceID',
+              });
+          },
+        },
+      },
+    ],
 
     createdAt: {
       type: Date,

@@ -7,6 +7,6 @@ router.post('/', verifyJWT, albumsController.addNew);
 router.put('/:id', verifyJWT, albumsController.updateAlbum);
 router.delete('/:id', verifyJWT, albumsController.deleteAlbum);
 router.get('/:id?', verifyJWT, albumsController.getAlbumsUser);
-// router.get('/:id', albumsController.getonealbum);
+router.get('/vacation/:id', verifyJWT, albumsController.getablumsvacations);
 
 export default router;

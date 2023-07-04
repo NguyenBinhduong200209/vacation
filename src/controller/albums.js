@@ -269,26 +269,42 @@ const albumsController = {
       });
     } else _throw({ code: 400, message: 'UserID not provided' });
   }),
-  getablumsfriend: asyncWrapper(async (req, res) => {
+  getablumsvacations: asyncWrapper(async (req, res) => {
     // Get the user ID from the request
-    const userId = req.params;
+    const vacationId = req.params.id;
+    const userId = req.userInfo._id;
+    console.log(vacationId);
 
     // Retrieve the albums associated with the user ID
-    const albums = await Albums.find(userId);
-    const albumList = albums.map(album => album.toObject()); // Convert each album to a plain JavaScript object
+    const album = await Albums.findOne({ vacationId: vacationId });
+    console.log(album);
+    if (!album.shareList.includes(userId) && album.userId.toString() !== userId) {
+      return res.status(403).json({
+        message: 'Người dùng không có quyền xem album',
+      });
+    }
+
     // Count the total number of albums
-    const totalAlbums = albums.length;
+    const totalAlbums = album.length;
     // Return the list of albums
     res.json({
       message: 'get infor albums sucsses',
       totalAlbums: totalAlbums,
-      data: albumList,
+      data: album,
     });
   }),
 
-  getonealbum: asyncWrapper(async (req, res) => {
+  getalbumdetail: asyncWrapper(async (req, res) => {
     // Get the user ID from the request
-    const { id } = req.params;
+    const albumId = req.params.id;
+    const userId = req.userInfo._id;
+    const album = await Albums.findOne({ albumId: albumId });
+    if (!album.shareList.includes(userId) && album.userId.toString() !== userId) {
+      return res.status(403).json({
+        message: 'Người dùng không có quyền xem album',
+      });
+    } else if (album.shareList.includes(userId) || album.userId.toString() == userId) {
+    }
 
     // Retrieve the albums associated with the user ID
     const albums = await Albums.findById(id);
@@ -298,6 +314,43 @@ const albumsController = {
       message: 'get infor albums sucsses',
       data: albums,
     });
+  }),
+  addNewAlbumPage: asyncWrapper(async (req, res) => {
+    // Get vital information from req.body
+    const { albumId, imageId, ref, vacationId } = req.body;
+
+    try {
+      // Find the album using the albumId
+      const album = await Albums.findById(albumId);
+
+      // Check if the album exists
+      if (!album) {
+        return res.status(404).json({ message: 'Album not found' });
+      }
+
+      // Check if the user has permission to add images to the album
+      const foundUser = req.userInfo;
+      const userIds = [...vacationId.shareList, vacationId.userId, vacationId.memberList].map(value => value.toString());
+      if (!userIds.includes(foundUser._id.toString())) {
+        return res.status(403).json({ message: 'You are not allowed to add images to this album' });
+      }
+
+      // Update the ref property of the image with the new ref
+      const updatedImage = album.images.find(image => image._id.toString() === imageId.toString());
+      if (updatedImage) {
+        updatedImage.ref = ref;
+      } else {
+        return res.status(404).json({ message: 'Image not found in the album' });
+      }
+
+      // Save the updated album
+      await album.save();
+
+      // Return the updated album as a response
+      return res.status(200).json({ album });
+    } catch (error) {
+      return _throw(error);
+    }
   }),
 };
 export default albumsController;
