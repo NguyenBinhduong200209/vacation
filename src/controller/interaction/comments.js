@@ -36,22 +36,8 @@ const commentController = {
     //Create new comment
     const newComment = await Comments.create({ modelType: type, modelId: id, userId, content, createdAt: new Date() });
 
-    //Create new Notification or update document
-    req.noti = {
-      modelType: type,
-      modelId: id,
-      receiverId: req.doc.userId,
-      senderId: userId,
-      action: 'comment',
-    };
-
-    //Transfer response to next middleware
-    res.result = {
-      code: 201,
-      data: newComment,
-      message: `add comment successfully`,
-    };
-    next();
+    //Send to front
+    return res.status(201).json({ data: newComment, message: `add comment successfully` });
   }),
 
   update: asyncWrapper(async (req, res) => {

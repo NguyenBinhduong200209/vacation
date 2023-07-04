@@ -33,31 +33,16 @@ const likeController = {
     //Find and delete like
     const foundLike = await Likes.findOneAndDelete({ modelType: type, modelId: id, userId: userId });
 
-    //If found and deleted successfully, send immedialy to front.
-    if (foundLike) {
+    if (foundLike)
+      //Send to front
       return res.status(200).json({ data: foundLike, message: `user has unliked this ${type}` });
-    }
-
-    //If cannot find, meaning user has not liked yet, then create new one and notification
+    //
     else {
+      //Create new document
       const newLike = await Likes.create({ modelType: type, modelId: id, userId: userId });
 
-      //Transfer notiInfo to next middleware
-      req.noti = {
-        modelType: type,
-        modelId: id,
-        receiverId: req.doc.userId,
-        senderId: userId,
-        action: 'like',
-      };
-
-      //Transfer response to next middleware
-      res.result = {
-        code: 201,
-        data: newLike,
-        message: `user has liked this ${type}`,
-      };
-      next();
+      //Send to front
+      return res.status(201).json({ data: newLike, message: `user has liked this ${type}` });
     }
   }),
 };

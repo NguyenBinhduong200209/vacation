@@ -37,8 +37,19 @@ const notiController = {
     return foundList.length === 0 ? res.sendStatus(204) : res.status(200).json(foundList[0]);
   }),
 
-  updateContent: asyncWrapper(async (req, res) => {
-    const { modelType, modelId, senderId, receiverId, action } = req.noti;
+  updateContent: async ({ document, action }) => {
+    const { modelType, modelId, userId } = document;
+
+    const foundDocument = await mongoose.model(modelType).findById(modelId);
+    !foundDocument &&
+      _throw({
+        code: 500,
+        errors: [{ field: 'notification', message: 'error while creating' }],
+        message: 'error while creating notification',
+      });
+
+    const receiverId = foundDocument.userId;
+    const senderId = userId;
 
     //Do not create new Noti if author like his/her own modelType
     if (receiverId.toString() !== senderId.toString()) {
@@ -47,14 +58,17 @@ const notiController = {
 
       //If Noti found
       if (foundNoti) {
+        //Update found Notification and save to DB
         foundNoti.userActionId = senderId;
         foundNoti.isSeen = false;
         await foundNoti.save();
+
+        return foundNoti;
       }
 
       //If Noti not found, create new Notification
       else
-        await Notifications.create({
+        return await Notifications.create({
           modelType,
           modelId,
           action,
@@ -63,11 +77,7 @@ const notiController = {
           createAt: new Date(),
         });
     }
-
-    //Send to front
-    const { code, data, message } = res.result;
-    return res.status(code).json({ data, message });
-  }),
+  },
 
   updateStatusAll: asyncWrapper(async (req, res) => {
     const userId = req.userInfo._id;
