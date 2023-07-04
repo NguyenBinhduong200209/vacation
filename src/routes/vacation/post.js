@@ -7,15 +7,19 @@ import checkPermission from '#root/middleware/checkForbidden/checkPermission';
 const router = express.Router();
 
 router.use(verifyJWT);
-router.route('/').post(checkPermission('vacation'), postController.addNew);
 
-router.route('/vacation/:id').get(checkPermission('vacation'), postController.getManyByVacation);
+router.route('/').post(checkPermission({ modelType: 'vacations', listType: 'memberList' }), postController.addNew);
+
+router
+  .route('/vacation/:id')
+  .get(checkPermission({ modelType: 'vacations', listType: 'shareList' }), postController.getManyByVacation);
+
 router.route('/location/:id').get(postController.getManyByLocation);
 
 router
   .route('/:id')
-  .get(checkPermission('post'), postController.getOne)
-  .put(checkAuthor('post'), postController.update)
-  .delete(checkAuthor('post'), postController.delete);
+  .get(checkPermission({ modelType: 'posts', listType: 'shareList' }), postController.getOne)
+  .put(checkAuthor({ modelType: 'posts' }), postController.update)
+  .delete(checkAuthor({ modelType: 'posts' }), postController.delete);
 
 export default router;

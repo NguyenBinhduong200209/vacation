@@ -143,6 +143,6 @@ vacationSchema.post('findOneAndDelete', async function () {
   console.log('deleteVacation', result);
 });
 
-const Vacations = mongoose.model('Vacations', vacationSchema);
+const Vacations = mongoose.model('vacations', vacationSchema);
 
 export default Vacations;

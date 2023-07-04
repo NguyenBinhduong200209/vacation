@@ -58,9 +58,6 @@ const resourceSchema = new mongoose.Schema(
           index: { type: Number, min: 0 },
         },
       ],
-      validate: value => {
-        value.length === 0 && _throw({ code: 400, errors: [{ field: 'ref', message: 'ref must not be an empty array' }] });
-      },
     },
 
     createdAt: {
@@ -76,27 +73,22 @@ const resourceSchema = new mongoose.Schema(
   // }
 );
 
-const Resources = mongoose.model('Resources', resourceSchema);
+resourceSchema.pre('findOneAndDelete', async function (next) {
+  const foundResource = await this.model.findById(this.getQuery());
+  if (foundResource) {
+    const { path } = foundResource;
 
-// resourceSchema.pre('findByIdAndDelete', function (next) {
-//   console.log(this);
-// });
+    // Create a reference to the file to delete
+    const storage = getStorage();
+    const desertRef = ref(storage, path);
 
-Resources.watch().on('change', async function (data) {
-  switch (data.operationType) {
-    case 'insert':
-      console.log('insert new resource');
-      break;
-
-    case 'delete':
-      //Get id of resource deleted
-      const { _id } = data.documentKey;
-
-      break;
-
-    default:
-      break;
+    // Delete the file
+    await deleteObject(desertRef);
+    console.log('deleted file in firebase');
   }
+  next();
 });
+
+const Resources = mongoose.model('resources', resourceSchema);
 
 export default Resources;

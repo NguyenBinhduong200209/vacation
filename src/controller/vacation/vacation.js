@@ -105,7 +105,7 @@ const vacationController = {
     );
 
     // Increase view of post by 1
-    await viewController.update({ modelType: 'vacation', modelId: id, userId: req.userInfo._id });
+    await viewController.update({ modelType: 'vacations', modelId: id, userId: req.userInfo._id });
 
     //Send to front
     return res.status(200).json({ data: result[0], message: 'get detail successfully' });

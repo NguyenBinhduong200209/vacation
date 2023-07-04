@@ -6,6 +6,9 @@ import checkPermission from '#root/middleware/checkForbidden/checkPermission';
 const router = express.Router();
 
 router.use(verifyJWT);
-router.route('/:id').get(likeController.getMany).put(checkPermission(), likeController.update, notiController.updateContent);
+router
+  .route('/:id')
+  .get(likeController.getMany)
+  .put(checkPermission({ listType: 'shareList' }), likeController.update, notiController.updateContent);
 
 export default router;

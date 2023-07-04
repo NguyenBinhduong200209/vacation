@@ -87,6 +87,6 @@ postSchema.post('findOneAndDelete', async function () {
   console.log('deletePost', result);
 });
 
-const Posts = mongoose.model('Posts', postSchema);
+const Posts = mongoose.model('posts', postSchema);
 
 export default Posts;

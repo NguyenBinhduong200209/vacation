@@ -7,7 +7,7 @@ const notiSchema = new mongoose.Schema(
     modelType: {
       type: String,
       required: 'model Type required',
-      enum: ['post', 'vacation', 'album', 'friend'],
+      enum: ['posts', 'vacations', 'albums', 'friend'],
       default: 'friend',
     },
 
@@ -74,6 +74,6 @@ const notiSchema = new mongoose.Schema(
   }
 );
 
-const Notifications = mongoose.model('Notifications', notiSchema);
+const Notifications = mongoose.model('notifications', notiSchema);
 
 export default Notifications;

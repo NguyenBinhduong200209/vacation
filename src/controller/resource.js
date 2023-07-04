@@ -1,7 +1,6 @@
 import Resources from '#root/model/resource';
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
-import { getStorage, ref, deleteObject } from 'firebase/storage';
 import mongoose from 'mongoose';
 import { addTotalPageFields, facet } from '#root/config/pipeline';
 
@@ -43,8 +42,8 @@ const resourceController = {
   }),
 
   addNewOne: asyncWrapper(async (req, res) => {
-    const { type } = req.params,
-      isAvatar = type === 'avatar';
+    const { field } = req.params,
+      isAvatar = field === 'avatar';
 
     //Create new document and save to DB without validation because validation has run in fileFilter in getFileUpload middleware
     const { fieldname, originalname, mimetype, size, url } = req.file;
@@ -57,7 +56,7 @@ const resourceController = {
       userId: isAvatar ? req.userInfo._id : req.doc.userId,
       ref: [
         {
-          model: isAvatar ? 'users' : type === 'cover' ? 'vacations' : 'posts',
+          model: isAvatar ? 'users' : field === 'cover' ? 'vacations' : 'posts',
           field: fieldname,
           _id: isAvatar ? req.userInfo._id : req.doc._id,
         },
@@ -73,13 +72,6 @@ const resourceController = {
 
     //Delete path in DB
     const deleteResource = await Resources.findByIdAndDelete(id);
-
-    // Create a reference to the file to delete
-    const storage = getStorage();
-    const desertRef = ref(storage, deleteResource.path);
-
-    // Delete the file
-    await deleteObject(desertRef);
 
     //Send to front
     return res.status(200).json({ data: deleteResource, message: 'delete successfully' });

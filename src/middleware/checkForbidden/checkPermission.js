@@ -1,50 +1,45 @@
 import Vacations from '#root/model/vacation/vacations';
-import Albums from '#root/model/albums';
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
+import mongoose from 'mongoose';
 
-function checkPermission(type) {
+function checkPermission({ modelType, listType }) {
   return asyncWrapper(async (req, res, next) => {
-    const crUserId = req.userInfo._id;
+    const userIdLogin = req.userInfo._id;
     const id = req.params?.id || req.query?.id || req.body?.vacationId;
-    const modelType = type || req.query?.type;
+    !modelType && (modelType = req.params?.type || req.query?.type);
 
-    if (['vacation', 'album', 'post'].includes(modelType)) {
-      //Find document based on params id
-      let result;
-      switch (modelType) {
-        case 'vacation':
-          result = await Vacations.findById(id);
-          break;
+    !['vacations', 'albums', 'posts'].includes(modelType) && _throw({ code: 500, message: 'invalid modelType' });
 
-        case 'album':
-          result = await Albums.findById(id);
-          break;
+    //Find document based on params id
+    let foundDocument;
+    switch (modelType) {
+      case 'posts':
+        //Throw an error if cannot find post
+        const foundPost = await Posts.findById(id);
+        !foundPost && _throw({ code: 404, errors: [{ field: 'id', message: 'invalid' }], message: 'post not found' });
 
-        case 'post':
-          //Find Post
-          const foundPost = await Posts.findById(id);
+        //Find vacation based on vacationId in foundPost
+        foundDocument = await Vacations.findById(foundPost.vacationId);
+        break;
 
-          //Throw an error if cannot find post
-          !foundPost && _throw({ code: 404, errors: [{ field: 'id', message: 'invalid' }], message: 'post not found' });
+      default:
+        foundDocument = await mongoose.model(modelType).findById(id);
+        break;
+    }
 
-          //Find vacation based on vacationId in foundPost
-          result = await Vacations.findById(foundPost.vacationId);
-          break;
+    //Throw an error if cannot find Type
+    !foundDocument &&
+      _throw({ code: 404, errors: [{ field: 'id', message: 'invalid' }], message: `${modelType} not found` });
 
-        default:
-          break;
-      }
-
-      //Throw an error if cannot find Type
-      !result && _throw({ code: 404, errors: [{ field: 'id', message: 'invalid' }], message: `${modelType} not found` });
-
-      const { shareList, shareStatus, userId } = result;
+    //If check permission in shareList
+    if (listType === 'shareList') {
+      const { shareList, shareStatus, userId } = foundDocument;
       switch (shareStatus) {
-        //Throw an error if userId login is not author of this modelType
         case 'onlyme':
-          crUserId.toString() !== userId.toString() &&
+          //Throw an error if userId login is not author of this modelType
+          userIdLogin.toString() !== userId.toString() &&
             _throw({
               code: 403,
               errors: [{ field: 'shareList', message: `user have no permission to access this ${modelType}` }],
@@ -54,7 +49,7 @@ function checkPermission(type) {
 
         case 'protected':
           //Throw an error if userId login is not in shareList of this modelType
-          !shareList.includes(crUserId) &&
+          !shareList.includes(userIdLogin) &&
             _throw({
               code: 403,
               errors: [{ field: 'shareList', message: `user is not in shareList of this ${modelType}` }],
@@ -65,10 +60,26 @@ function checkPermission(type) {
         default:
           break;
       }
-
-      //Send result to next middleware
-      req.doc = result;
     }
+
+    //If check permission in memberList
+    else if (listType === 'memberList') {
+      const { memberList, userId } = foundDocument;
+      //Throw an error if user login is not in memberList of vacation
+      !memberList.includes(userIdLogin) &&
+        userId.toString() !== userIdLogin.toString() &&
+        _throw({
+          code: 403,
+          errors: [{ field: 'memberList', message: `user is not in memberList of this ${modelType}` }],
+          message: 'Forbidden',
+        });
+    }
+
+    //Throw an error if listType params is not memberList nor shareList
+    else _throw({ code: 500, message: 'Invalid listType' });
+
+    //Send result to next middleware
+    req.doc = foundDocument;
 
     next();
   });
