@@ -7,8 +7,8 @@ const viewSchema = new mongoose.Schema(
     modelType: {
       type: String,
       required: 'model Type required',
-      enum: ['vacation', 'album'],
-      default: 'vacation',
+      enum: ['vacations', 'albums'],
+      default: 'vacations',
     },
 
     modelId: {
@@ -54,6 +54,6 @@ const viewSchema = new mongoose.Schema(
   }
 );
 
-const Views = mongoose.model('Views', viewSchema);
+const Views = mongoose.model('views', viewSchema);
 
 export default Views;

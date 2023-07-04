@@ -10,8 +10,8 @@ router.use(verifyJWT);
 router
   .route('/:id')
   .get(commentController.getMany)
-  .post(checkPermission(), commentController.addNew, notiController.updateContent)
-  .put(checkAuthor('comment'), commentController.update)
-  .delete(checkAuthor('comment'), commentController.delete);
+  .post(checkPermission({ listType: 'shareList' }), commentController.addNew, notiController.updateContent)
+  .put(checkAuthor({ modelType: 'comments' }), commentController.update)
+  .delete(checkAuthor({ modelType: 'comments' }), commentController.delete);
 
 export default router;

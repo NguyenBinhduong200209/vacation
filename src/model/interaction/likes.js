@@ -7,8 +7,8 @@ const likeSchema = new mongoose.Schema(
     modelType: {
       type: String,
       required: 'model Type required',
-      enum: ['vacation', 'post', 'album'],
-      default: 'vacation',
+      enum: ['vacations', 'posts', 'albums'],
+      default: 'vacations',
     },
 
     modelId: {
@@ -43,6 +43,6 @@ const likeSchema = new mongoose.Schema(
   }
 );
 
-const Likes = mongoose.model('Likes', likeSchema);
+const Likes = mongoose.model('likes', likeSchema);
 
 export default Likes;

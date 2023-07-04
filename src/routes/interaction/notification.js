@@ -8,6 +8,6 @@ const router = express.Router();
 router.use(verifyJWT);
 router.get('/', notiController.getMany);
 router.put('/all', notiController.updateStatusAll);
-router.put('/one/:id', checkAuthor('notification'), notiController.updateStatusOne);
+router.put('/one/:id', checkAuthor({ modelType: 'notifications' }), notiController.updateStatusOne);
 
 export default router;

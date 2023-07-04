@@ -1,21 +1,19 @@
 import express from 'express';
 const router = express.Router();
 import asyncWrapper from '#root/middleware/asyncWrapper';
-import fs from 'fs';
-import { resourcePath } from '#root/config/path';
-import path from 'path';
 import getFileUpload from '#root/middleware/uploadFiles/getFileUpload';
 import upload from '#root/middleware/uploadFiles/upload';
 import Resources from '#root/model/resource';
 import Vacations from '#root/model/vacation/vacations';
-import Posts from '#root/model/vacation/posts';
 import verifyJWT from '#root/middleware/verifyJWT';
+import mongoose from 'mongoose';
 
 const monitor = asyncWrapper(async (req, res) => {
-  const { id } = req.query;
-  console.log(resourcePath);
-  const files = await fs.promises.readdir(id ? path.join(resourcePath, id) : resourcePath);
-  return res.status(200).json(files);
+  const foundViews = await mongoose.model('users').updateMany({}, [{ $unset: ['avatar'] }]);
+  // const { id } = req.query;
+  // console.log(resourcePath);
+  // const files = await fs.promises.readdir(id ? path.join(resourcePath, id) : resourcePath);
+  return res.status(200).json(foundViews);
 });
 
 const test = asyncWrapper(async (req, res) => {
@@ -71,9 +69,9 @@ const clean = asyncWrapper(async (req, res) => {
   return res.status(200).json(deleteAll);
 });
 
-// router.route('/').get(monitor).post(getFileUpload.single('cover'), upload, test).delete(clean);
+router.route('/').get(monitor).post(test).delete(clean);
 
-router.use(verifyJWT);
+// router.use(verifyJWT);
 // router.get('/', getFileUpload.single('avatar'), upload);
 
 export default router;

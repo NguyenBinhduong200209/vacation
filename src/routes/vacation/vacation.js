@@ -11,8 +11,8 @@ router.route('/').get(vacationController.getMany).post(vacationController.addNew
 
 router
   .route('/:id')
-  .get(checkPermission('vacation'), vacationController.getOne)
-  .put(checkAuthor('vacation'), vacationController.update)
-  .delete(checkAuthor('vacation'), vacationController.delete);
+  .get(checkPermission({ modelType: 'vacations', listType: 'shareList' }), vacationController.getOne)
+  .put(checkAuthor({ modelType: 'vacations' }), vacationController.update)
+  .delete(checkAuthor({ modelType: 'vacations' }), vacationController.delete);
 
 export default router;

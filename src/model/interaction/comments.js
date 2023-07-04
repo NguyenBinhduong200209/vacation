@@ -7,8 +7,8 @@ const commentSchema = new mongoose.Schema(
     modelType: {
       type: String,
       required: 'model Type required',
-      enum: ['vacation', 'post', 'album'],
-      default: 'vacation',
+      enum: ['vacations', 'posts', 'albums'],
+      default: 'vacations',
     },
 
     modelId: {
@@ -54,6 +54,6 @@ const commentSchema = new mongoose.Schema(
   }
 );
 
-const Comments = mongoose.model('Comments', commentSchema);
+const Comments = mongoose.model('comments', commentSchema);
 
 export default Comments;

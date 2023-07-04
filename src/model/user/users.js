@@ -145,15 +145,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-  },
-  {
-    versionKey: false,
-    toObject: { getters: true, setters: true },
-    toJSON: { getters: true, setters: true },
-    runSettersOnQuery: true,
   }
+  // {
+  //   versionKey: false,
+  //   toObject: { getters: true, setters: true },
+  //   toJSON: { getters: true, setters: true },
+  //   runSettersOnQuery: true,
+  // }
 );
 
-const Users = mongoose.model('Users', userSchema);
+const Users = mongoose.model('users', userSchema);
 
 export default Users;
