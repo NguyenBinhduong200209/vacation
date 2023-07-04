@@ -11,17 +11,17 @@ const resourceController = {
 
     let searchRef;
     switch (type) {
-      case 'user':
+      case 'users':
         const userId = req.userInfo._id;
-        searchRef = { model: 'users', field: 'avatar', _id: new mongoose.Types.ObjectId(userId) };
+        searchRef = { model: type, field: 'avatar', _id: new mongoose.Types.ObjectId(userId) };
         break;
 
-      case 'vacation':
-        searchRef = { model: 'vacations', field: 'cover', _id: new mongoose.Types.ObjectId(id) };
+      case 'vacations':
+        searchRef = { model: type, field: 'cover', _id: new mongoose.Types.ObjectId(id) };
         break;
 
-      case 'album':
-        searchRef = { model: 'albums', _id: new mongoose.Types.ObjectId(id) };
+      case 'albums':
+        searchRef = { model: type, _id: new mongoose.Types.ObjectId(id) };
         break;
 
       default:

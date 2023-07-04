@@ -16,7 +16,7 @@ const likeController = {
         addTotalPageFields({ page }),
 
         //Look up to users model to get info
-        getUserInfo({ field: ['username', 'avatar'] }),
+        getUserInfo({ field: ['username', 'avatar'], isFriend: req.userInfo._id }),
 
         //Restructure query
         facet({ meta: ['total', 'page', 'pages'], data: ['authorInfo'] })
