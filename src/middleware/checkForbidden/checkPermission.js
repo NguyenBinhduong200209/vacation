@@ -8,9 +8,9 @@ function checkPermission({ modelType, listType }) {
   return asyncWrapper(async (req, res, next) => {
     const userIdLogin = req.userInfo._id;
     const id = req.params?.id || req.query?.id || req.body?.vacationId;
-    !modelType && (modelType = req.params?.type || req.query?.type);
+    !modelType && (modelType = req.params?.type || req.query?.type || 'users');
 
-    if (['vacations', 'albums', 'posts'].includes(modelType)) {
+    if (/(vacations|albums|posts)/.test(modelType)) {
       //Find document based on params id
       let foundDocument;
       switch (modelType) {
