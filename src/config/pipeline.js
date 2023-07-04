@@ -143,7 +143,7 @@ export function getResourcePath({ localField, as, returnAsArray }) {
   );
 }
 
-export function getUserInfo({ localField, as, field, countFriend, checkFriend }) {
+export function getUserInfo({ localField, as, field, countFriend, isFriend }) {
   const isGetAvatar = field.includes('avatar');
   const localFieldUsed = localField || 'userId',
     saveAs = as || 'authorInfo';
@@ -158,14 +158,19 @@ export function getUserInfo({ localField, as, field, countFriend, checkFriend })
           //Get avatar link if field params contain avatar
           isGetAvatar ? getResourcePath({ localField: '_id', as: 'avatar' }) : [],
 
-          //Limit field pass to next stage based on field params
-          { $project: field.reduce((obj, item) => Object.assign(obj, { [item]: 1 }), {}) },
-
           //Check author is friend of userlogin or not
-          checkFriend ? checkFriend({ userId: checkFriend }) : [],
+          isFriend ? checkFriend({ userId: isFriend }) : [],
 
           //Get totalFiend based on countTotalFriend params
-          countFriend ? getCountInfo({ field: ['friend'] }) : []
+          countFriend ? getCountInfo({ field: ['friend'] }) : [],
+
+          //Limit field pass to next stage based on field params
+          {
+            $project: field.reduce(
+              (obj, item) => Object.assign(obj, { [item]: 1 }),
+              Object.assign({}, isFriend ? { isFriend: 1 } : {}, countFriend ? { friends: 1 } : {})
+            ),
+          }
         ),
         as: saveAs,
       },
