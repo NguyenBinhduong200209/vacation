@@ -183,7 +183,7 @@ const usersController = {
     //Send to front
     const result = Object.keys(foundUser._doc).reduce(
       (obj, key) =>
-        ['passwordToken', 'refreshToken', 'accessToken', 'password', 'emailVerified'].includes(key)
+        /(passwordToken|refreshToken|accessToken|password|emailVerified)/i.test(key)
           ? obj
           : Object.assign(obj, { [key]: foundUser._doc[key] }),
       {}

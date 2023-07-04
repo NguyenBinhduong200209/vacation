@@ -10,7 +10,7 @@ const vacationController = {
       userId = req.userInfo._id;
 
     //Set type default value is newFeed
-    const type = ['newFeed', 'userProfile'].includes(req.query.type) ? req.query.type : 'newFeed';
+    const type = /(newFeed|userProfile)/.test(req.query.type) ? req.query.type : 'newFeed';
 
     const result = await Vacations.aggregate(
       [].concat(

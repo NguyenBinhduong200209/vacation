@@ -42,7 +42,7 @@ const resourceController = {
   }),
 
   addNewOne: asyncWrapper(async (req, res) => {
-    const { field } = req.params,
+    const { field, id } = req.params,
       isAvatar = field === 'avatar';
 
     //Create new document and save to DB without validation because validation has run in fileFilter in getFileUpload middleware
@@ -58,7 +58,7 @@ const resourceController = {
         {
           model: isAvatar ? 'users' : field === 'cover' ? 'vacations' : 'posts',
           field: fieldname,
-          _id: isAvatar ? req.userInfo._id : req.doc._id,
+          _id: isAvatar ? req.userInfo._id : id,
         },
       ],
     });
