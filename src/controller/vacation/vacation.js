@@ -3,7 +3,6 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Vacations from '#root/model/vacation/vacations';
 import { addTotalPageFields, getUserInfo, getCountInfo, facet, checkFriend, getResourcePath } from '#root/config/pipeline';
 import mongoose from 'mongoose';
-import viewController from '#root/controller/interaction/views';
 
 const vacationController = {
   getMany: asyncWrapper(async (req, res) => {
@@ -103,9 +102,6 @@ const vacationController = {
         getCountInfo({ field: ['view', 'memberList'] })
       )
     );
-
-    // Increase view of post by 1
-    await viewController.update({ modelType: 'vacations', modelId: id, userId: req.userInfo._id });
 
     //Send to front
     return res.status(200).json({ data: result[0], message: 'get detail successfully' });

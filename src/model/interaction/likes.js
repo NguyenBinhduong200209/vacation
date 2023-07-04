@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import _throw from '#root/utils/_throw';
 import Users from '#root/model/user/users';
+import notiController from '#root/controller/interaction/notification';
 
 const likeSchema = new mongoose.Schema(
   {
@@ -42,6 +43,11 @@ const likeSchema = new mongoose.Schema(
     runSettersOnQuery: true,
   }
 );
+
+likeSchema.post('save', async function () {
+  //Update new Notification to user has receive like action
+  await notiController.updateContent({ document: this, action: 'like' });
+});
 
 const Likes = mongoose.model('likes', likeSchema);
 
