@@ -16,7 +16,7 @@ const viewController = {
       }
 
       //If view not found, then create a new view with default view is 1
-      else await Views.create({ modelType, modelId, userId, createdAt: new Date() });
+      else await Views.create({ modelType, modelId: id, userId: req.userInfo._id, createdAt: new Date() });
 
       next();
     }),
