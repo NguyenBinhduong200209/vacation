@@ -298,7 +298,7 @@ export async function search({ models, searchValue, page }) {
               })
             : { $project: { title: 1, startingTime: 1, endingTime: 1, lastUpdateAt: 1, cover: 1, views: 1, authorInfo: 1 } }
         );
-        return { model: 'Vacations', newItem };
+        return { model: 'vacations', newItem };
 
       case 'user':
         newItem = [].concat(
@@ -325,7 +325,7 @@ export async function search({ models, searchValue, page }) {
               })
             : { $project: { firstname: 1, lastname: 1, username: 1, email: 1, avatar: 1 } }
         );
-        return { model: 'Users', newItem };
+        return { model: 'users', newItem };
 
       case 'location':
         newItem = [].concat(
@@ -344,7 +344,7 @@ export async function search({ models, searchValue, page }) {
             ? facet({ meta: ['total', 'page', 'pages'], data: ['title', 'district', 'city'] })
             : { $project: { title: 1, district: 1, city: 1 } }
         );
-        return { model: 'Locations', newItem };
+        return { model: 'locations', newItem };
 
       case 'album':
         newItem = [].concat(
