@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 function checkPermission({ field, modelType, listType }) {
   return asyncWrapper(async (req, res, next) => {
     const userIdLogin = req.userInfo._id;
-    const id = req.params?.id || req.query?.id || req.body?.vacationId;
+    const id = req.params?.id || req.query?.id || req.query?.vacationId || req.body?.vacationId;
     !field && (field = req.params?.field || req.query?.field);
 
     //Config model to findById
@@ -18,7 +18,7 @@ function checkPermission({ field, modelType, listType }) {
           : field === 'avatar'
           ? 'users'
           : field === 'post'
-          ? 'posts'
+          ? 'vacations'
           : 'users'
         : req.query?.type || req.params?.type);
 
