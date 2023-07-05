@@ -4,11 +4,23 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
 import mongoose from 'mongoose';
 
-function checkPermission({ modelType, listType }) {
+function checkPermission({ field, modelType, listType }) {
   return asyncWrapper(async (req, res, next) => {
     const userIdLogin = req.userInfo._id;
     const id = req.params?.id || req.query?.id || req.body?.vacationId;
-    !modelType && (modelType = req.params?.type || req.query?.type || 'users');
+    !field && (field = req.params?.field || req.query?.field);
+
+    //Config model to findById
+    !modelType &&
+      (modelType = field
+        ? field === 'cover'
+          ? 'vacations'
+          : field === 'avatar'
+          ? 'users'
+          : field === 'post'
+          ? 'posts'
+          : 'users'
+        : req.query?.type || req.params?.type);
 
     if (/(vacations|albums|posts)/.test(modelType)) {
       //Find document based on params id

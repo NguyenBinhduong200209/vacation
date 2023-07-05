@@ -66,7 +66,7 @@ const notiSchema = new mongoose.Schema(
     },
   },
   {
-    optimisticConcurrency: true,
+    // optimisticConcurrency: true,
     //   versionKey: '__v',
     //   toObject: { getters: true, setters: true },
     //   toJSON: { getters: true, setters: true },

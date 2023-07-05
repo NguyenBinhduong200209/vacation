@@ -6,8 +6,7 @@ import { addTotalPageFields, getUserInfo, facet } from '#root/config/pipeline';
 
 const likeController = {
   getMany: asyncWrapper(async (req, res) => {
-    const { id } = req.params;
-    const { type, page } = req.query;
+    const { type, id, page } = req.query;
 
     const result = await Likes.aggregate(
       //Filter based on modelType and modelId
@@ -26,8 +25,7 @@ const likeController = {
   }),
 
   update: asyncWrapper(async (req, res, next) => {
-    const { id } = req.params,
-      { type } = req.query,
+    const { type, id } = req.query,
       userId = req.userInfo._id;
 
     //Find and delete like

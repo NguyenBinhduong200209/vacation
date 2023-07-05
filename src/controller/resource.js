@@ -5,23 +5,22 @@ import mongoose from 'mongoose';
 import { addTotalPageFields, facet } from '#root/config/pipeline';
 
 const resourceController = {
-  //Use this function to get list picture of avatar, cover of vacation or pictures of album
   getMany: asyncWrapper(async (req, res) => {
-    const { id, page, type } = req.query;
+    const { id, page, field } = req.query;
 
     let searchRef;
-    switch (type) {
-      case 'users':
+    switch (field) {
+      case 'avatar':
         const userId = req.userInfo._id;
-        searchRef = { model: type, field: 'avatar', _id: new mongoose.Types.ObjectId(userId) };
+        searchRef = { model: 'users', field: 'avatar', _id: new mongoose.Types.ObjectId(userId) };
         break;
 
-      case 'vacations':
-        searchRef = { model: type, field: 'cover', _id: new mongoose.Types.ObjectId(id) };
+      case 'cover':
+        searchRef = { model: 'vacations', field: 'cover', _id: new mongoose.Types.ObjectId(id) };
         break;
 
       case 'albums':
-        searchRef = { model: type, _id: new mongoose.Types.ObjectId(id) };
+        searchRef = { model: 'albums', _id: new mongoose.Types.ObjectId(id) };
         break;
 
       default:
@@ -41,12 +40,12 @@ const resourceController = {
     return foundResource.length === 0 ? res.sendStatus(204) : res.status(200).json(foundResource[0]);
   }),
 
-  addNewOne: asyncWrapper(async (req, res) => {
-    const { field, id } = req.params,
+  addNew: asyncWrapper(async (req, res) => {
+    const { field, id } = req.query,
       isAvatar = field === 'avatar';
 
     //Create new document and save to DB without validation because validation has run in fileFilter in getFileUpload middleware
-    const { fieldname, originalname, mimetype, size, url } = req.file;
+    const { originalname, mimetype, size, url } = req.file;
 
     const newResource = await Resources.create({
       name: originalname,
@@ -54,13 +53,7 @@ const resourceController = {
       size: size,
       path: url,
       userId: isAvatar ? req.userInfo._id : req.doc.userId,
-      ref: [
-        {
-          model: isAvatar ? 'users' : field === 'cover' ? 'vacations' : 'posts',
-          field: fieldname,
-          _id: isAvatar ? req.userInfo._id : id,
-        },
-      ],
+      ref: [],
     });
 
     //Send to front

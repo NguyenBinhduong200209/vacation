@@ -6,8 +6,7 @@ import { addTotalPageFields, getUserInfo, facet } from '#root/config/pipeline';
 
 const commentController = {
   getMany: asyncWrapper(async (req, res) => {
-    const { id } = req.params;
-    const { type, page } = req.query;
+    const { type, id, page } = req.query;
 
     const result = await Comments.aggregate(
       [].concat(
@@ -28,8 +27,7 @@ const commentController = {
   }),
 
   addNew: asyncWrapper(async (req, res, next) => {
-    const { id } = req.params,
-      { type } = req.query,
+    const { type, id } = req.query,
       { content } = req.body,
       userId = req.userInfo._id;
 

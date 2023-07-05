@@ -10,10 +10,11 @@ const router = express.Router();
 
 router.use(verifyJWT);
 
-router.route('/').get(checkPermission({ listType: 'shareList' }), resourceController.getMany);
+router
+  .route('/')
+  .get(checkPermission({ listType: 'shareList' }), resourceController.getMany)
+  .post(checkAuthor({}), getFileUpload, upload, resourceController.addNew);
 //   .delete(checkAuthor('resource'), resourceController.deleteMany);
-
-router.route('/:field/:id?').post(checkAuthor({}), getFileUpload, upload, resourceController.addNewOne);
 
 router.route('/:id').delete(checkAuthor({ modelType: 'resources' }), resourceController.deleteOne);
 
