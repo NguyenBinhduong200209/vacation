@@ -9,6 +9,6 @@ router.use(verifyJWT);
 router
   .route('/:id')
   .get(likeController.getMany)
-  .put(checkPermission({ listType: 'shareList' }), likeController.update, notiController.updateContent);
+  .put(checkPermission({ listType: 'shareList' }), likeController.update);
 
 export default router;
