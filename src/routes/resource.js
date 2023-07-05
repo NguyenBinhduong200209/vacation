@@ -13,7 +13,8 @@ router.use(verifyJWT);
 router
   .route('/')
   .get(checkPermission({ listType: 'shareList' }), resourceController.getMany)
-  .post(checkAuthor({}), getFileUpload, upload, resourceController.addNew);
+  .post(checkPermission({ listType: 'memberList' }), getFileUpload, upload, resourceController.addNew);
+// .put(checkAuthor({}), resourceController.updateRef);
 //   .delete(checkAuthor('resource'), resourceController.deleteMany);
 
 router.route('/:id').delete(checkAuthor({ modelType: 'resources' }), resourceController.deleteOne);

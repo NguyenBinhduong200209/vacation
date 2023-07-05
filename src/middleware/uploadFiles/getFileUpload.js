@@ -16,7 +16,7 @@ const multerUpload = multer({
     //Get contentType array based on value of field params
     const contentType = /(avatar|cover)/i.test(field)
       ? ['image/png', 'image/jpg', 'image/jpeg']
-      : field === 'posts'
+      : field === 'post'
       ? ['image/png', 'image/jpg', 'image/jpeg', 'video/mp4', 'video/mov']
       : undefined;
 
@@ -49,7 +49,7 @@ const multerUpload = multer({
 
 const getFileUpload = async (req, res, next) => {
   const { field } = req.query;
-  field === 'posts' ? multerUpload.array('file', 10)(req, res, next) : multerUpload.single('file')(req, res, next);
+  field === 'post' ? multerUpload.array('file', 10)(req, res, next) : multerUpload.single('file')(req, res, next);
 };
 
 export default getFileUpload;

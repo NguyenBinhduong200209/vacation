@@ -1,7 +1,6 @@
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
-import Vacations from '#root/model/vacation/vacations';
 import {
   addTotalPageFields,
   getUserInfo,
@@ -13,6 +12,7 @@ import {
 } from '#root/config/pipeline';
 import getDate from '#root/utils/getDate';
 import mongoose from 'mongoose';
+import Resources from '#root/model/resource';
 
 const postController = {
   getManyByVacation: asyncWrapper(async (req, res) => {
@@ -162,27 +162,55 @@ const postController = {
       createdAt: new Date(),
     });
 
-    //Update lastUpdateAt in vacation
-    await Vacations.findByIdAndUpdate(vacationId, { lastUpdateAt: new Date() });
-
     //Send to front
     return res.status(201).json({ data: newPost, message: 'post created successfully' });
   }),
 
   update: asyncWrapper(async (req, res) => {
+    const { id } = req.params;
     //Get document from previous middleware
     const foundPost = req.doc;
 
     //Config updatable key and update based on req.body value
-    const updateKeys = ['locationId', 'content'];
-    updateKeys.forEach(key => {
-      const val = req.body[key];
-      val && (foundPost[key] = req.body[key]);
-    });
+    const updateKeys = ['locationId', 'content', 'lastUpdateAt'];
+    const updateObj = updateKeys.reduce((obj, key) => {
+      switch (key) {
+        case 'lastUpdateAt':
+          return Object.assign(obj, { lastUpdateAt: new Date() });
 
-    //Save new value for key lastUpdateAt
-    foundPost.lastUpdateAt = new Date();
-    await foundPost.save();
+        default:
+          const val = req.body[key];
+          return val ? Object.assign(obj, { [key]: val }) : obj;
+      }
+    }, {});
+
+    await foundPost.updateOne(updateObj);
+
+    //If user want to update files in post
+    if (req.body.resourceList) {
+      const listFromReq = req.body.resourceList;
+      const listFromDB = await Resources.find({
+        userId: req.userInfo._id,
+        ref: { $elemMatch: { model: 'posts', _id: id } },
+      }).then(data => data.map(item => item._id.toString()));
+
+      //Get resrouceId which is not in listFromDB and updateRef for document
+      let updateArr = [];
+      for (const element of listFromReq) {
+        !listFromDB.includes(element) && updateArr.push(element);
+      }
+      const updateResource = Resources.updateMany({ _id: { $in: updateArr } }, { ref: [{ model: 'posts', _id: id }] });
+
+      //Get resourceId which is not in listFromReq and delete document
+      let deleteArr = [];
+      for (const element of listFromDB) {
+        !listFromReq.includes(element) && deleteArr.push(element);
+      }
+      const deleteResouce = Resources.deleteMany({ _id: { $in: deleteArr } });
+
+      //Run promise all
+      await Promise.all([updateResource, deleteResouce]);
+    }
 
     //Send to front
     return res.status(201).json({ data: foundPost, message: 'update post successfully' });

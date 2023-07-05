@@ -41,23 +41,34 @@ const resourceController = {
   }),
 
   addNew: asyncWrapper(async (req, res) => {
-    const { field, id } = req.query,
-      isAvatar = field === 'avatar';
+    const { field, vacationId } = req.query,
+      isAvatar = field === 'avatar',
+      isPost = field === 'post';
 
     //Create new document and save to DB without validation because validation has run in fileFilter in getFileUpload middleware
-    const { originalname, mimetype, size, url } = req.file;
+    let result = [];
+    for (const file of req.filesArr) {
+      const { originalname, mimetype, size, url } = file;
 
-    const newResource = await Resources.create({
-      name: originalname,
-      type: mimetype,
-      size: size,
-      path: url,
-      userId: isAvatar ? req.userInfo._id : req.doc.userId,
-      ref: [],
-    });
+      //Only create value for ref field when user upload file for new cover vacation or new avatar, there is no ref for new post yet. Using updateRef for set up ref for post
+      const newResource = await Resources.create({
+        name: originalname,
+        type: mimetype,
+        size: size,
+        path: url,
+        userId: isAvatar ? req.userInfo._id : req.doc.userId,
+        ref: isPost
+          ? []
+          : isAvatar
+          ? [{ model: 'users', field: field, _id: req.userInfo._id }]
+          : [{ model: 'vacations', field: field, _id: vacationId }],
+      });
+
+      result.push(newResource);
+    }
 
     //Send to front
-    return res.status(201).json({ data: newResource, message: 'add successfully' });
+    return res.status(201).json({ data: result, message: 'add successfully' });
   }),
 
   deleteOne: asyncWrapper(async (req, res) => {
