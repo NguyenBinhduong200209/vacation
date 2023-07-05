@@ -2,7 +2,7 @@ import Vacations from '#root/model/vacation/vacations';
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
-import mongoose from 'mongoose';
+import mongoose, { model } from 'mongoose';
 
 function checkPermission({ field, modelType, listType }) {
   return asyncWrapper(async (req, res, next) => {

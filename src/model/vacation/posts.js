@@ -88,16 +88,12 @@ postSchema.post('findOneAndDelete', async function () {
 });
 
 postSchema.post('save', async function () {
-  const { _id, userId, vacationId } = this;
-
-  //Update ref of resources
-  const updateResources = Resources.updateMany({ userId: userId, ref: [] }, { ref: [{ model: 'posts', _id: _id }] });
+  const { vacationId } = this;
 
   //Update lastUpdateAt in vacation
-  const updateVacation = Vacations.findByIdAndUpdate(vacationId, { lastUpdateAt: new Date() });
+  const updateVacation = await Vacations.findByIdAndUpdate(vacationId, { lastUpdateAt: new Date() });
 
-  const result = await Promise.all([updateResources, updateVacation]);
-  console.log('createPost', result);
+  console.log('createPost', updateVacation);
 });
 
 const Posts = mongoose.model('posts', postSchema);

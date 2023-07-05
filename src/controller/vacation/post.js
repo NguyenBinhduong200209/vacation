@@ -148,19 +148,25 @@ const postController = {
 
   addNew: asyncWrapper(async (req, res) => {
     //Get infor from req.body
-    const { vacationId, locationId, content } = req.body;
+    const { vacationId, locationId, content, resources } = req.body;
 
     //Get userInfo from verifyJWT middleware
-    const foundUser = req.userInfo;
+    const foundUserId = req.userInfo._id;
 
     //Create new post and save it to database
     const newPost = await Posts.create({
       vacationId,
       locationId,
-      userId: foundUser._id,
+      userId: foundUserId,
       content,
       createdAt: new Date(),
     });
+
+    //Update ref of resources
+    await Resources.updateMany(
+      { userId: foundUserId, _id: { $in: resources }, ref: [] },
+      { ref: [{ model: 'posts', _id: newPost._id }] }
+    );
 
     //Send to front
     return res.status(201).json({ data: newPost, message: 'post created successfully' });
