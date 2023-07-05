@@ -35,13 +35,13 @@ const likeSchema = new mongoose.Schema(
       type: Date,
       default: new Date(),
     },
-  },
-  {
-    versionKey: false,
-    toObject: { getters: true, setters: true },
-    toJSON: { getters: true, setters: true },
-    runSettersOnQuery: true,
   }
+  // {
+  //   versionKey: false,
+  //   toObject: { getters: true, setters: true },
+  //   toJSON: { getters: true, setters: true },
+  //   runSettersOnQuery: true,
+  // }
 );
 
 likeSchema.post('save', async function () {

@@ -41,6 +41,7 @@ const notiController = {
     const { modelType, modelId, userId } = document;
 
     const foundDocument = await mongoose.model(modelType).findById(modelId);
+
     !foundDocument &&
       _throw({
         code: 500,
