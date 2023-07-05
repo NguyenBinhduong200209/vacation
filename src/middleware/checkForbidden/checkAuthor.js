@@ -33,7 +33,7 @@ function checkAuthor({ modelType, field }) {
         _throw({
           code: 404,
           errors: [{ field: modelType, message: `${modelType}Id not found` }],
-          message: `invalid ${type}Id`,
+          message: `invalid ${modelType}Id`,
         });
 
       //Throw an error if user login is not author of this post
