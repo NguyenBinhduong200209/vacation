@@ -11,6 +11,7 @@ import likeRoute from '#root/routes/interaction/like';
 import commentRoute from '#root/routes/interaction/comment';
 import searchRoute from '#root/routes/search/search';
 import albumsRoute from '#root/routes/albums';
+import albumspagesRoute from '#root/routes/albumspages';
 import resourceRoute from '#root/routes/resource';
 import notiRoute from '#root/routes/interaction/notification';
 
@@ -31,6 +32,7 @@ const pathArr = [
   { path: '/notification', route: notiRoute },
 
   //Other path
+  { path: '/albumpage', route: albumspagesRoute },
   { path: '/search', route: searchRoute },
   { path: '/resource', route: resourceRoute },
   { path: '/album', route: albumsRoute },
