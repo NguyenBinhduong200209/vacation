@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-
+import Users from '#root/model/user/users';
 import _throw from '#root/utils/_throw';
 import Albums from '#root/model/albums';
 import Resource from '#root/model/resource';
@@ -31,16 +31,13 @@ const albumspageSchema = new mongoose.Schema({
         });
     },
   },
-  order: {
-    type: String,
-    required: true,
-  },
-  image: [
+  resource: [
     {
       id: {
         type: mongoose.ObjectId,
         ref: 'Resource', // Sử dụng tham chiếu đến mô hình Resource
-        required: 'resourceID',
+        required: 'resourceId',
+        trim: true,
         validate: async value => {
           const foundimage = await Resource.findById(value).select('path');
           // Tìm ảnh theo đường dẫn
@@ -52,12 +49,11 @@ const albumspageSchema = new mongoose.Schema({
             });
         },
       },
-      resource: {
-        type: String,
-      },
+      index: { type: Number, min: 0 },
       style: {
         type: String,
         required: true,
+        trim: true,
       },
     },
   ],
