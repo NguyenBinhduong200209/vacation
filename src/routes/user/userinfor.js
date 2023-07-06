@@ -3,6 +3,6 @@ import usersinforController from '#root/controller/user/userinfo';
 
 const router = express.Router();
 
-router.get('/', usersinforController.getfriendprofile);
+router.get('/:id?', usersinforController.getfriendprofile);
 
 export default router;
