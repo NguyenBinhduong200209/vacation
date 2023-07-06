@@ -1,20 +1,20 @@
 import express from 'express';
-import usersController from '#root/controller/user/auth';
+import authController from '#root/controller/user/auth';
 import verifyJWT from '#root/middleware/verifyJWT';
-import upload from '#root/middleware/upload';
-import usersinforController from '#root/controller/user/userinfo';
+import usersController from '#root/controller/user/userinfo';
 
 const router = express.Router();
 
 router
-  .post('/login', usersController.logIn)
-  .post('/register', usersController.register)
-  .post('/verify', usersController.verify)
-  .post('/refresh', usersController.refresh)
-  .post('/forgot/:email', usersController.forgot)
-  .put('/reset', usersController.reset);
+  .post('/login', authController.logIn)
+  .post('/register', authController.register)
+  .post('/verify', authController.verify)
+  .post('/refresh', authController.refresh)
+  .post('/forgot/:email', authController.forgot)
+  .put('/reset', authController.reset);
 
 router.use(verifyJWT);
+router.put('/update', authController.update).get('/info', usersController.getprofile).post('/logout', authController.logOut);
 router
   .put('/update', upload.single('avatar'), usersController.update)
   .get('/info/:id?', usersinforController.getprofile)

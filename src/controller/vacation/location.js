@@ -20,18 +20,29 @@ const locationController = {
     switch (type) {
       //If type is level, meaning user want to get city List, districtList or
       case 'level':
-        const { parentId } = req.query;
         let list = [];
         switch (number) {
+          //If user want to get Naionality list
           case 4:
-            list = await Locations.aggregate([{ $match: { level: 4 } }, { $project: { _id: 1, title: 1 } }]);
+            list = await Locations.aggregate([
+              { $match: { level: 4 } },
+              { $project: { _id: 1, title: 1 } },
+              { $sort: { title: 1 } },
+            ]);
             break;
 
+          //If user want to get city list
           case 3:
-            list = await Locations.aggregate([{ $match: { level: 3 } }, { $project: { _id: 1, title: 1 } }]);
+            list = await Locations.aggregate([
+              { $match: { level: 3 } },
+              { $project: { _id: 1, title: 1 } },
+              { $sort: { title: 1 } },
+            ]);
             break;
 
+          //If user want to get district list
           case 2:
+            const { parentId } = req.query;
             //Throw an error if there is no parentId
             !parentId &&
               _throw({
@@ -44,10 +55,11 @@ const locationController = {
             list = await Locations.aggregate([
               { $match: { level: number, parentId: new mongoose.Types.ObjectId(parentId) } },
               { $project: { _id: 1, title: 1 } },
+              { $sort: { title: 1 } },
             ]);
             break;
 
-          //Throw an error if type is level number greater than 3 or lower than 2
+          //Throw an error if type is level number greater than 4 or lower than 2
           default:
             _throw({
               code: 400,
@@ -98,6 +110,8 @@ const locationController = {
           //Only firstN elements in array based on params
           { $limit: number },
         ]);
+
+        //Send to front
         return res
           .status(200)
           .json({ meta: { total: result.length }, data: result, message: 'get trending list successfully' });
@@ -115,14 +129,16 @@ const locationController = {
     const { id } = req.params;
 
     const result = await Locations.aggregate(
-      //Filter based on id
-      [{ $match: { _id: new mongoose.Types.ObjectId(id) } }].concat(
+      [].concat(
+        //Filter based on id
+        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+
         //Get user and location infor by lookup to model
         getUserInfo({ field: ['username', 'avatar'] }),
         getLocation({ localField: '_id' }),
 
         //Get specific fields
-        [{ $project: { level: 0, title: 0, userId: 0, parentId: 0 } }]
+        { $project: { level: 0, title: 0, userId: 0, parentId: 0 } }
       )
     );
 

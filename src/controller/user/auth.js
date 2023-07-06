@@ -1,12 +1,12 @@
-import _throw from '#root/utils/_throw';
-import Users from '#root/model/user/users';
-import Resources from '#root/model/resource';
-import asyncWrapper from '#root/middleware/asyncWrapper';
+import fs from 'fs';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import sendMail from '#root/utils/email/sendEmail';
 import mongoose from 'mongoose';
-import { __publicPath } from '#root/app';
+import { resourcePath } from '#root/config/path';
+import Users from '#root/model/user/users';
+import asyncWrapper from '#root/middleware/asyncWrapper';
+import _throw from '#root/utils/_throw';
+import sendMail from '#root/utils/email/sendEmail';
 
 const usersController = {
   logIn: asyncWrapper(async (req, res) => {
@@ -88,6 +88,7 @@ const usersController = {
     newUser.password = hashedPwd;
 
     //Save to database
+    newUser.createdAt = new Date();
     await newUser.save();
 
     //Send email
@@ -120,7 +121,7 @@ const usersController = {
     foundUser.accessToken = accessToken;
     foundUser.refreshToken = refreshToken;
     foundUser.emailVerified = true;
-    foundUser.createdAt = new Date();
+    foundUser.lastUpdateAt = new Date();
     await foundUser.save();
 
     //Send result to frontend
@@ -134,9 +135,8 @@ const usersController = {
     //Find User by username get from accessToken
     const foundUser = req.userInfo;
 
-    //Get schema User
+    //Get schema User and Update User
     const templateUser = await Users.schema.obj;
-    //Update User
     for (const key of Object.keys(templateUser)) {
       const val = req.body[key];
       //Only processing update if has any value
@@ -170,27 +170,8 @@ const usersController = {
             break;
 
           default:
-            //if user does upload a file, then upload to server, and create new Resource document
-            if (req.file) {
-              const { fieldname, destination, originalname, mimetype, size } = req.file;
-              //Config path of file uploaded to server
-              const newPath = destination.split('\\').slice(-1)[0] + '/' + originalname;
-
-              console.log(destination);
-
-              //Create new Resource document
-              const newResource = await Resources.create({
-                name: originalname,
-                type: mimetype,
-                size: size,
-                path: newPath,
-                userId: foundUser._id,
-                ref: [{ model: 'users', field: fieldname }],
-              });
-              foundUser.avatar = newResource;
-            }
-            //if user did not upload any file, then return any value that match key
-            else foundUser[key] = val;
+            //update any value that match key
+            foundUser[key] = val;
             break;
         }
       }
@@ -200,8 +181,16 @@ const usersController = {
     await foundUser.save();
 
     //Send to front
+    const result = Object.keys(foundUser._doc).reduce(
+      (obj, key) =>
+        /(passwordToken|refreshToken|accessToken|password|emailVerified)/i.test(key)
+          ? obj
+          : Object.assign(obj, { [key]: foundUser._doc[key] }),
+      {}
+    );
+
     return res.status(200).json({
-      data: { userInfo: Object.assign(foundUser) },
+      data: { userInfo: result },
       message: `user ${foundUser.username} update successfully`,
     });
   }),
@@ -311,6 +300,17 @@ const usersController = {
         message: 'invalid token',
       });
   }),
+
+  delete: async (req, res) => {
+    //Config expired date
+    const expDate = new Date(Date.now() - process.env.MAX_RANGE_ACTIVE_ACCOUNT);
+
+    //Delete all users has not verified by their email in 30 days
+    const deleteInactiveUser = await Users.deleteMany({ emailVerified: false, lastUpdateAt: { $lte: expDate } });
+
+    //return result
+    return deleteInactiveUser;
+  },
 };
 
 export default usersController;

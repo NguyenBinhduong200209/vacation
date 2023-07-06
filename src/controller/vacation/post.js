@@ -1,55 +1,111 @@
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
-import checkPermission from '#root/utils/checkForbidden/checkPermission';
-import checkAuthor from '#root/utils/checkForbidden/checkAuthor';
-import { addTotalPageFields, getUserInfo, getCountInfo, getLocation, facet } from '#root/config/pipeline';
+import {
+  addTotalPageFields,
+  getUserInfo,
+  getCountInfo,
+  getLocation,
+  facet,
+  getResourcePath,
+  isLiked,
+} from '#root/config/pipeline';
+import getDate from '#root/utils/getDate';
 import mongoose from 'mongoose';
+import Resources from '#root/model/resource';
+import Locations from '#root/model/vacation/locations';
+import getDifference from '#root/utils/DifferenceTwoArr';
 
 const postController = {
-  getMany: asyncWrapper(async (req, res) => {
-    const { type, id, page } = req.query,
-      isVacation = type === 'vacation',
-      userId = req.userInfo._id;
+  getManyByVacation: asyncWrapper(async (req, res) => {
+    const { id } = req.params;
+    const { page, timeline } = req.query;
 
-    //Throw an error if type is not vacation and location
-    !['vacation', 'location'].includes(type) &&
-      _throw({
-        code: 400,
-        errors: [{ field: 'type', message: 'type can only be vacation or location' }],
-        message: 'invalid type',
-      });
-
-    //Throw an error if user have no permission to see any post of vacation
-    isVacation && (await checkPermission({ crUserId: userId, modelType: 'vacation', modelId: id }));
-
+    //Get other data
     const result = await Posts.aggregate(
       [].concat(
         //Get all posts belong to vacationId
-        isVacation
-          ? { $match: { vacationId: new mongoose.Types.ObjectId(id) } }
-          : [
-              {
-                $lookup: {
-                  from: 'vacations',
-                  localField: 'vacationId',
-                  foreignField: '_id',
-                  pipeline: [{ $project: { shareStatus: 1, shareList: 1, userId: 1, _id: 0 } }],
-                  as: 'vacation',
-                },
-              },
-              { $unwind: '$vacation' },
-              {
-                $match: {
-                  locationId: new mongoose.Types.ObjectId(id),
-                  $or: [
-                    { 'vacation.shareStatus': 'public' },
-                    { 'vacation.shareStatus': 'protected', 'vacation.shareList': { $in: [userId] } },
-                    { 'vacation.shareStatus': 'onlyme', 'vacation.userId': userId },
-                  ],
-                },
-              },
+        {
+          $match: Object.assign(
+            { vacationId: new mongoose.Types.ObjectId(id) },
+            timeline ? { createdAt: { $gte: new Date(timeline) } } : {}
+          ),
+        },
+
+        //Sort in order to push the newest updated post to top
+        { $sort: { lastUpdateAt: -1, createdAt: -1 } },
+
+        // Add 3 new fields (total, page, pages) and then Get username, location by looking up to other model
+        timeline ? [{ $skip: (page || 1) * process.env.ITEM_OF_PAGE }] : addTotalPageFields({ page }),
+        getUserInfo({ field: ['username', 'avatar'] }),
+        getCountInfo({ field: ['like', 'comment'] }),
+        getLocation({ localField: 'locationId' }),
+        getResourcePath({ localField: '_id', as: 'resource', returnAsArray: true }),
+        isLiked({ userId: req.userInfo._id }),
+
+        //Set up new array with total field is length of array and list field is array without __v field
+        facet(
+          Object.assign(timeline ? {} : { meta: ['total', 'page', 'pages'] }, {
+            data: [
+              'content',
+              'lastUpdateAt',
+              'resource',
+              'location',
+              'createdAt',
+              'authorInfo',
+              'likes',
+              'comments',
+              'isLiked',
             ],
+          })
+        )
+      )
+    );
+
+    // Get timeline
+    if (result.length === 0) return res.sendStatus(204);
+    else {
+      if (!timeline) {
+        const timeline = (await Posts.find({ vacationId: id }).sort({ createdAt: -1 }))
+          .map(value => getDate(value.createdAt))
+          .filter((value, index, array) => array.indexOf(value) === index);
+        result[0].meta.timeline = timeline;
+      }
+      return res.status(200).json(result);
+    }
+  }),
+
+  getManyByLocation: asyncWrapper(async (req, res) => {
+    const { id } = req.params,
+      { page } = req.query,
+      userId = req.userInfo._id;
+
+    //Get other data
+    const result = await Posts.aggregate(
+      [].concat(
+        //Get all posts belong to vacationId
+        [
+          {
+            $lookup: {
+              from: 'vacations',
+              localField: 'vacationId',
+              foreignField: '_id',
+              pipeline: [{ $project: { shareStatus: 1, shareList: 1, userId: 1, _id: 0 } }],
+              as: 'vacation',
+            },
+          },
+          { $unwind: '$vacation' },
+          {
+            $match: {
+              locationId: new mongoose.Types.ObjectId(id),
+              $or: [
+                { 'vacation.shareStatus': 'public' },
+                { 'vacation.shareStatus': 'protected', 'vacation.shareList': { $in: [userId] } },
+                { 'vacation.shareStatus': 'onlyme', 'vacation.userId': userId },
+              ],
+            },
+          },
+        ],
 
         //Sort in order to push the newest updated post to top
         { $sort: { lastUpdateAt: -1, createdAt: -1 } },
@@ -58,38 +114,44 @@ const postController = {
         addTotalPageFields({ page }),
         getUserInfo({ field: ['username', 'avatar'] }),
         getCountInfo({ field: ['like', 'comment'] }),
-        isVacation ? getLocation({ localField: 'locationId' }) : [],
+        isLiked({ userId: req.userInfo._id }),
 
         //Set up new array with total field is length of array and list field is array without __v field
         facet({
           meta: ['total', 'page', 'pages'],
-          data: ['content', 'lastUpdateAt', 'resource', 'location', 'createdAt', 'authorInfo', 'likes', 'comments'],
+          data: [
+            'content',
+            'lastUpdateAt',
+            'resource',
+            'location',
+            'createdAt',
+            'authorInfo',
+            'likes',
+            'comments',
+            'isLiked',
+          ],
         })
       )
     );
 
-    return res.status(200).json(result[0]);
+    return result.length === 0 ? res.sendStatus(204) : res.status(200).json(result[0]);
   }),
 
   getOne: asyncWrapper(async (req, res) => {
     const { id } = req.params;
 
-    //Get vacationId based on postId and check forbidden of userId login and vacation contain post
-    const foundPost = await Posts.findById(id);
-    !foundPost && _throw({ code: 404, errors: [{ field: 'id', message: 'invalid' }], message: 'post not found' });
-
-    //Check the authorization of user to post
-    await checkPermission({ crUserId: req.userInfo._id, modelType: 'vacation', modelId: foundPost.vacationId });
-
     const result = await Posts.aggregate(
-      //Filter based on id
-      [{ $match: { _id: new mongoose.Types.ObjectId(id) } }].concat(
+      [].concat(
+        //Filter based on id
+        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+
         //Get username, location by looking up to other model
         getUserInfo({ field: ['username', 'avatar'] }),
         getLocation({ localField: 'locationId' }),
+        getResourcePath({ localField: '_id', as: 'resource', returnAsArray: true }),
 
         //Remove unnecessary fields
-        [{ $project: { vacationId: 0, userId: 0, locationId: 0, __v: 0 } }]
+        { $project: { vacationId: 0, userId: 0, locationId: 0, __v: 0 } }
       )
     );
 
@@ -99,20 +161,39 @@ const postController = {
 
   addNew: asyncWrapper(async (req, res) => {
     //Get infor from req.body
-    const { vacationId, locationId, content, resource } = req.body;
+    const { vacationId, locationId, content, resources } = req.body;
 
     //Get userInfo from verifyJWT middleware
-    const foundUser = req.userInfo;
+    const foundUserId = req.userInfo._id;
+
+    //check Location level
+    const foundLocation = await Locations.findById(locationId);
+    //Throw an error if cannot find location
+    !foundLocation &&
+      _throw({ code: 404, errors: [{ field: 'locationId', message: 'not found' }], message: 'location not found' });
+
+    //Throw an error if location level must be greater than 1
+    Number(foundLocation.level) > 1 &&
+      _throw({
+        code: 400,
+        errors: [{ field: 'locationId', message: 'can only choose location level 1' }],
+        message: 'location level must be 1',
+      });
 
     //Create new post and save it to database
     const newPost = await Posts.create({
       vacationId,
       locationId,
-      userId: foundUser._id,
+      userId: foundUserId,
       content,
-      resource,
       createdAt: new Date(),
     });
+
+    //Update ref of resources
+    await Resources.updateMany(
+      { userId: foundUserId, _id: { $in: resources }, ref: [] },
+      { ref: [{ model: 'posts', _id: newPost._id }] }
+    );
 
     //Send to front
     return res.status(201).json({ data: newPost, message: 'post created successfully' });
@@ -120,19 +201,35 @@ const postController = {
 
   update: asyncWrapper(async (req, res) => {
     const { id } = req.params;
-
-    //Throw an error if user login is not author of this post
-    const foundPost = await checkAuthor({ modelType: 'post', modelId: id, userId: req.userInfo._id });
+    //Get document from previous middleware
+    const foundPost = req.doc;
 
     //Config updatable key and update based on req.body value
-    const updateKeys = ['vacationId', 'locationId', 'content', 'resource'];
-    updateKeys.forEach(key => {
-      foundPost[key] = req.body[key];
-    });
+    const updateKeys = ['locationId', 'content'];
+    const updateObj = updateKeys.reduce((obj, key) => {
+      const val = req.body[key];
+      return val ? Object.assign(obj, { [key]: val }) : obj;
+    }, {});
 
-    //Save new value for key lastUpdateAt
-    foundPost.lastUpdateAt = new Date();
-    await foundPost.save();
+    await foundPost.updateOne(updateObj);
+
+    //If user want to update files in post
+    if (req.body.resources) {
+      const listFromReq = req.body.resources;
+      const listFromDB = await Resources.find({
+        userId: req.userInfo._id,
+        ref: { $elemMatch: { model: 'posts', _id: id } },
+      }).then(data => data.map(item => item._id.toString()));
+
+      //Get updateArr including id need to updateRef and deleteArr including id need to delete
+      const { arr1: updateArr, arr2: deleteArr } = await getDifference(listFromReq, listFromDB);
+
+      const updateResource = Resources.updateMany({ _id: { $in: updateArr } }, { ref: [{ model: 'posts', _id: id }] });
+      const deleteResouce = Resources.deleteMany({ _id: { $in: deleteArr } });
+
+      //Run promise all
+      await Promise.all([updateResource, deleteResouce]);
+    }
 
     //Send to front
     return res.status(201).json({ data: foundPost, message: 'update post successfully' });
@@ -141,23 +238,11 @@ const postController = {
   delete: asyncWrapper(async (req, res) => {
     const { id } = req.params;
 
-    //Throw an error if user login is not author of this post
-    await checkAuthor({ modelType: 'post', modelId: id, userId: req.userInfo._id });
-
     //Define deletePost method
-    const deletePost = Posts.findByIdAndDelete(id);
-
-    //Define deleteLikes method
-    const deleteLikes = Likes.deleteMany({ modelType: 'post', modelId: id });
-
-    //Define deleteComments method
-    const deleteComments = Comments.deleteMany({ modelType: 'post', modelId: id });
-
-    //Run all methods at once
-    await Promise.all([deletePost, deleteLikes, deleteComments]);
+    const deletePost = await Posts.findByIdAndDelete(id);
 
     //Send to front
-    return res.status(202).json({ message: 'delete post successfully' });
+    return res.status(200).json({ data: deletePost, message: 'delete post successfully' });
   }),
 };
 

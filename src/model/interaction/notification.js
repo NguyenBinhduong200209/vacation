@@ -7,19 +7,13 @@ const notiSchema = new mongoose.Schema(
     modelType: {
       type: String,
       required: 'model Type required',
-      enum: ['post', 'vacation', 'album', 'friend'],
+      enum: ['posts', 'vacations', 'albums', 'friend'],
       default: 'friend',
     },
 
     modelId: {
       type: mongoose.ObjectId,
       required: 'modelId required',
-    },
-
-    action: {
-      type: String,
-      required: 'action required',
-      enum: ['like', 'comment', 'addFriend'],
     },
 
     userId: {
@@ -36,11 +30,24 @@ const notiSchema = new mongoose.Schema(
       },
     },
 
-    content: {
+    userActionId: {
+      type: mongoose.ObjectId,
+      required: 'userActionId required',
+      validate: async value => {
+        const foundUser = await Users.findById(value);
+        !foundUser &&
+          _throw({
+            code: 400,
+            errors: [{ field: 'userId', message: 'invalid userId' }],
+            message: 'invalid userId',
+          });
+      },
+    },
+
+    action: {
       type: String,
-      required: 'content required',
-      trim: true,
-      maxlength: 65000,
+      required: 'action required',
+      enum: ['like', 'comment', 'addFriend'],
     },
 
     isSeen: {
@@ -59,13 +66,14 @@ const notiSchema = new mongoose.Schema(
     },
   },
   {
-    versionKey: false,
-    toObject: { getters: true, setters: true },
-    toJSON: { getters: true, setters: true },
-    runSettersOnQuery: true,
+    // optimisticConcurrency: true,
+    //   versionKey: '__v',
+    //   toObject: { getters: true, setters: true },
+    //   toJSON: { getters: true, setters: true },
+    //   runSettersOnQuery: true,
   }
 );
 
-const Notifications = mongoose.model('Notifications', notiSchema);
+const Notifications = mongoose.model('notifications', notiSchema);
 
 export default Notifications;

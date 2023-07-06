@@ -2,6 +2,10 @@ import mongoose from 'mongoose';
 import validator from 'validator';
 import _throw from '#root/utils/_throw';
 import Users from '#root/model/user/users';
+import Posts from '#root/model/vacation/posts';
+import Views from '#root/model/interaction/views';
+import Likes from '#root/model/interaction/likes';
+import Comments from '#root/model/interaction/comments';
 
 const vacationSchema = new mongoose.Schema(
   {
@@ -39,12 +43,6 @@ const vacationSchema = new mongoose.Schema(
       required: 'Description required',
       trim: true,
       maxlength: 65000,
-    },
-
-    cover: {
-      type: String,
-      required: 'cover photo required',
-      trim: true,
     },
 
     memberList: [
@@ -109,12 +107,6 @@ const vacationSchema = new mongoose.Schema(
       },
     },
 
-    views: {
-      type: Number,
-      min: 1,
-      default: 1,
-    },
-
     createdAt: {
       type: Date,
     },
@@ -123,15 +115,28 @@ const vacationSchema = new mongoose.Schema(
       type: Date,
       default: new Date(),
     },
-  },
-  {
-    versionKey: false,
-    toObject: { getters: true, setters: true },
-    toJSON: { getters: true, setters: true },
-    runSettersOnQuery: true,
   }
+  // {
+  //   versionKey: false,
+  //   toObject: { getters: true, setters: true },
+  //   toJSON: { getters: true, setters: true },
+  //   runSettersOnQuery: true,
+  // }
 );
 
-const Vacations = mongoose.model('Vacations', vacationSchema);
+//Config event after delete one vacation
+vacationSchema.post('findOneAndDelete', async function () {
+  const { _id } = this.getQuery();
+
+  //Use vacationId to delete Posts, views, like and comment of vacation deleted
+  const deletePost = Posts.deleteMany({ vacationId: _id });
+  const deleteViews = Views.deleteMany({ modelType: 'vacation', modelId: _id });
+  const deleteLike = Likes.deleteMany({ modelType: 'vacation', modelId: _id });
+  const deleteComment = Comments.deleteMany({ modelType: 'vacation', modelId: _id });
+  const result = await Promise.all([deletePost, deleteViews, deleteLike, deleteComment]);
+  console.log('deleteVacation', result);
+});
+
+const Vacations = mongoose.model('vacations', vacationSchema);
 
 export default Vacations;

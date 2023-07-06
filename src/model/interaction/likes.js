@@ -1,14 +1,15 @@
 import mongoose from 'mongoose';
 import _throw from '#root/utils/_throw';
 import Users from '#root/model/user/users';
+import notiController from '#root/controller/interaction/notification';
 
 const likeSchema = new mongoose.Schema(
   {
     modelType: {
       type: String,
       required: 'model Type required',
-      enum: ['vacation', 'post', 'album'],
-      default: 'vacation',
+      enum: ['vacations', 'posts', 'albums'],
+      default: 'vacations',
     },
 
     modelId: {
@@ -34,15 +35,20 @@ const likeSchema = new mongoose.Schema(
       type: Date,
       default: new Date(),
     },
-  },
-  {
-    versionKey: false,
-    toObject: { getters: true, setters: true },
-    toJSON: { getters: true, setters: true },
-    runSettersOnQuery: true,
   }
+  // {
+  //   versionKey: false,
+  //   toObject: { getters: true, setters: true },
+  //   toJSON: { getters: true, setters: true },
+  //   runSettersOnQuery: true,
+  // }
 );
 
-const Likes = mongoose.model('Likes', likeSchema);
+likeSchema.post('save', async function () {
+  //Update new Notification to user has receive like action
+  await notiController.updateContent({ document: this, action: 'like' });
+});
+
+const Likes = mongoose.model('likes', likeSchema);
 
 export default Likes;

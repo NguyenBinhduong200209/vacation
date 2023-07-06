@@ -9,21 +9,21 @@ import dbConnect from '#root/config/dbConnect';
 import corsOptions from '#root/config/corsOption';
 import pathArr from '#root/routes/index';
 import internalTasks from '#root/services/internalTasks';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
+import { publicPath } from '#root/config/path';
+import firebase from '#root/services/firebase';
 // create an instance of an Express application
 const app = express();
 // set the port number for the server to listen on
 const PORT = 3100;
 
 //build-in middleware for static files
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const __publicPath = path.join(__dirname, '..', 'public');
-app.use('/static', express.static(__publicPath));
+app.use('/static', express.static(publicPath));
 
 //Connect to database
 await dbConnect();
+
+//Connect to firebase
+await firebase();
 
 //Run internal Task
 internalTasks();
@@ -32,13 +32,13 @@ internalTasks();
 app.use(credentials);
 
 //build-in middleware to handle urlencoded data
-app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Parse JSON request bodies
+app.use(express.json());
 
 // Enable Cross-Origin Resource Sharing
 app.use(cors());
-
-// Parse JSON request bodies
-app.use(express.json({ limit: '100kb' }));
 
 // use router for handling requests
 pathArr.forEach(({ path, route }) => app.use(path, route));
