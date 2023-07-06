@@ -14,6 +14,7 @@ import getDate from '#root/utils/getDate';
 import mongoose from 'mongoose';
 import Resources from '#root/model/resource';
 import Locations from '#root/model/vacation/locations';
+import getDifference from '#root/utils/DifferenceTwoArr';
 
 const postController = {
   getManyByVacation: asyncWrapper(async (req, res) => {
@@ -204,41 +205,26 @@ const postController = {
     const foundPost = req.doc;
 
     //Config updatable key and update based on req.body value
-    const updateKeys = ['locationId', 'content', 'lastUpdateAt'];
+    const updateKeys = ['locationId', 'content'];
     const updateObj = updateKeys.reduce((obj, key) => {
-      switch (key) {
-        case 'lastUpdateAt':
-          return Object.assign(obj, { lastUpdateAt: new Date() });
-
-        default:
-          const val = req.body[key];
-          return val ? Object.assign(obj, { [key]: val }) : obj;
-      }
+      const val = req.body[key];
+      return val ? Object.assign(obj, { [key]: val }) : obj;
     }, {});
 
     await foundPost.updateOne(updateObj);
 
     //If user want to update files in post
-    if (req.body.resourceList) {
-      const listFromReq = req.body.resourceList;
+    if (req.body.resources) {
+      const listFromReq = req.body.resources;
       const listFromDB = await Resources.find({
         userId: req.userInfo._id,
         ref: { $elemMatch: { model: 'posts', _id: id } },
       }).then(data => data.map(item => item._id.toString()));
 
-      //Get resrouceId which is not in listFromDB and updateRef for document
-      let updateArr = [];
-      for (const element of listFromReq) {
-        !listFromDB.includes(element) && updateArr.push(new mongoose.Types.ObjectId(element));
-      }
-      const updateResource = await Resources.updateMany({ _id: { $in: updateArr } }, { ref: [{ model: 'posts', _id: id }] });
-      console.log(updateArr, await Resources.find({ _id: { $in: updateArr } }));
+      //Get updateArr including id need to updateRef and deleteArr including id need to delete
+      const { arr1: updateArr, arr2: deleteArr } = await getDifference(listFromReq, listFromDB);
 
-      //Get resourceId which is not in listFromReq and delete document
-      let deleteArr = [];
-      for (const element of listFromDB) {
-        !listFromReq.includes(element) && deleteArr.push(new mongoose.Types.ObjectId(element));
-      }
+      const updateResource = Resources.updateMany({ _id: { $in: updateArr } }, { ref: [{ model: 'posts', _id: id }] });
       const deleteResouce = Resources.deleteMany({ _id: { $in: deleteArr } });
 
       //Run promise all

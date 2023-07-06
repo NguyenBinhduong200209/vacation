@@ -92,8 +92,7 @@ postSchema.post('save', async function () {
 
   //Update lastUpdateAt in vacation
   const updateVacation = await Vacations.findByIdAndUpdate(vacationId, { lastUpdateAt: new Date() });
-
-  console.log('createPost', updateVacation);
+  // console.log('createPost', updateVacation);
 });
 
 const Posts = mongoose.model('posts', postSchema);
