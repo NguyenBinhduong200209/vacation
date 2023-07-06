@@ -270,126 +270,113 @@ export function facet({ meta, data }) {
   );
 }
 
-export async function search({ models, searchValue, page }) {
-  const itemOfPage = Number(process.env.ITEM_OF_PAGE);
+export async function searchOne({ model, value, page }) {
+  let newItem = [];
+  switch (model) {
+    case 'vacation':
+      newItem = [].concat(
+        //Filter to get documents has title contain searchValue
+        { $match: { title: { $regex: value, $options: 'i' } } },
 
-  function aggregateFlow(model) {
-    let newItem = [];
-    switch (model) {
-      case 'vacation':
-        newItem = [].concat(
-          //Filter to get documents has title contain searchValue
-          { $match: { title: { $regex: searchValue, $options: 'i' } } },
+        //Sort from the most views, latest update to the least
+        { $sort: { lastUpdateAt: -1, createdAt: -1 } },
 
-          //Sort from the most views, latest update to the least
-          { $sort: { views: -1, lastUpdateAt: -1, createdAt: -1 } },
+        //If page exists, meaning search for one, then add 3 fields: total, page and pages, otherwise, limit the document pass this stage
+        addTotalPageFields({ page }),
 
-          //If page exists, meaning search for one, then add 3 fields: total, page and pages, otherwise, limit the document pass this stage
-          page ? addTotalPageFields({ page }) : { $limit: itemOfPage },
+        //Lookup to user model to get info
+        getUserInfo({ field: ['username', 'avatar'] }),
 
-          //Lookup to user model to get info
-          getUserInfo({ field: ['username', 'avatar'] }),
+        //If page exists, meangin search for one, then restructure result by facet and limit fields could pass, otherwise, just limit fields could pass
+        facet({
+          meta: ['total', 'page', 'pages'],
+          data: ['title', 'startingTime', 'endingTime', 'lastUpdateAt', 'cover', 'views', 'authorInfo'],
+        })
+      );
+      return mongoose.model('vacations').aggregate(newItem);
 
-          //If page exists, meangin search for one, then restructure result by facet and limit fields could pass, otherwise, just limit fields could pass
-          page
-            ? facet({
-                meta: ['total', 'page', 'pages'],
-                data: ['title', 'startingTime', 'endingTime', 'lastUpdateAt', 'cover', 'views', 'authorInfo'],
-              })
-            : { $project: { title: 1, startingTime: 1, endingTime: 1, lastUpdateAt: 1, cover: 1, views: 1, authorInfo: 1 } }
-        );
-        return { model: 'vacations', newItem };
-
-      case 'user':
-        newItem = [].concat(
-          //Filter to get documents has username, firstname, lastname or email contain searchValue
-          {
-            $match: {
-              $or: [
-                { username: { $regex: searchValue, $options: 'i' } },
-                { firstname: { $regex: searchValue, $options: 'i' } },
-                { lastname: { $regex: searchValue, $options: 'i' } },
-                { email: { $regex: searchValue, $options: 'i' } },
-              ],
-            },
+    case 'user':
+      newItem = [].concat(
+        //Filter to get documents has username, firstname, lastname or email contain searchValue
+        {
+          $match: {
+            $or: [
+              { username: { $regex: value, $options: 'i' } },
+              { firstname: { $regex: value, $options: 'i' } },
+              { lastname: { $regex: value, $options: 'i' } },
+              { email: { $regex: value, $options: 'i' } },
+            ],
           },
+        },
 
-          //If page exists, meaning search for one, then add 3 fields: total, page and pages, otherwise, limit the document pass this stage
-          page ? addTotalPageFields({ page }) : { $limit: itemOfPage },
+        //If page exists, meaning search for one, then add 3 fields: total, page and pages, otherwise, limit the document pass this stage
+        addTotalPageFields({ page }),
 
-          //If page exists, meangin search for one, then restructure result by facet and limit fields could pass, otherwise, just limit fields could pass
-          page
-            ? facet({
-                meta: ['total', 'page', 'pages'],
-                data: ['firstname', 'lastname', 'username', 'email', 'avatar'],
-              })
-            : { $project: { firstname: 1, lastname: 1, username: 1, email: 1, avatar: 1 } }
-        );
-        return { model: 'users', newItem };
+        //Lookup to user model to get info
+        getUserInfo({ localField: '_id', field: ['avatar'], as: 'avatar' }),
+        { $addFields: { avatar: '$avatar.avatar.path' } },
 
-      case 'location':
-        newItem = [].concat(
-          //Filter to get documents has title contain searchValue and level is 1
-          { $match: { title: { $regex: searchValue, $options: 'i' }, level: 1 } },
+        //If page exists, meangin search for one, then restructure result by facet and limit fields could pass, otherwise, just limit fields could pass
+        facet({
+          meta: ['total', 'page', 'pages'],
+          data: ['firstname', 'lastname', 'username', 'email', 'avatar'],
+        })
+      );
+      return mongoose.model('users').aggregate(newItem);
 
-          //If page exists, meaning search for one, then add 3 fields: total, page and pages, otherwise, limit the document pass this stage
-          page ? addTotalPageFields({ page }) : { $limit: itemOfPage },
+    case 'location':
+      newItem = [].concat(
+        //Filter to get documents has title contain searchValue and level is 1
+        { $match: { title: { $regex: value, $options: 'i' }, level: 1 } },
 
-          //Lookup to location model to district and city
-          getLocation({ localField: '_id' }),
-          { $addFields: { district: '$location.district', city: '$location.city' } },
+        //If page exists, meaning search for one, then add 3 fields: total, page and pages, otherwise, limit the document pass this stage
+        addTotalPageFields({ page }),
 
-          //If page exists, meangin search for one, then restructure result by facet and limit fields could pass, otherwise, just limit fields could pass
-          page
-            ? facet({ meta: ['total', 'page', 'pages'], data: ['title', 'district', 'city'] })
-            : { $project: { title: 1, district: 1, city: 1 } }
-        );
-        return { model: 'locations', newItem };
+        //Lookup to location model to district and city
+        getLocation({ localField: '_id' }),
+        { $addFields: { district: '$location.district', city: '$location.city' } },
 
-      case 'album':
-        newItem = [].concat(
-          //Filter to get documents has title contain searchValue
-          { $match: { title: { $regex: searchValue, $options: 'i' } } },
+        //If page exists, meangin search for one, then restructure result by facet and limit fields could pass, otherwise, just limit fields could pass
+        facet({ meta: ['total', 'page', 'pages'], data: ['title', 'district', 'city'] })
+      );
+      return mongoose.model('locations').aggregate(newItem);
 
-          //If page exists, meaning search for one, then add 3 fields: total, page and pages, otherwise, limit the document pass this stage
-          page ? addTotalPageFields({ page }) : { $limit: itemOfPage },
+    case 'album':
+      newItem = [].concat(
+        //Filter to get documents has title contain searchValue
+        { $match: { title: { $regex: value, $options: 'i' } } },
 
-          //If page exists, meangin search for one, then restructure result by facet and limit fields could pass, otherwise, just limit fields could pass
-          page
-            ? facet({
-                meta: ['total', 'page', 'pages'],
-                data: ['title', 'createdAt', 'lastUpdateAt'],
-              })
-            : { $project: { title: 1, createdAt: 1, lastUpdateAt: 1 } }
-        );
-        return { model: 'Albums', newItem };
+        { $sort: { lastUpdateAt: -1, createdAt: -1 } },
 
-      default:
-        _throw({
-          code: 400,
-          errors: [{ field: 'model', message: 'invalid model can be used for searching' }],
-          message: 'invalid model',
-        });
-    }
+        //If page exists, meaning search for one, then add 3 fields: total, page and pages, otherwise, limit the document pass this stage
+        addTotalPageFields({ page }),
+
+        //If page exists, meangin search for one, then restructure result by facet and limit fields could pass, otherwise, just limit fields could pass
+        facet({ meta: ['total', 'page', 'pages'], data: ['title', 'createdAt', 'lastUpdateAt'] })
+      );
+      return mongoose.model('Albums').aggregate(newItem);
+
+    default:
+      _throw({
+        code: 400,
+        errors: [{ field: 'model', message: 'invalid model can be used for searching' }],
+        message: 'invalid model',
+      });
+      break;
   }
+}
 
-  //In case models has only one model
-  if (models.length === 1) {
-    const { model, newItem } = aggregateFlow(models[0]);
-    return await mongoose.model(model).aggregate(newItem);
-  }
+export async function searchMany({ models, value }) {
+  //Use promise all to reduce time in server
+  const searchResult = await Promise.all(
+    models.reduce((arr, item) => {
+      return arr.concat(searchOne({ model: item, value: value }));
+    }, [])
+  );
 
-  //In case models has more than one model
-  else {
-    //Use promise all to reduce time in server
-    const searchResult = await Promise.all(
-      models.reduce((arr, item) => {
-        const { model, newItem } = aggregateFlow(item);
-        return arr.concat(mongoose.model(model).aggregate(newItem));
-      }, [])
-    );
+  const result = searchResult.reduce((obj, item, index) => {
+    return Object.assign(obj, { [models[index]]: item.length === 0 ? [] : item[0]?.data });
+  }, {});
 
-    //Convert array to object
-    return searchResult.reduce((obj, item, index) => Object.assign(obj, { [models[index]]: item }), {});
-  }
+  return result;
 }
