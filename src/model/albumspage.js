@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import validator from 'validator';
+
 import _throw from '#root/utils/_throw';
 import Albums from '#root/model/albums';
 import Resource from '#root/model/resource';
@@ -18,8 +18,21 @@ const albumspageSchema = new mongoose.Schema({
         });
     },
   },
+  userId: {
+    type: mongoose.ObjectId,
+    required: 'UserId required',
+    validate: async value => {
+      const foundUser = await Users.findById(value);
+      !foundUser &&
+        _throw({
+          code: 400,
+          errors: [{ field: 'userId', message: 'invalid userId' }],
+          message: 'invalid userId',
+        });
+    },
+  },
   order: {
-    type: Number,
+    type: String,
     required: true,
   },
   image: [
@@ -39,6 +52,9 @@ const albumspageSchema = new mongoose.Schema({
             });
         },
       },
+      resource: {
+        type: String,
+      },
       style: {
         type: String,
         required: true,
@@ -51,6 +67,6 @@ const albumspageSchema = new mongoose.Schema({
     default: new Date(),
   },
 });
-const AlbumsPageSchema = mongoose.model('AlbumPages', albumspageSchema);
+const AlbumsPage = mongoose.model('AlbumsPage', albumspageSchema);
 
-export default AlbumSchema;
+export default AlbumsPage;
