@@ -89,6 +89,22 @@ resourceSchema.pre('findOneAndDelete', async function (next) {
   next();
 });
 
+resourceSchema.pre('deleteMany', async function (next) {
+  const foundResources = await this.model.find(this.getFilter());
+
+  // Create a reference to the file to delete
+  const storage = getStorage();
+
+  for (const document of foundResources) {
+    const desertRef = ref(storage, document.path);
+    // Delete the file
+    await deleteObject(desertRef);
+  }
+
+  console.log(`deleted ${foundResources.length} files in firebase`);
+  next();
+});
+
 const Resources = mongoose.model('resources', resourceSchema);
 
 export default Resources;

@@ -9,11 +9,8 @@ import verifyJWT from '#root/middleware/verifyJWT';
 import mongoose from 'mongoose';
 
 const monitor = asyncWrapper(async (req, res) => {
-  const foundViews = await mongoose.model('vacations').updateMany({}, [{ $unset: ['views'] }]);
-  // const { id } = req.query;
-  // console.log(resourcePath);
-  // const files = await fs.promises.readdir(id ? path.join(resourcePath, id) : resourcePath);
-  return res.status(200).json(foundViews);
+  // const foundPost = await mongoose.model('posts').updateMany({}, [{ $unset: ['resource'] }]);
+  return res.json(foundPost);
 });
 
 const test = asyncWrapper(async (req, res) => {
