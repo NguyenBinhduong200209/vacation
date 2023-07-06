@@ -129,14 +129,16 @@ const locationController = {
     const { id } = req.params;
 
     const result = await Locations.aggregate(
-      //Filter based on id
-      [{ $match: { _id: new mongoose.Types.ObjectId(id) } }].concat(
+      [].concat(
+        //Filter based on id
+        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+
         //Get user and location infor by lookup to model
         getUserInfo({ field: ['username', 'avatar'] }),
         getLocation({ localField: '_id' }),
 
         //Get specific fields
-        [{ $project: { level: 0, title: 0, userId: 0, parentId: 0 } }]
+        { $project: { level: 0, title: 0, userId: 0, parentId: 0 } }
       )
     );
 

@@ -13,6 +13,7 @@ import {
 import getDate from '#root/utils/getDate';
 import mongoose from 'mongoose';
 import Resources from '#root/model/resource';
+import Locations from '#root/model/vacation/locations';
 
 const postController = {
   getManyByVacation: asyncWrapper(async (req, res) => {
@@ -33,7 +34,7 @@ const postController = {
         //Sort in order to push the newest updated post to top
         { $sort: { lastUpdateAt: -1, createdAt: -1 } },
 
-        //Add 3 new fields (total, page, pages) and then Get username, location by looking up to other model
+        // Add 3 new fields (total, page, pages) and then Get username, location by looking up to other model
         timeline ? [{ $skip: (page || 1) * process.env.ITEM_OF_PAGE }] : addTotalPageFields({ page }),
         getUserInfo({ field: ['username', 'avatar'] }),
         getCountInfo({ field: ['like', 'comment'] }),
@@ -69,7 +70,7 @@ const postController = {
           .filter((value, index, array) => array.indexOf(value) === index);
         result[0].meta.timeline = timeline;
       }
-      return res.status(200).json(result[0]);
+      return res.status(200).json(result);
     }
   }),
 
@@ -112,11 +113,22 @@ const postController = {
         addTotalPageFields({ page }),
         getUserInfo({ field: ['username', 'avatar'] }),
         getCountInfo({ field: ['like', 'comment'] }),
+        isLiked({ userId: req.userInfo._id }),
 
         //Set up new array with total field is length of array and list field is array without __v field
         facet({
           meta: ['total', 'page', 'pages'],
-          data: ['content', 'lastUpdateAt', 'resource', 'location', 'createdAt', 'authorInfo', 'likes', 'comments'],
+          data: [
+            'content',
+            'lastUpdateAt',
+            'resource',
+            'location',
+            'createdAt',
+            'authorInfo',
+            'likes',
+            'comments',
+            'isLiked',
+          ],
         })
       )
     );
@@ -152,6 +164,20 @@ const postController = {
 
     //Get userInfo from verifyJWT middleware
     const foundUserId = req.userInfo._id;
+
+    //check Location level
+    const foundLocation = await Locations.findById(locationId);
+    //Throw an error if cannot find location
+    !foundLocation &&
+      _throw({ code: 404, errors: [{ field: 'locationId', message: 'not found' }], message: 'location not found' });
+
+    //Throw an error if location level must be greater than 1
+    Number(foundLocation.level) > 1 &&
+      _throw({
+        code: 400,
+        errors: [{ field: 'locationId', message: 'can only choose location level 1' }],
+        message: 'location level must be 1',
+      });
 
     //Create new post and save it to database
     const newPost = await Posts.create({
@@ -203,14 +229,15 @@ const postController = {
       //Get resrouceId which is not in listFromDB and updateRef for document
       let updateArr = [];
       for (const element of listFromReq) {
-        !listFromDB.includes(element) && updateArr.push(element);
+        !listFromDB.includes(element) && updateArr.push(new mongoose.Types.ObjectId(element));
       }
-      const updateResource = Resources.updateMany({ _id: { $in: updateArr } }, { ref: [{ model: 'posts', _id: id }] });
+      const updateResource = await Resources.updateMany({ _id: { $in: updateArr } }, { ref: [{ model: 'posts', _id: id }] });
+      console.log(updateArr, await Resources.find({ _id: { $in: updateArr } }));
 
       //Get resourceId which is not in listFromReq and delete document
       let deleteArr = [];
       for (const element of listFromDB) {
-        !listFromReq.includes(element) && deleteArr.push(element);
+        !listFromReq.includes(element) && deleteArr.push(new mongoose.Types.ObjectId(element));
       }
       const deleteResouce = Resources.deleteMany({ _id: { $in: deleteArr } });
 
