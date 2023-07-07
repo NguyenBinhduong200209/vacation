@@ -1,6 +1,6 @@
 import multer from 'multer';
 import _throw from '#root/utils/_throw';
-import Resources from '#root/model/resource';
+import Resources from '#root/model/resource/resource';
 
 const storage = multer.memoryStorage();
 

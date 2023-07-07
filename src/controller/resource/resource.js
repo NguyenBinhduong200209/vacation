@@ -1,4 +1,4 @@
-import Resources from '#root/model/resource';
+import Resources from '#root/model/resource/resource';
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import mongoose from 'mongoose';
@@ -6,7 +6,7 @@ import { addTotalPageFields, facet } from '#root/config/pipeline';
 
 const resourceController = {
   getMany: asyncWrapper(async (req, res) => {
-    const { id, page, field } = req.query;
+    const { vacationId, page, field } = req.query;
 
     let searchRef;
     switch (field) {
@@ -16,11 +16,7 @@ const resourceController = {
         break;
 
       case 'cover':
-        searchRef = { model: 'vacations', field: 'cover', _id: new mongoose.Types.ObjectId(id) };
-        break;
-
-      case 'albums':
-        searchRef = { model: 'albums', _id: new mongoose.Types.ObjectId(id) };
+        searchRef = { model: 'vacations', field: 'cover', _id: new mongoose.Types.ObjectId(vacationId) };
         break;
 
       default:
