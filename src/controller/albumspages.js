@@ -1,6 +1,6 @@
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
-import AlbumsPage from '#root/model/albumsPage';
+import AlbumsPage from '#root/model/albumspage';
 import Albums from '#root/model/albums';
 import Vacations from '#root/model/vacation/vacations';
 import Posts from '#root/model/vacation/posts';
