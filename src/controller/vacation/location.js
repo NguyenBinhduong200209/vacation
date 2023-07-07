@@ -10,10 +10,10 @@ const locationController = {
     const number = Math.round(req.query.number);
 
     //Throw an error if number received from query is not an positive integer
-    (!number || number <= 0) &&
+    (!number || number < 1 || number > 4) &&
       _throw({
         code: 400,
-        errors: [{ field: 'query', message: 'number query must be a positive integer' }],
+        errors: [{ field: 'query', message: 'number query must be a positive integer in range from 1 to 4' }],
         message: 'invalid query',
       });
 
@@ -21,51 +21,32 @@ const locationController = {
       //If type is level, meaning user want to get city List, districtList or
       case 'level':
         let list = [];
-        switch (number) {
-          //If user want to get Naionality list
-          case 4:
-            list = await Locations.aggregate([
-              { $match: { level: 4 } },
-              { $project: { _id: 1, title: 1 } },
-              { $sort: { title: 1 } },
-            ]);
-            break;
+        //If user wants to get cityList or nationList, this list does not require parentId
+        if (number > 2) {
+          list = await Locations.aggregate([
+            { $match: { level: number } },
+            { $project: { _id: 1, title: 1 } },
+            { $sort: { title: 1 } },
+          ]);
+        }
 
-          //If user want to get city list
-          case 3:
-            list = await Locations.aggregate([
-              { $match: { level: 3 } },
-              { $project: { _id: 1, title: 1 } },
-              { $sort: { title: 1 } },
-            ]);
-            break;
-
-          //If user want to get district list
-          case 2:
-            const { parentId } = req.query;
-            //Throw an error if there is no parentId
-            !parentId &&
-              _throw({
-                code: 400,
-                errors: [{ field: 'parentId', message: 'required' }],
-                message: 'parentId field required',
-              });
-
-            //Get list based on level and parentId
-            list = await Locations.aggregate([
-              { $match: { level: number, parentId: new mongoose.Types.ObjectId(parentId) } },
-              { $project: { _id: 1, title: 1 } },
-              { $sort: { title: 1 } },
-            ]);
-            break;
-
-          //Throw an error if type is level number greater than 4 or lower than 2
-          default:
+        //If user wants to get otherList, this does require parentId
+        else {
+          //Throw an error if there is no parentId
+          const { parentId } = req.query;
+          !parentId &&
             _throw({
               code: 400,
-              errors: [{ field: 'query', message: 'level can be in range from 2 to 4' }],
-              message: 'invalid level field',
+              errors: [{ field: 'parentId', message: 'required' }],
+              message: 'parentId field required',
             });
+
+          //Get list based on level and parentId
+          list = await Locations.aggregate([
+            { $match: { level: number, parentId: new mongoose.Types.ObjectId(parentId) } },
+            { $project: { _id: 1, title: 1 } },
+            { $sort: { title: 1 } },
+          ]);
         }
 
         //Send to front
@@ -89,7 +70,20 @@ const locationController = {
               from: 'posts',
               localField: '_id',
               foreignField: 'locationId',
-              pipeline: [{ $project: { _id: 1 } }].concat(getCountInfo({ field: ['like', 'comment'] })),
+              pipeline: [].concat(
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $lte: ['$createdAt', Date.now()] },
+                        { $gte: ['$createdAt', Date.now() - 7 * 24 * 60 * 60 * 1000] },
+                      ],
+                    },
+                  },
+                },
+                { $project: { _id: 1 } },
+                getCountInfo({ field: ['like', 'comment'] })
+              ),
               as: 'postInfo',
             },
           },
@@ -97,7 +91,7 @@ const locationController = {
           //Add new field is the summary of likes and comments
           {
             $addFields: {
-              interactions: { $sum: [{ $sum: '$postInfo.totalLikes' }, { $sum: '$postInfo.totalComments' }] },
+              interactions: { $sum: [{ $sum: '$postInfo.likes' }, { $sum: '$postInfo.comments' }] },
             },
           },
 
@@ -108,7 +102,7 @@ const locationController = {
           { $sort: { interactions: -1, title: 1 } },
 
           //Only firstN elements in array based on params
-          { $limit: number },
+          { $limit: Number(number) },
         ]);
 
         //Send to front

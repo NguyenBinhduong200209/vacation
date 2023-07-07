@@ -2,12 +2,13 @@ import Vacations from '#root/model/vacation/vacations';
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Posts from '#root/model/vacation/posts';
-import mongoose, { model } from 'mongoose';
+import mongoose from 'mongoose';
 
 function checkPermission({ field, modelType, listType }) {
   return asyncWrapper(async (req, res, next) => {
     const userIdLogin = req.userInfo._id;
     const id = req.params?.id || req.query?.id || req.query?.vacationId || req.body?.vacationId;
+    !listType && (listType = req.query.listType);
     !field && (field = req.params?.field || req.query?.field);
 
     //Config model to findById
