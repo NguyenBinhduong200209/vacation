@@ -3,7 +3,7 @@ const router = express.Router();
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import getFileUpload from '#root/middleware/uploadFiles/getFileUpload';
 import upload from '#root/middleware/uploadFiles/upload';
-import Resources from '#root/model/resource';
+import Resources from '#root/model/resource/resource';
 import Vacations from '#root/model/vacation/vacations';
 import verifyJWT from '#root/middleware/verifyJWT';
 import mongoose from 'mongoose';

@@ -12,7 +12,7 @@ import commentRoute from '#root/routes/interaction/comment';
 import searchRoute from '#root/routes/search/search';
 import albumsRoute from '#root/routes/albums';
 import albumspagesRoute from '#root/routes/albumspages';
-import resourceRoute from '#root/routes/resource';
+import resourceRoute from '#root/routes/resource/resource';
 import notiRoute from '#root/routes/interaction/notification';
 
 const pathArr = [

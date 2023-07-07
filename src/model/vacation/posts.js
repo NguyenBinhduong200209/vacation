@@ -6,7 +6,7 @@ import Vacations from '#root/model/vacation/vacations';
 import Locations from '#root/model/vacation/locations';
 import Likes from '#root/model/interaction/likes';
 import Comments from '#root/model/interaction/comments';
-import Resources from '#root/model/resource';
+import Resources from '#root/model/resource/resource';
 
 const postSchema = new mongoose.Schema(
   {

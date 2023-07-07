@@ -12,7 +12,7 @@ import {
 } from '#root/config/pipeline';
 import getDate from '#root/utils/getDate';
 import mongoose from 'mongoose';
-import Resources from '#root/model/resource';
+import Resources from '#root/model/resource/resource';
 import Locations from '#root/model/vacation/locations';
 import getDifference from '#root/utils/DifferenceTwoArr';
 

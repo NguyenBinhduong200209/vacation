@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import Users from '#root/model/user/users';
 import _throw from '#root/utils/_throw';
 import Albums from '#root/model/albums';
-import Resource from '#root/model/resource';
+import Resource from '#root/model/resource/resource';
 
 const albumspageSchema = new mongoose.Schema({
   albumsId: {
