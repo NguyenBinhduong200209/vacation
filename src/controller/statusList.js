@@ -3,8 +3,8 @@ import _throw from '#root/utils/_throw';
 import mongoose from 'mongoose';
 import { getUserInfo, addTotalPageFields, facet } from '#root/config/pipeline';
 
-const statusListController = {
-  getStatusList: asyncWrapper(async (req, res) => {
+const statusController = {
+  getMany: asyncWrapper(async (req, res) => {
     const { listType, type, id, page } = req.query;
 
     if (/(public|onlyme)/.test(req.doc.shareStatus) && listType === 'shareList') return res.sendStatus(204);
@@ -31,6 +31,7 @@ const statusListController = {
     );
     return res.json(result[0]);
   }),
+  update: asyncWrapper(async (req, res) => {}),
 };
 
-export default statusListController;
+export default statusController;

@@ -105,8 +105,20 @@ export function checkFriend({ userId }) {
             $match: {
               $expr: {
                 $or: [
-                  { $and: [{ $eq: ['$userId1', '$$userId'] }, { $eq: ['$userId2', '$$authorId'] }] },
-                  { $and: [{ $eq: ['$userId2', '$$userId'] }, { $eq: ['$userId1', '$$authorId'] }] },
+                  {
+                    $and: [
+                      { $eq: ['$userId1', '$$userId'] },
+                      { $eq: ['$userId2', '$$authorId'] },
+                      { $eq: ['$status', 'accepted'] },
+                    ],
+                  },
+                  {
+                    $and: [
+                      { $eq: ['$userId2', '$$userId'] },
+                      { $eq: ['$userId1', '$$authorId'] },
+                      { $eq: ['$status', 'accepted'] },
+                    ],
+                  },
                 ],
               },
             },
