@@ -11,11 +11,11 @@ const albumspagesController = {
     //Get vital information from req.body
     const userId = req.userInfo._id;
     console.log(userId);
-    const { albumId, resource, vacationId } = req.body;
+    const { albumsId, resource, vacationId } = req.body;
     console.log(resource);
 
     const existingAlbum = await AlbumsPage.findOne({
-      albumsId: albumId,
+      albumsId: albumsId,
       userId: userId,
       vacationId: vacationId,
     });
@@ -36,7 +36,7 @@ const albumspagesController = {
     }
 
     const newAlbumPage = await AlbumsPage.create({
-      albumsId: albumId,
+      albumsId: albumsId,
       userId: userId,
       resource: resource,
       createdAt: new Date(),
@@ -45,6 +45,60 @@ const albumspagesController = {
     res.json({
       message: 'AlbumPage created successfully',
       data: newAlbumPage,
+    });
+  }),
+  updatealbumspage: asyncWrapper(async (req, res) => {
+    //Get vital information from req.body
+    const albumPageId = req.params.id;
+    const userId = req.userInfo._id;
+    const { albumsId, resource, vacationId } = req.body;
+
+    const existingAlbumPage = await AlbumsPage.findOne({
+      _id: albumPageId,
+      userId: userId,
+    });
+
+    if (!existingAlbumPage) {
+      return res.status(404).json({ message: 'Album page not found' });
+    }
+
+    const vacation = await Vacations.findOne({
+      _id: vacationId,
+      $or: [{ memberList: userId }, { shareList: userId }],
+    });
+
+    if (!vacation) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    existingAlbumPage.albumsId = albumsId;
+    existingAlbumPage.resource = resource;
+    existingAlbumPage.vacationId = vacationId;
+    existingAlbumPage.updatedAt = new Date();
+
+    const updatedAlbumPage = await existingAlbumPage.save();
+
+    res.json({
+      message: 'Album page updated successfully',
+      data: updatedAlbumPage,
+    });
+  }),
+  deletealbumspage: asyncWrapper(async (req, res) => {
+    const albumPageId = req.params.id;
+    const userId = req.userInfo._id;
+
+    const existingAlbumPage = await AlbumsPage.findOneAndDelete({
+      _id: albumPageId,
+      userId: userId,
+    });
+
+    if (!existingAlbumPage) {
+      return res.status(404).json({ message: 'Album page not found' });
+    }
+
+    res.json({
+      message: 'Album page deleted successfully',
+      data: existingAlbumPage,
     });
   }),
 
@@ -132,25 +186,40 @@ const albumspagesController = {
       data: data,
     });
   }),
+
   getAlbumDetails: asyncWrapper(async (req, res) => {
-    const albumId = req.params.id;
+    const albumsId = req.params.id;
+    const userId = req.userInfo._id;
+    const albums = await Albums.findOne({
+      $or: [{ userId: userId }, { shareList: userId }],
+    });
 
-    try {
-      const album = await AlbumsPage.findOne({ albumId: albumId });
-
-      if (!album) {
-        return res.status(404).json({ message: 'Album not found' });
-      }
-
-      res.json({
-        message: 'Album details retrieved successfully',
-        data: album,
-      });
-    } catch (error) {
-      // Xử lý lỗi nếu có
-      console.error(error);
-      res.status(500).json({ message: 'Internal server error' });
+    if (!albums) {
+      // Albums not found
+      return res.status(404).json({ message: 'Albums not found' });
     }
+
+    const album = await AlbumsPage.findOne({ albumsId: albumsId });
+
+    if (!album) {
+      return res.status(404).json({ message: 'Album not found' });
+    }
+    const modifiedResources = album.resource.map(resource => ({
+      resourceId: resource.id,
+      index: resource.index,
+      style: resource.style,
+      _id: resource._id,
+    }));
+
+    res.json({
+      message: 'Album details retrieved successfully',
+      data: {
+        _id: album._id,
+        albumsId: album.albumsId,
+        userId: album.userId,
+        resource: modifiedResources,
+      },
+    });
   }),
 };
 
