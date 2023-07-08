@@ -106,6 +106,17 @@ const albumSchema = new mongoose.Schema(
     runSettersOnQuery: true,
   }
 );
+albumSchema.pre('remove', async function (next) {
+  const albumId = this._id;
+
+  try {
+    // Remove associated AlbumsPage documents with matching albumId
+    await AlbumsPage.deleteMany({ albumsId: albumId });
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 const Albums = mongoose.model('Albums', albumSchema);
 
