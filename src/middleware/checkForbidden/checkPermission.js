@@ -9,7 +9,7 @@ function checkPermission({ field, modelType, listType }) {
     const userIdLogin = req.userInfo._id;
     const id = req.params?.id || req.query?.id || req.query?.vacationId || req.body?.vacationId;
     !listType && (listType = req.query.listType);
-    !field && (field = req.params?.field || req.query?.field);
+    !field && (field = req.params?.field || req.query?.field || req.body?.field);
 
     //Config model to findById
     !modelType &&
@@ -21,7 +21,7 @@ function checkPermission({ field, modelType, listType }) {
           : field === 'post'
           ? 'vacations'
           : 'users'
-        : req.query?.type || req.params?.type);
+        : req.query?.type || req.params?.type || req.body?.type);
 
     if (/(vacations|albums|posts)/.test(modelType)) {
       //Find document based on params id

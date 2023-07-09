@@ -6,7 +6,7 @@ function checkAuthor({ modelType, field }) {
   return asyncWrapper(async (req, res, next) => {
     const userId = req.userInfo._id;
     const id = req.params?.id || req.query?.id;
-    !field && (field = req.params?.field || req.query?.field);
+    !field && (field = req.params?.field || req.query?.field || req.body?.field);
 
     //Config model to findById
     !modelType &&
