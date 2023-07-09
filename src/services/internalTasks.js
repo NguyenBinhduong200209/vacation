@@ -14,11 +14,15 @@ rule.tz = 'Asia/Saigon';
 // Run internal task on Sunday, 9am
 const internalTasks = asyncWrapper(async (req, res) =>
   schedule.scheduleJob(rule, async (req, res) => {
-    console.log('start internal task');
+    console.time('start internal task');
 
-    //delete outdated notification, inactive user account
-    await Promise.all([notiController.delete, authController.delete]);
-    console.log('end internal task');
+    await Promise.all([
+      //Delete outdate notification
+      notiController.delete,
+      //Delete unverified account
+      authController.delete,
+    ]);
+    console.timeEnd('end internal task');
   })
 );
 
