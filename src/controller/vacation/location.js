@@ -10,16 +10,24 @@ const locationController = {
     const number = Math.round(req.query.number);
 
     //Throw an error if number received from query is not an positive integer
-    (!number || number < 1 || number > 4) &&
+    (!number || number < 0) &&
       _throw({
         code: 400,
-        errors: [{ field: 'query', message: 'number query must be a positive integer in range from 1 to 4' }],
+        errors: [{ field: 'query', message: 'number query must be a positive integer' }],
         message: 'invalid query',
       });
 
     switch (type) {
       //If type is level, meaning user want to get city List, districtList or
       case 'level':
+        //Throw an error if number received from query is not in range 1 to 4
+        (number < 1 || number > 4) &&
+          _throw({
+            code: 400,
+            errors: [{ field: 'query', message: 'number query must be in range from 1 to 4' }],
+            message: 'invalid query',
+          });
+
         let list = [];
         //If user wants to get cityList or nationList, this list does not require parentId
         if (number > 2) {
