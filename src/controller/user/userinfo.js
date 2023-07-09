@@ -3,6 +3,7 @@ import Users from '#root/model/user/users';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Likes from '#root/model/interaction/likes';
 import Posts from '#root/model/vacation/posts';
+import Resource from '#root/model/resource';
 import Vacations from '#root/model/vacation/vacations';
 import Friends from '#root/model/user/friend';
 import mongoose from 'mongoose';
@@ -10,15 +11,24 @@ import mongoose from 'mongoose';
 const usersinforController = {
   getprofile: asyncWrapper(async (req, res) => {
     const ObjectId = mongoose.Types.ObjectId;
-    const username = req.userInfo.username;
-    const value = { username };
-    const ids = req.params.id;
+    const userId = req.userInfo._id;
+    const value = { userId };
 
-    if (username && ids) {
+    const ids = req.params.id;
+    const field = 'avatar';
+
+    if (userId && ids) {
       const users = [];
+      const avatar = await Resource.findOne({
+        userId: ids,
+        'ref.model': 'users',
+        'ref.field': field,
+      })
+        .sort({ createdAt: -1 })
+        .select('path');
 
       const foundUser = await Users.findById(ids);
-      const userPosts = await Posts.find({ userId: foundUser._id });
+      const userPosts = await Posts.find({ ids: foundUser._id });
 
       // Lấy danh sách các ID bài viết của người dùng
       const postIds = userPosts.map(post => post._id.toString());
@@ -65,7 +75,7 @@ const usersinforController = {
 
       users.push({
         id: foundUser._id,
-        avatar: foundUser.avatar,
+        avatar: avatar,
         firstname: foundUser.firstname,
         lastname: foundUser.lastname,
         dateOfBirth: foundUser.dateOfBirth,
@@ -85,11 +95,18 @@ const usersinforController = {
         totalUsers: totalUsers,
         data: users,
       });
-    } else if (username) {
+    } else if (userId) {
       const foundUser = await Users.findOne(value);
       if (!foundUser) {
         return res.status(404).json({ message: 'User not found' });
       }
+      const avatar = await Resource.findOne({
+        userId: userId,
+        'ref.model': 'users',
+        'ref.field': field,
+      })
+        .sort({ createdAt: -1 })
+        .select('path');
 
       const userPosts = await Posts.find({ userId: foundUser._id });
 
@@ -139,7 +156,7 @@ const usersinforController = {
       return res.status(200).json({
         data: {
           id: foundUser._id,
-          avatar: foundUser.avatar,
+          avatar: avatar,
           username: foundUser.username,
           firstname: foundUser.firstname,
           lastname: foundUser.lastname,
@@ -155,7 +172,7 @@ const usersinforController = {
         },
         message: 'Get info successfully',
       });
-    } else _throw({ code: 400, message: 'Username not provided' });
+    } else _throw({ code: 400, message: 'userId not provided' });
   }),
 
   getfriendprofile: asyncWrapper(async (req, res) => {

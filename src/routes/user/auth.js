@@ -14,6 +14,9 @@ router
   .put('/reset', authController.reset);
 
 router.use(verifyJWT);
-router.put('/update', authController.update).get('/info', usersController.getprofile).post('/logout', authController.logOut);
+router
+  .put('/update', authController.update)
+  .get('/info/:id?', usersController.getprofile)
+  .post('/logout', authController.logOut);
 
 export default router;
