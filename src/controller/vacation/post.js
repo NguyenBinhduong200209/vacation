@@ -71,7 +71,7 @@ const postController = {
           .filter((value, index, array) => array.indexOf(value) === index);
         result[0].meta.timeline = timeline;
       }
-      return res.status(200).json(result);
+      return res.status(200).json(result[0]);
     }
   }),
 
