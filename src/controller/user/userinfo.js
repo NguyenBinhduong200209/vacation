@@ -3,7 +3,7 @@ import Users from '#root/model/user/users';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Likes from '#root/model/interaction/likes';
 import Posts from '#root/model/vacation/posts';
-import Resource from '#root/model/resource';
+import Resource from '#root/model/resource/resource';
 import Vacations from '#root/model/vacation/vacations';
 import Friends from '#root/model/user/friend';
 import mongoose from 'mongoose';
