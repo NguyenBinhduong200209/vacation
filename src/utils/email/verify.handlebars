@@ -1,25 +1,19 @@
 <html>
   <head>
     <style>
-      * {
-        font-size: 16px;
-      }
-      .para{
-        color: #455056;
-        font-size: 16px;
-      }
-      #link{
-        color:#27AF66;
-        font-size:20px;
-        font-weight:bold;
-      }
+      * { font-size: 16px; } .para { color: #455056; font-size: 16px; } #link { appearance: none; background-color:
+      transparent; border: none; color: #27af66; font-size: 16px; font-weight: bold; padding: 0; }
     </style>
   </head>
   <body>
-    <p class="para" >Hi {{email}},<br>
-    <p class="para">You registered an account on [customer portal], before being able to use your account you need to verify that this is your email address by clicking here: 
-      <a id="link" href={{url}} target="_blank">Link</a>
-    </p>
+    <form action='{{url}}' method='post' target='_blank'>
+      <p class='para'>Hi {{email}}</p>
+      <p class='para'>
+        You registered an account on Travip, before being able to use your account you need to verify that this is your email
+        address by clicking here:
+        <button type='submit' id='link'>Link</button>
+      </p>
+    </form>
     <p>Problems? Please contact support@travip.com</p>
     <p>Kind Regards,</p>
   </body>

@@ -5,6 +5,8 @@ import Users from '#root/model/user/users';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import _throw from '#root/utils/_throw';
 import sendMail from '#root/utils/email/sendEmail';
+import path from 'path';
+import { publicPath } from '#root/config/path';
 
 const usersController = {
   logIn: asyncWrapper(async (req, res) => {
@@ -95,12 +97,20 @@ const usersController = {
     const hashedPwd = await bcrypt.hash(password, 10);
     newUser.password = hashedPwd;
 
+    //Get new passwordToken and save to foundUser
+    const verifyToken = new mongoose.Types.ObjectId();
+    newUser.verifyToken = verifyToken;
+
     //Save to database
     newUser.createdAt = new Date();
     await newUser.save();
 
     //Send email
-    await sendMail({ type: 'verify', email, url: `http://localhost:3100/static` });
+    await sendMail({
+      type: 'verify',
+      email,
+      url: `https://vacation-backend.onrender.com/auth/verify?email=${email}&token=${verifyToken}`,
+    });
 
     //Send to front
     return res.status(200).json({ message: `an email has been send to ${email} account. Please check your email account` });
@@ -108,35 +118,20 @@ const usersController = {
 
   verify: asyncWrapper(async (req, res) => {
     //Get username and password from req.body
-    const { email } = req.query;
+    const { email, token } = req.query;
 
-    //Throw an error if cannot find user
-    const foundUser = await Users.findOne({ email });
-    !foundUser &&
-      _throw({ code: 400, errors: [{ field: 'email', message: 'verify failed' }], message: 'verify email failed' });
+    console.log(email, token, new Date(1));
 
-    //Generate new accessToken
-    const accessToken = jwt.sign({ username: foundUser.username }, process.env.ACCESS_TOKEN_SECRET, {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRATION,
-    });
+    const foundUser = await Users.findOne({ email, verifyToken: token });
+    if (foundUser) {
+      //Save token to database to prevent previousToken still take effect
+      foundUser.emailVerified = true;
+      foundUser.lastUpdateAt = new Date();
+      await foundUser.save();
 
-    //Generate new refreshToken
-    const refreshToken = jwt.sign({ username: foundUser.username }, process.env.REFRESH_TOKEN_SECRET, {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRATION,
-    });
-
-    //Save token to database to prevent previousToken still take effect
-    foundUser.accessToken = accessToken;
-    foundUser.refreshToken = refreshToken;
-    foundUser.emailVerified = true;
-    foundUser.lastUpdateAt = new Date();
-    await foundUser.save();
-
-    //Send result to frontend
-    return res.status(200).json({
-      data: { _id: foundUser._id, username: foundUser.username, accessToken, refreshToken },
-      message: 'verify successfully',
-    });
+      //Send result to frontend
+      return res.sendFile(path.join(publicPath, 'verify', 'success.html'));
+    } else return res.sendFile(path.join(publicPath, 'verify', 'fail.html'));
   }),
 
   update: asyncWrapper(async (req, res) => {

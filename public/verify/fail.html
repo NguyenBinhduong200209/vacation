@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Success</title>
+    <link
+      rel="icon"
+      href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvtlzj2dNfI0ZGxp6d4MjH0OCjnV_VrNcCpuZ7jGvR-hn0PJNb7SSfpkZ7DBIvQYEuEzE&usqp=CAU"
+    />
+    <title>Fail</title>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Khand:wght@500&display=swap');
       * {
@@ -23,7 +27,7 @@
 
       .wrapperAlert {
         width: 500px;
-        height: 400px;
+        min-height: 400px;
         overflow: hidden;
         border-radius: 12px;
         border: thin solid #ddd;
@@ -42,7 +46,7 @@
         position: relative;
         padding: 40px 0;
         background: rgb(0, 0, 0);
-        background: -webkit-linear-gradient(45deg, #019871, #a0ebcf);
+        background: -webkit-linear-gradient(45deg, #981f01, #eba5a0);
       }
 
       .topHalf p {
@@ -161,17 +165,20 @@
         margin-bottom: 10px;
       }
 
-      button {
+      #alertMO {
+        appearance: none;
+        text-decoration: none;
         border: none;
         color: white;
         cursor: pointer;
         border-radius: 12px;
-        padding: 10px 18px;
-        background-color: #019871;
+        padding: 7px 15px;
+        background-color: #bb250bcc;
         text-shadow: 0 1px rgba(128, 128, 128, 0.75);
+        transition: 100ms all linear;
       }
-      button:hover {
-        background-color: #85ddbf;
+      #alertMO:hover {
+        background-color: #f08282;
       }
     </style>
   </head>
@@ -182,11 +189,11 @@
           <p>
             <svg viewBox="0 0 512 512" width="100" title="check-circle">
               <path
-                d="M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"
+                d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z"
               />
             </svg>
           </p>
-          <h1>Congratulations</h1>
+          <h1>Unfortunately</h1>
 
           <ul class="bg-bubbles">
             <li></li>
@@ -203,8 +210,8 @@
         </div>
 
         <div class="bottomHalf">
-          <p>Well Done!, your account has just been created</p>
-          <button id="alertMO">Moving On</button>
+          <p>There is some error occurs, please contact us to solve problem</p>
+          <a href="https://https-github-com-trunghieult-demo.vercel.app/register" target="_blank" id="alertMO">Moving On</a>
         </div>
       </div>
     </div>
