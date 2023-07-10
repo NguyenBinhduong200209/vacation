@@ -37,7 +37,7 @@ const resourceController = {
   }),
 
   addNew: asyncWrapper(async (req, res) => {
-    const { field, vacationId } = req.query,
+    const { field, vacationId } = req.body,
       isAvatar = field === 'avatar',
       isPost = field === 'post';
 
