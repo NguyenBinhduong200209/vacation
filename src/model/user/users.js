@@ -41,7 +41,7 @@ const userSchema = new mongoose.Schema(
       required: 'Username required',
       maxlength: 100,
       validate: value => {
-        !validator.isAlphanumeric(value, 'vi-VN', { ignore: "-_'" }) &&
+        !validator.isAlphanumeric(value, 'vi-VN', { ignore: "-_'." }) &&
           _throw({
             code: 400,
             errors: [{ field: 'username', message: 'Invalid username' }],
@@ -63,15 +63,10 @@ const userSchema = new mongoose.Schema(
       },
     },
 
-    // avatar: {
-    //   type: String,
-    //   trim: true,
-    // },
-
     dateOfBirth: {
       type: Date,
       max: new Date(),
-      default: new Date(),
+      default: new Date(1),
     },
 
     gender: {
@@ -111,6 +106,10 @@ const userSchema = new mongoose.Schema(
     },
 
     refreshToken: {
+      type: String,
+    },
+
+    verifyToken: {
       type: String,
     },
 
