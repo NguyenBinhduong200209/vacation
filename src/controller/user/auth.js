@@ -1,8 +1,6 @@
-import fs from 'fs';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import { resourcePath } from '#root/config/path';
 import Users from '#root/model/user/users';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import _throw from '#root/utils/_throw';
@@ -41,12 +39,22 @@ const usersController = {
       foundUser.createdAt = new Date();
       await foundUser.save();
 
+      //Get Avatar for user login
+      const avatar = await mongoose
+        .model('resources')
+        .findOne(
+          { ref: { $elemMatch: { model: 'users', _id: foundUser._id, field: 'avatar' } } },
+          { path: 1, createdAt: 1 }
+        );
+
       //Return result
       return res.status(200).json({
         data: {
           _id: foundUser._id,
           username: foundUser.username,
-          avatar: foundUser.avatar,
+          firstname: foundUser.firstname,
+          lastname: foundUser.lastname,
+          avatar,
           accessToken,
           refreshToken,
         },
