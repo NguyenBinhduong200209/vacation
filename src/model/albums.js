@@ -118,6 +118,6 @@ albumSchema.pre('remove', async function (next) {
   }
 });
 
-const Albums = mongoose.model('Albums', albumSchema);
+const Albums = mongoose.model('albums', albumSchema);
 
 export default Albums;

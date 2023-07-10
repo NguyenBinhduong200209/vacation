@@ -14,6 +14,7 @@ import albumsRoute from '#root/routes/albums';
 import albumspagesRoute from '#root/routes/albumspages';
 import resourceRoute from '#root/routes/resource/resource';
 import notiRoute from '#root/routes/interaction/notification';
+import statusRoute from '#root/routes/statusList';
 
 const pathArr = [
   //Path related to user
@@ -31,11 +32,14 @@ const pathArr = [
   { path: '/comment', route: commentRoute },
   { path: '/notification', route: notiRoute },
 
-  //Other path
+  //Path related to album
   { path: '/albumpage', route: albumspagesRoute },
-  { path: '/search', route: searchRoute },
-  { path: '/resource', route: resourceRoute },
   { path: '/album', route: albumsRoute },
+
+  //Other path
+  { path: '/search', route: searchRoute },
+  { path: '/list', route: statusRoute },
+  { path: '/resource', route: resourceRoute },
   { path: '/test', route: testRoute },
 ];
 
