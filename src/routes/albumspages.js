@@ -7,7 +7,7 @@ const router = express.Router();
 router.post('/', verifyJWT, albumspagesController.newalbums);
 router.put('/:id', verifyJWT, albumspagesController.updatealbumspage);
 router.delete('/:id', verifyJWT, albumspagesController.deletealbumspage);
-router.get('/vacation/:id', verifyJWT, albumspagesController.getalbumspagesvacations);
-router.get('/:id', verifyJWT, albumspagesController.getAlbumDetails);
+
+router.get('/:id', verifyJWT, albumspagesController.getmanyAlbumPage);
 
 export default router;

@@ -5,18 +5,23 @@ import Albums from '#root/model/albums';
 import Resource from '#root/model/resource';
 
 const albumspageSchema = new mongoose.Schema({
-  albumsId: {
+  albumId: {
     type: mongoose.ObjectId,
-    required: 'albumsID required',
+    required: 'albumId required',
     validate: async value => {
       const foundalbumspage = await Albums.findById(value);
       !foundalbumspage &&
         _throw({
           code: 400,
-          errors: [{ field: 'albumsID', message: 'invalid albumsID' }],
+          errors: [{ field: 'albumId', message: 'invalid albumId' }],
           message: 'invalid albumsID',
         });
     },
+  },
+  page: {
+    type: Number,
+    required: 'page Number required',
+    trim: true,
   },
   userId: {
     type: mongoose.ObjectId,
@@ -33,7 +38,7 @@ const albumspageSchema = new mongoose.Schema({
   },
   resource: [
     {
-      id: {
+      resourceId: {
         type: mongoose.ObjectId,
         ref: 'Resource', // Sử dụng tham chiếu đến mô hình Resource
         required: 'resourceId',
@@ -49,7 +54,7 @@ const albumspageSchema = new mongoose.Schema({
             });
         },
       },
-      index: { type: Number, min: 0 },
+
       style: {
         type: String,
         required: true,
