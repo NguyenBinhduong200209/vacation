@@ -6,7 +6,7 @@ import Vacations from '#root/model/vacation/vacations';
 import Posts from '#root/model/vacation/posts';
 import mongoose from 'mongoose';
 import { addTotalPageFields, facet } from '#root/config/pipeline';
-import Resources from '#root/model/resource';
+import Resources from '#root/model/resource/resource';
 
 const albumspagesController = {
   newalbums: asyncWrapper(async (req, res) => {
