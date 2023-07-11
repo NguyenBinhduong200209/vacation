@@ -52,15 +52,17 @@ const albumspagesController = {
   }),
   updatealbumspage: asyncWrapper(async (req, res) => {
     //Get vital information from req.body
+    const page = req.query.page;
+    console.log(page);
     const albumPageId = req.params.id;
+    console.log(albumPageId);
     const userId = req.userInfo._id;
-    const { albumId, resource, vacationId, page } = req.body;
+    const { albumId, resource, vacationId } = req.body;
 
     const existingAlbumPage = await AlbumsPage.findOne({
       _id: albumPageId,
-      userId: userId,
-      page: page,
     });
+    console.log(existingAlbumPage);
 
     if (!existingAlbumPage) {
       return res.status(404).json({ message: 'Album page not found' });
@@ -78,7 +80,7 @@ const albumspagesController = {
     existingAlbumPage.albumId = albumId;
     existingAlbumPage.resource = resource;
     existingAlbumPage.vacationId = vacationId;
-    existingAlbumPage.updatedAt = new Date();
+    existingAlbumPage.lastUpdate = new Date();
 
     const updatedAlbumPage = await existingAlbumPage.save();
 
@@ -159,31 +161,7 @@ const albumspagesController = {
       { $addFields: { _id: '$resources._id', path: '$resources.path' } },
       ...addTotalPageFields({ page: req.query }),
       ...facet({ meta: ['page', 'pages', 'total'], data: ['_id', 'path'] }),
-      // {
-      //   $facet: {
-      //     totalCount: [
-      //       {
-      //         $group: {
-      //           _id: null,
-      //           total: { $sum: { $size: '$resources' } },
-      //         },
-      //       },
-      //       {
-      //         $project: {
-      //           _id: 0,
-      //           total: 1,
-      //         },
-      //       },
-      //     ],
-      //     paginatedResults: [{ $skip: skip }, { $limit: itemPerPage }],
-      //   },
-      // },
     ]);
-
-    // const totalCount = albumspage[0].totalCount[0].total;
-    // const data = albumspage[0].paginatedResults;
-    // const totalPages = Math.ceil(totalCount / itemPerPage);
-    // const currentPage = page > 0 ? page : 1;
 
     res.json(albumspage[0]);
   }),
@@ -313,12 +291,14 @@ const albumspagesController = {
           },
         },
       ]);
+      let totalResources = 0;
       if (albumPage.length > 0) {
         albumPage.forEach(album => {
           album.resource.forEach(res => {
             const foundResource = album.resources.find(r => r._id.toString() === res.resourceId.toString());
             if (foundResource) {
               res.path = foundResource.path;
+              totalResources++;
             }
           });
         });
@@ -339,6 +319,10 @@ const albumspagesController = {
 
       res.json({
         message: 'Album details retrieved successfully',
+        meta: {
+          page: page,
+          totalResources: totalResources,
+        },
         data: albumPages,
       });
     }
