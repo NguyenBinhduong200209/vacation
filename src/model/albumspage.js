@@ -67,6 +67,10 @@ const albumspageSchema = new mongoose.Schema({
     type: Date,
     default: new Date(),
   },
+  lastUpdate: {
+    type: Date,
+    default: new Date(),
+  },
 });
 const AlbumsPage = mongoose.model('AlbumsPage', albumspageSchema);
 
