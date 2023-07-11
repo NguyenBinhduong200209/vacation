@@ -120,8 +120,6 @@ const usersController = {
     //Get username and password from req.body
     const { email, token } = req.query;
 
-    console.log(email, token, new Date(1));
-
     const foundUser = await Users.findOne({ email, verifyToken: token });
     if (foundUser) {
       //Save token to database to prevent previousToken still take effect
