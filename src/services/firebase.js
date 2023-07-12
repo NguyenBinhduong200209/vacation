@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyB8JHwvoLBqbVykDW6IxejPKrA3aYts20s',
+  apiKey: process.env.FIREBASE_APIKEY,
   authDomain: 'vacation-social-media.firebaseapp.com',
   projectId: 'vacation-social-media',
   storageBucket: 'vacation-social-media.appspot.com',

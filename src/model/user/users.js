@@ -39,7 +39,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       required: 'Username required',
-      maxlength: 100,
+      minlength: 8,
+      maxlength: 16,
       validate: value => {
         !validator.isAlphanumeric(value, 'vi-VN', { ignore: "-_'." }) &&
           _throw({

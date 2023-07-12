@@ -25,10 +25,23 @@ const notiController = {
         addTotalPageFields({ page }),
         getUserInfo({ localField: 'userActionId', as: 'userInfo', field: ['username', 'avatar'] }),
 
-        //Restructure the docs
+        //Lookup to get content of post and vacation
+        {
+          $lookup: {
+            from: 'posts',
+            localField: 'modelId',
+            foreignField: '_id',
+            pipeline: [{ $project: { content: 1 } }],
+            as: 'modelInfo',
+          },
+        },
+        { $unwind: '$modelInfo' },
+        { $addFields: { 'modelInfo.type': '$modelType' } },
+
+        // Restructure the docs
         facet({
           meta: ['total', 'page', 'pages'],
-          data: ['lastUpdateAt', 'isSeen', 'modelType', 'modelId', 'userInfo', '__v', 'action'],
+          data: ['lastUpdateAt', 'isSeen', 'userInfo', '__v', 'action', 'modelInfo'],
         })
       )
     );
