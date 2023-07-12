@@ -96,7 +96,7 @@ const usersinforController = {
         data: users,
       });
     } else if (userId) {
-      const foundUser = await Users.findOne(value);
+      const foundUser = await Users.findOne(userId);
       if (!foundUser) {
         return res.status(404).json({ message: 'User not found' });
       }
