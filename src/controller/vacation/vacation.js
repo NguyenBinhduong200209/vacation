@@ -135,6 +135,8 @@ const vacationController = {
       startingTime,
       endingTime,
       userId,
+      createdAt: new Date(),
+      lastUpdateAt: new Date(),
     });
 
     //Update ref of resources
@@ -194,6 +196,7 @@ const vacationController = {
     });
 
     //Save to databse
+    foundVacation.lastUpdateAt = new Date();
     await foundVacation.save();
 
     //Send to front

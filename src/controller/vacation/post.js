@@ -187,6 +187,7 @@ const postController = {
       userId: foundUserId,
       content,
       createdAt: new Date(),
+      lastUpdateAt: new Date(),
     });
 
     //Update ref of resources
