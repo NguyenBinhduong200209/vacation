@@ -3,6 +3,7 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Vacations from '#root/model/vacation/vacations';
 import { addTotalPageFields, getUserInfo, getCountInfo, facet, checkFriend, getResourcePath } from '#root/config/pipeline';
 import mongoose from 'mongoose';
+import Resources from '#root/model/resource/resource';
 
 const vacationController = {
   getMany: asyncWrapper(async (req, res) => {
@@ -134,8 +135,13 @@ const vacationController = {
       startingTime,
       endingTime,
       userId,
-      cover,
     });
+
+    //Update ref of resources
+    await Resources.updateOne(
+      { userId: foundUserId, _id: cover, ref: [] },
+      { ref: [{ model: 'vacations', field: 'cover', _id: newVacation._id }] }
+    );
 
     //Send to front
     return res.status(201).json({ data: newVacation, message: 'vacation created' });
