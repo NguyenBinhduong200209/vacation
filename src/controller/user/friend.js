@@ -29,19 +29,17 @@ const friendsController = {
     }
 
     // Tạo yêu cầu kết bạn mới
-    const newFriendRequest = new Friends({
+    const newFriendRequest = await Friends.create({
       userId1,
       userId2,
     });
 
-    // Lưu yêu cầu kết bạn
-    await newFriendRequest.save();
-
-    return res.status(200).json({
+    return res.status(201).json({
       message: 'Friend request sent',
       friendRequest: newFriendRequest,
     });
   }),
+
   acceptFriend: asyncWrapper(async (req, res) => {
     const { friendRequestId, status } = req.body;
     const userId2 = req.userInfo._id;
@@ -77,6 +75,7 @@ const friendsController = {
         });
     }
   }),
+
   getResquestFriendList: asyncWrapper(async (req, res) => {
     const userId = req.userInfo._id;
     const foundUser = await Users.findById(userId);
@@ -177,6 +176,7 @@ const friendsController = {
       data: paginatedFriendList,
     });
   }),
+
   removeFriend: asyncWrapper(async (req, res) => {
     const { friendId } = req.params;
 
