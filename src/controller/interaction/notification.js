@@ -51,7 +51,7 @@ const notiController = {
   }),
 
   updateContent: async ({ document, action }) => {
-    const { modelType, modelId, userId } = document;
+    let { modelType, modelId, userId, receiverId, senderId } = document;
 
     const foundDocument = await mongoose.model(modelType).findById(modelId);
 
@@ -62,8 +62,9 @@ const notiController = {
         message: 'error while creating notification',
       });
 
-    const receiverId = foundDocument.userId;
-    const senderId = userId;
+    //Reassign when action is not add friend
+    receiverId ||= foundDocument.userId;
+    senderId ||= userId;
 
     //Do not create new Noti if author like his/her own modelType
     if (receiverId.toString() !== senderId.toString()) {
@@ -89,6 +90,7 @@ const notiController = {
           userId: receiverId,
           userActionId: senderId,
           createAt: new Date(),
+          lastUpdateAt: new Date(),
         });
     }
   },

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import _throw from '#root/utils/_throw';
+import notiController from '#root/controller/interaction/notification';
 
 const friendSchema = new mongoose.Schema({
   userId1: {
@@ -23,6 +24,13 @@ const friendSchema = new mongoose.Schema({
   },
 });
 
-const Friends = mongoose.model('Friends', friendSchema);
+friendSchema.post('save', async function () {
+  await notiController.updateContent({
+    document: { modelType: 'friends', modelId: this._id, receiverId: this.userId2, senderId: this.userId1 },
+    action: 'addFriend',
+  });
+});
+
+const Friends = mongoose.model('friends', friendSchema);
 
 export default Friends;

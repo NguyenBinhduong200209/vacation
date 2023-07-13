@@ -7,7 +7,7 @@ const notiSchema = new mongoose.Schema(
     modelType: {
       type: String,
       required: 'model Type required',
-      enum: ['posts', 'vacations', 'albums', 'friend'],
+      enum: ['posts', 'vacations', 'albums', 'friends'],
       default: 'friend',
     },
 
