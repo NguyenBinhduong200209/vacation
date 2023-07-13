@@ -21,8 +21,10 @@ const notiController = {
         //Sort fron the newest to the oldest
         { $sort: { lastUpdateAt: -1, createdAt: -1 } },
 
-        //Add 3 fields total, page and pages to docs
+        //Add 3 fields total, page, pages and totalUnseen to docs
+        { $setWindowFields: { output: { totalUnseen: { $sum: { $cond: [{ $toBool: '$isSeen' }, 0, 1] } } } } },
         addTotalPageFields({ page }),
+
         getUserInfo({ localField: 'userActionId', as: 'userInfo', field: ['username', 'avatar'] }),
 
         //Lookup to get content of post and vacation
@@ -41,7 +43,7 @@ const notiController = {
 
         // Restructure the docs
         facet({
-          meta: ['total', 'page', 'pages'],
+          meta: ['total', 'page', 'pages', 'totalUnseen'],
           data: ['lastUpdateAt', 'isSeen', 'userInfo', '__v', 'action', 'modelInfo'],
         })
       )
