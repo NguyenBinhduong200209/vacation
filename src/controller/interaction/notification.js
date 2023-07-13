@@ -48,7 +48,7 @@ const notiController = {
     );
 
     //Send to front
-    return foundList.length === 0 ? res.sendStatus(204) : res.status(200).json(foundList);
+    return foundList.length === 0 ? res.sendStatus(204) : res.status(200).json(foundList[0]);
   }),
 
   updateContent: async ({ document, action }) => {
