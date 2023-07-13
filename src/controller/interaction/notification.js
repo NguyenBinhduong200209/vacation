@@ -64,8 +64,8 @@ const notiController = {
       });
 
     //Reassign when action is not add friend
-    receiverId ||= foundDocument.userId;
-    senderId ||= userId;
+    !receiverId && (receiverId = foundDocument.userId);
+    !senderId && (senderId = userId);
 
     //Do not create new Noti if author like his/her own modelType
     if (receiverId.toString() !== senderId.toString()) {
