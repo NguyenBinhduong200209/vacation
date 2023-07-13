@@ -99,6 +99,8 @@ const vacationController = {
         //Get userInfo by looking up to model
         getUserInfo({ field: ['username', 'avatar', 'firstname', 'lastname'], countFriend: true }),
 
+        { $addFields: { isMember: { $in: [req.userInfo._id, '$memberList'] } } },
+
         //Get field count total views of vacation
         getCountInfo({ field: ['view', 'memberList'] })
       )

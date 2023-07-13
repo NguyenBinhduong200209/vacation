@@ -50,7 +50,12 @@ export function getCountInfo({ field }) {
               from: 'friends',
               let: { user_id: { $toObjectId: '$_id' } },
               pipeline: [
-                { $match: { $expr: { $or: [{ $eq: ['$userId1', '$$user_id'] }, { $eq: ['$userId2', '$$user_id'] }] } } },
+                {
+                  $match: {
+                    status: 'accepted',
+                    $expr: { $or: [{ $eq: ['$userId1', '$$user_id'] }, { $eq: ['$userId2', '$$user_id'] }] },
+                  },
+                },
               ],
               as: 'friends',
             },
