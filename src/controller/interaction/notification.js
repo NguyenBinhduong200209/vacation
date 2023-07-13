@@ -35,7 +35,8 @@ const notiController = {
             as: 'modelInfo',
           },
         },
-        { $unwind: '$modelInfo' },
+
+        { $unwind: { path: '$modelInfo', preserveNullAndEmptyArrays: true } },
         { $addFields: { 'modelInfo.type': '$modelType' } },
 
         // Restructure the docs
@@ -47,7 +48,7 @@ const notiController = {
     );
 
     //Send to front
-    return foundList.length === 0 ? res.sendStatus(204) : res.status(200).json(foundList[0]);
+    return foundList.length === 0 ? res.sendStatus(204) : res.status(200).json(foundList);
   }),
 
   updateContent: async ({ document, action }) => {
