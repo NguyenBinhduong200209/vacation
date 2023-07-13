@@ -31,6 +31,7 @@ const multerUpload = multer({
       userId: req.userInfo._id,
       ref: [],
     });
+
     await newResource.validate();
 
     return callback(null, true);
@@ -42,8 +43,4 @@ const multerUpload = multer({
   },
 });
 
-const getFileUpload = async (req, res, next) => {
-  multerUpload.array('files', 10)(req, res, next);
-};
-
-export default getFileUpload;
+export default multerUpload;

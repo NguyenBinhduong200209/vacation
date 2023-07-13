@@ -371,7 +371,7 @@ export async function searchOne({ model, value, page }) {
         //If page exists, meangin search for one, then restructure result by facet and limit fields could pass, otherwise, just limit fields could pass
         facet({ meta: ['total', 'page', 'pages'], data: ['title', 'createdAt', 'lastUpdateAt'] })
       );
-      return mongoose.model('Albums').aggregate(newItem);
+      return mongoose.model('albums').aggregate(newItem);
 
     default:
       _throw({
