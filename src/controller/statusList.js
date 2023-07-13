@@ -13,6 +13,7 @@ const statusController = {
     const result = await mongoose.model(type).aggregate(
       [].concat(
         { $match: { _id: new mongoose.Types.ObjectId(id) } },
+        { $unwind: `$${listType}` },
 
         //Get total, page and limit at most 10 elements pass to next stage
         addTotalPageFields({ page }),
