@@ -21,7 +21,7 @@ function checkAuthor({ modelType, field }) {
         : req.query?.type || req.params?.type);
 
     //Throw an error if value of modelType did not meed the condition
-    (!modelType || !/(vacations|posts|users|resources|likes|comments)/.test(modelType)) &&
+    (!modelType || !/(vacations|posts|users|resources|likes|comments|notifications)/.test(modelType)) &&
       _throw({ code: 400, errors: [{ field: 'type', message: 'invalid' }], message: 'invalid type' });
 
     //Only check Author for other model except User model
