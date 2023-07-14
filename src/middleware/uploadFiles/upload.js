@@ -4,6 +4,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const handleUpload = asyncWrapper(async (req, res, next) => {
   const { field } = req.body;
+
   //Throw an error if user has not uploaded any file
   (!req.files || req.files.length < 1) && _throw({ code: 400, message: 'user has not upload yet' });
 

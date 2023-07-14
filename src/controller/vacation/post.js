@@ -151,7 +151,7 @@ const postController = {
         getResourcePath({ localField: '_id', as: 'resource', returnAsArray: true }),
 
         //Remove unnecessary fields
-        { $project: { vacationId: 0, userId: 0, locationId: 0, __v: 0 } }
+        { $project: { userId: 0, locationId: 0, __v: 0 } }
       )
     );
 
