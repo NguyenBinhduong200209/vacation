@@ -9,6 +9,7 @@ const multerUpload = multer({
   limits: { fileSize: 7 * 1000 * 1000 },
   fileFilter: async (req, file, callback) => {
     const fileSize = parseInt(req.headers['content-length']);
+
     const { originalname, mimetype, size } = file;
 
     //Throw an error in case of invalid contentType
