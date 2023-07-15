@@ -11,6 +11,8 @@ import pathArr from '#root/routes/index';
 import internalTasks from '#root/services/internalTasks';
 import { publicPath } from '#root/config/path';
 import firebase from '#root/services/firebase';
+import { getFirestore } from 'firebase/firestore';
+
 // create an instance of an Express application
 const app = express();
 // set the port number for the server to listen on
@@ -24,6 +26,7 @@ await dbConnect();
 
 //Connect to firebase
 await firebase();
+export const firestore = getFirestore();
 
 //Run internal Task
 internalTasks();

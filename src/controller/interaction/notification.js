@@ -1,122 +1,198 @@
 import Notifications from '#root/model/interaction/notification';
 import _throw from '#root/utils/_throw';
 import asyncWrapper from '#root/middleware/asyncWrapper';
-import { addTotalPageFields, facet, getUserInfo } from '#root/config/pipeline';
+import { getResourcePath } from '#root/config/pipeline';
 import mongoose from 'mongoose';
+import { firestore } from '#root/app';
+import {
+  collection,
+  Timestamp,
+  doc,
+  getDocs,
+  query,
+  where,
+  addDoc,
+  updateDoc,
+  serverTimestamp,
+  orderBy,
+  limit,
+  startAfter,
+  getCountFromServer,
+} from 'firebase/firestore';
 
 const notiController = {
   getMany: asyncWrapper(async (req, res) => {
-    const { page, type } = req.query;
     //Get userId from verify JWT middelware
     const userId = req.userInfo._id;
+    const notiRef = collection(firestore, 'notifications');
+    const itemPerPage = process.env.ITEM_OF_PAGE;
 
-    //Find noti list based on userId
-    const foundList = await Notifications.aggregate(
-      [].concat(
-        //Filter to get all noti that belong to userLogin by searching by userId
-        {
-          $match: Object.assign({ userId: new mongoose.Types.ObjectId(userId) }, type === 'unread' ? { isSeen: false } : {}),
-        },
+    //Throw an error if page is undefined or not a number
+    const page = Number(req.query.page);
+    !page && _throw({ code: 400, errors: [{ field: 'page', message: 'required' }], message: 'page query required' });
+    page < 0 &&
+      _throw({
+        code: 400,
+        errors: [{ field: 'page', message: 'invalid' }],
+        message: 'page query must be a positive number',
+      });
 
-        //Sort fron the newest to the oldest
-        { $sort: { lastUpdateAt: -1, createdAt: -1 } },
+    let resultQuery;
+    //If page is first page
+    if (page === 1) {
+      // Query the first page of docs
+      const first = query(
+        notiRef,
+        where('receiverId', '==', userId.toString()),
+        orderBy('lastUpdateAt', 'desc'),
+        limit(itemPerPage)
+      );
 
-        //Add 3 fields total, page, pages and totalUnseen to docs
-        { $setWindowFields: { output: { totalUnseen: { $sum: { $cond: [{ $toBool: '$isSeen' }, 0, 1] } } } } },
-        addTotalPageFields({ page }),
+      //Send to front code 204 if result is empty array
+      resultQuery = (await getDocs(first)).docs;
+      if (resultQuery.length === 0) return res.sendStatus(204);
+    }
 
-        getUserInfo({ localField: 'userActionId', as: 'userInfo', field: ['username', 'avatar'] }),
+    //If page is not first page
+    else {
+      // Query the first page of docs
+      const first = query(
+        notiRef,
+        where('receiverId', '==', userId.toString()),
+        orderBy('lastUpdateAt', 'desc'),
+        limit((page - 1) * itemPerPage)
+      );
 
-        //Lookup to get content of post and vacation
-        {
-          $lookup: {
-            from: 'posts',
-            localField: 'modelId',
-            foreignField: '_id',
-            pipeline: [{ $project: { content: 1 } }],
-            as: 'modelInfo',
-          },
-        },
+      //Send to front code 204 if result is empty array
+      const foundNoti = (await getDocs(first)).docs;
+      if (foundNoti.length === 0) return res.sendStatus(204);
 
-        { $unwind: { path: '$modelInfo', preserveNullAndEmptyArrays: true } },
-        { $addFields: { 'modelInfo.type': '$modelType' } },
+      // Get the last visible document
+      const lastVisible = foundNoti[foundNoti.length - 1];
 
-        // Restructure the docs
-        facet({
-          meta: ['total', 'page', 'pages', 'totalUnseen'],
-          data: ['lastUpdateAt', 'isSeen', 'userInfo', '__v', 'action', 'modelInfo'],
-        })
-      )
-    );
+      // Construct a new query starting at this document,
+      const next = query(
+        notiRef,
+        where('receiverId', '==', userId.toString()),
+        orderBy('lastUpdateAt', 'desc'),
+        startAfter(lastVisible),
+        limit(itemPerPage)
+      );
+
+      //Send to front code 204 if result is empty array
+      const resultQuery = (await getDocs(next)).docs;
+      if (resultQuery.length === 0) return res.sendStatus(204);
+    }
+
+    //Restructure Object to send to front
+    let result = [],
+      totalUnseen = 0;
+    for (const item of resultQuery) {
+      const { senderId, isSeen } = item.data();
+      const userInfo = await mongoose
+        .model('users')
+        .aggregate(
+          [].concat(
+            { $match: { _id: new mongoose.Types.ObjectId(senderId) } },
+            { $project: { username: 1 } },
+            getResourcePath({ localField: '_id', as: 'avatar' })
+          )
+        );
+
+      !isSeen && (totalUnseen += 1);
+      result.push(Object.assign({ userInfo: userInfo[0] }, item.data()));
+    }
+
+    const totalDocs = (await getCountFromServer(query(notiRef, where('receiverId', '==', userId.toString())))).data().count;
 
     //Send to front
-    return foundList.length === 0 ? res.sendStatus(204) : res.status(200).json(foundList[0]);
+    return res.json({
+      meta: { total: totalDocs, page, pages: Math.ceil(totalDocs / itemPerPage), totalUnseen },
+      data: result,
+    });
   }),
 
   updateContent: async ({ document, action }) => {
     let { modelType, modelId, userId, receiverId, senderId } = document;
+    const notiRef = collection(firestore, 'notifications');
 
-    const foundDocument = await mongoose.model(modelType).findById(modelId);
-
-    !foundDocument &&
-      _throw({
-        code: 500,
-        errors: [{ field: 'notification', message: 'error while creating' }],
-        message: 'error while creating notification',
-      });
-
-    //Reassign when action is not add friend
-    !receiverId && (receiverId = foundDocument.userId);
-    !senderId && (senderId = userId);
+    if (action !== 'addFriend') {
+      const foundPost = await mongoose.model('posts').findById(modelId);
+      !foundPost && _throw({ code: 404, message: 'post cannot be found' });
+      receiverId = foundPost.userId;
+      senderId = userId;
+    }
 
     //Do not create new Noti if author like his/her own modelType
     if (receiverId.toString() !== senderId.toString()) {
-      //Find Notification that has modelType, modelId, userId and has not been seen by user
-      const foundNoti = await Notifications.findOne({ modelType, modelId, userId: receiverId, action, isSeen: false });
+      const queryCondition = query(
+        notiRef,
+        where('modelType', '==', modelType),
+        where('modelId', '==', modelId.toString()),
+        where('receiverId', '==', receiverId.toString()),
+        where('action', '==', action)
+      );
 
-      //If Noti found
-      if (foundNoti) {
-        //Update found Notification and save to DB
-        foundNoti.userActionId = senderId;
-        foundNoti.isSeen = false;
-        await foundNoti.save();
-
-        return foundNoti;
-      }
-
+      const foundNoti = (await getDocs(queryCondition)).docs.map(doc => Object.assign({ id: doc.id }, doc.data()));
       //If Noti not found, create new Notification
-      else
-        return await Notifications.create({
+      if (foundNoti.length === 0)
+        await addDoc(notiRef, {
           modelType,
-          modelId,
-          action,
-          userId: receiverId,
-          userActionId: senderId,
-          createAt: new Date(),
-          lastUpdateAt: new Date(),
+          modelId: modelId.toString(),
+          senderId: senderId.toString(),
+          receiverId: receiverId.toString(),
+          lastUpdateAt: Timestamp.fromDate(new Date()),
+          action: action,
+          isSeen: false,
+          isFirst: true,
+        });
+      //Update noti in case found
+      else
+        await updateDoc(doc(notiRef, foundNoti[0].id), {
+          lastUpdateAt: serverTimestamp(),
+          isSeen: false,
+          isFirst: false,
+          senderId: senderId.toString(),
         });
     }
   },
 
   updateStatusAll: asyncWrapper(async (req, res) => {
-    const userId = req.userInfo._id;
+    const receiverId = req.userInfo._id;
 
-    const foundNotiList = await Notifications.updateMany({ userId }, { isSeen: true });
+    const queryCondition = query(notiRef, where('receiverId', '==', receiverId.toString()));
+    const foundNoti = (await getDocs(queryCondition)).docs.map(doc => Object.assign({ id: doc.id }, doc.data()));
+
+    let result = [];
+    for (const noti of foundNoti) {
+      result.push(
+        updateDoc(doc(firestore, noti.id), {
+          lastUpdateAt: serverTimestamp(),
+          isSeen: true,
+        })
+      );
+    }
+    await Promise.all(result);
 
     //Send to front
-    return res
-      .status(200)
-      .json({ meta: { total: foundNotiList.modifiedCount }, message: 'update status of all post successfully' });
+    return res.status(200).json({ meta: { total: foundNoti.length }, message: 'update status of all post successfully' });
   }),
 
   updateStatusOne: asyncWrapper(async (req, res) => {
-    //Get document from previos middleware, Change seen Status to true and save to DB
     const foundNoti = req.doc;
-    foundNoti.isSeen = true;
-    await foundNoti.save();
+
+    //Get document from previos middleware, Change seen Status to true and save to DB
+    await updateDoc(doc(firestore, 'notifications', foundNoti.id), {
+      isSeen: true,
+    });
 
     //Send to front
-    return res.status(200).json({ data: foundNoti, message: 'update status of one post successfully' });
+    return res.status(200).json({
+      data: Object.assign(foundNoti, {
+        isSeen: true,
+      }),
+      message: 'update status of one post successfully',
+    });
   }),
 
   delete: async () => {
