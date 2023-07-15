@@ -1,6 +1,8 @@
 import _throw from '#root/utils/_throw';
 import mongoose from 'mongoose';
 import asyncWrapper from '#root/middleware/asyncWrapper';
+import { firestore } from '#root/app';
+import { collection, Timestamp, doc, getDoc, query, where, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 function checkAuthor({ modelType, field }) {
   return asyncWrapper(async (req, res, next) => {
@@ -26,8 +28,14 @@ function checkAuthor({ modelType, field }) {
 
     //Only check Author for other model except User model
     if (modelType !== 'users') {
+      let foundDoc;
       //Throw an error if cannot find post based on id params
-      const foundDoc = await mongoose.model(modelType).findById(id);
+      if (modelType === 'notifications') {
+        const result = await getDoc(doc(firestore, 'notifications', id));
+        result.data() && (foundDoc = Object.assign({ id: result.id }, result.data()));
+      } else {
+        foundDoc = await mongoose.model(modelType).findById(id);
+      }
 
       !foundDoc &&
         _throw({
@@ -37,7 +45,8 @@ function checkAuthor({ modelType, field }) {
         });
 
       //Throw an error if user login is not author of this post
-      foundDoc.userId.toString() !== userId.toString() &&
+      const authorId = foundDoc.userId || foundDoc.receiverId;
+      authorId?.toString() !== userId.toString() &&
         _throw({
           code: 403,
           errors: [{ field: `${modelType}Id`, message: `user is not author of this ${modelType}` }],
