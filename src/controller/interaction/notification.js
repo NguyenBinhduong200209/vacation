@@ -87,7 +87,8 @@ const notiController = {
     let result = [],
       totalUnseen = 0;
     for (const item of resultQuery) {
-      const { senderId, isSeen } = item.data();
+      const { senderId, isSeen, modelType, modelId } = item.data();
+      let modelInfo = {};
       const userInfo = await mongoose
         .model('users')
         .aggregate(
@@ -97,9 +98,11 @@ const notiController = {
             getResourcePath({ localField: '_id', as: 'avatar' })
           )
         );
+      modelType === 'posts' &&
+        (modelInfo = await mongoose.model('posts').findById(modelId).select({ vacationId: 1, content: 1 }).lean());
 
       !isSeen && (totalUnseen += 1);
-      result.push(Object.assign({ id: item.id, userInfo: userInfo[0] }, item.data()));
+      result.push({ id: item.id, modelInfo: Object.assign(modelInfo, { type: modelType }), userInfo: userInfo[0] });
     }
 
     const totalDocs = (await getCountFromServer(query(notiRef, where('receiverId', '==', userId.toString())))).data().count;
