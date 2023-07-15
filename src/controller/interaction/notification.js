@@ -28,8 +28,7 @@ const notiController = {
     const itemPerPage = process.env.ITEM_OF_PAGE;
 
     //Throw an error if page is undefined or not a number
-    const page = Number(req.query.page);
-    !page && _throw({ code: 400, errors: [{ field: 'page', message: 'required' }], message: 'page query required' });
+    const page = Number(req.query.page) || 1;
     page < 0 &&
       _throw({
         code: 400,
@@ -100,7 +99,7 @@ const notiController = {
         );
 
       !isSeen && (totalUnseen += 1);
-      result.push(Object.assign({ userInfo: userInfo[0] }, item.data()));
+      result.push(Object.assign({ id: item.id, userInfo: userInfo[0] }, item.data()));
     }
 
     const totalDocs = (await getCountFromServer(query(notiRef, where('receiverId', '==', userId.toString())))).data().count;
