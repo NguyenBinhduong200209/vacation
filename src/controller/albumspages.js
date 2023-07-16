@@ -223,14 +223,13 @@ const albumspagesController = {
             }
           });
         });
-      }
-      const albumPages = albumPage[0];
-      console.log(albumPages.page);
-      if (!albumPage) {
+      } else {
         return res.status(404).json({ message: 'albumPages not found' });
       }
+      const albumPages = albumPage[0];
+
       const data = {
-        _id: albumPages.id,
+        _id: albumPages._id,
         albumId: albumPages.albumId,
         userId: albumPages.userId,
         resource: albumPages.resource,
