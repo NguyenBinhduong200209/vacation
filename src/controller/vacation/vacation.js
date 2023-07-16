@@ -98,6 +98,7 @@ const vacationController = {
 
         //Get userInfo by looking up to model
         getUserInfo({ field: ['username', 'avatar', 'firstname', 'lastname'], countFriend: true }),
+        getResourcePath({ localField: '_id', as: 'cover' }),
 
         { $addFields: { isMember: { $in: [req.userInfo._id, '$memberList'] } } },
 
