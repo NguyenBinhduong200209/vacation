@@ -207,12 +207,13 @@ const postController = {
 
     //Config updatable key and update based on req.body value
     const updateKeys = ['locationId', 'content'];
-    const updateObj = updateKeys.reduce((obj, key) => {
+    const updateObj = updateKeys.forEach(key => {
       const val = req.body[key];
-      return val ? Object.assign(obj, { [key]: val }) : obj;
-    }, {});
+      val && (foundPost[key] = val);
+    });
 
-    await foundPost.updateOne(updateObj);
+    foundPost.lastUpdateAt = new Date();
+    await foundPost.save();
 
     //If user want to update files in post
     if (req.body.resources) {
