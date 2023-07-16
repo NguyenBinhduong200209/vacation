@@ -167,6 +167,7 @@ const notiController = {
 
   updateStatusAll: asyncWrapper(async (req, res) => {
     const receiverId = req.userInfo._id;
+    const notiRef = collection(firestore, 'notifications');
 
     const queryCondition = query(notiRef, where('receiverId', '==', receiverId.toString()));
     const foundNoti = (await getDocs(queryCondition)).docs.map(doc => Object.assign({ id: doc.id }, doc.data()));
@@ -174,7 +175,7 @@ const notiController = {
     let result = [];
     for (const noti of foundNoti) {
       result.push(
-        updateDoc(doc(firestore, noti.id), {
+        updateDoc(doc(notiRef, noti.id), {
           lastUpdateAt: serverTimestamp(),
           isSeen: true,
         })
@@ -188,9 +189,10 @@ const notiController = {
 
   updateStatusOne: asyncWrapper(async (req, res) => {
     const foundNoti = req.doc;
+    const notiRef = collection(firestore, 'notifications');
 
     //Get document from previos middleware, Change seen Status to true and save to DB
-    await updateDoc(doc(firestore, 'notifications', foundNoti.id), {
+    await updateDoc(doc(notiRef, foundNoti.id), {
       isSeen: true,
     });
 
