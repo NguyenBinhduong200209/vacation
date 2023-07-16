@@ -177,7 +177,6 @@ const notiController = {
     for (const noti of foundNoti) {
       result.push(
         updateDoc(doc(notiRef, noti.id), {
-          lastUpdateAt: serverTimestamp(),
           isSeen: true,
         })
       );
