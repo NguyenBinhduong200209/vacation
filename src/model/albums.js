@@ -111,7 +111,7 @@ albumSchema.pre('remove', async function (next) {
 
   try {
     // Remove associated AlbumsPage documents with matching albumId
-    await AlbumsPage.deleteMany({ albumsId: albumId });
+    await AlbumsPage.deleteMany({ albumId: albumId });
     next();
   } catch (error) {
     next(error);

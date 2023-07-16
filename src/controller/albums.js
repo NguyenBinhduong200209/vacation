@@ -3,6 +3,7 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Friends from '#root/model/user/friend';
 import Albums from '#root/model/albums';
 import Vacations from '#root/model/vacation/vacations';
+import AlbumsPage from '#root/model/albumsPage';
 
 const albumsController = {
   addNew: asyncWrapper(async (req, res) => {
@@ -205,11 +206,12 @@ const albumsController = {
   }),
 
   deleteAlbum: asyncWrapper(async (req, res) => {
-    const { albumId } = req.params;
+    const albumId = req.params.id.trim();
     console.log(albumId);
     const foundUser = req.userInfo;
+
     // Kiểm tra xem album có tồn tại trong database không
-    const existingAlbum = await Albums.findOne(albumId);
+    const existingAlbum = await Albums.findOne({ _id: albumId });
     console.log(existingAlbum);
 
     if (!existingAlbum) {
@@ -223,6 +225,7 @@ const albumsController = {
 
     // Xóa album khỏi database
     await Albums.findByIdAndDelete(existingAlbum._id);
+    await AlbumsPage.deleteMany({ albumId: albumId });
 
     return res.status(200).json({
       message: 'Albums deleted',

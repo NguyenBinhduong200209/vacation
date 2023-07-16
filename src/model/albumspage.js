@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { Schema } from 'mongoose';
 import Users from '#root/model/user/users';
 import _throw from '#root/utils/_throw';
 import Albums from '#root/model/albums';
@@ -56,7 +57,7 @@ const albumspageSchema = new mongoose.Schema({
       },
 
       style: {
-        type: String,
+        type: Schema.Types.Mixed,
         required: true,
         trim: true,
       },
