@@ -108,6 +108,7 @@ const notiController = {
         userInfo: userInfo[0],
         action,
         isFirst,
+        isSeen,
       });
     }
 
