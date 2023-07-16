@@ -3,7 +3,7 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Friends from '#root/model/user/friend';
 import Albums from '#root/model/albums';
 import Vacations from '#root/model/vacation/vacations';
-import AlbumsPage from '#root/model/albumsPage';
+import AlbumsPage from '#root/model/albumspage';
 
 const albumsController = {
   addNew: asyncWrapper(async (req, res) => {
