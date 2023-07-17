@@ -161,7 +161,8 @@ const postController = {
 
   addNew: asyncWrapper(async (req, res) => {
     //Get infor from req.body
-    const { vacationId, locationId, content, resources } = req.body;
+    const { vacationId, locationId, content } = req.body;
+    const resources = req.body.resources || [];
 
     //Get userInfo from verifyJWT middleware
     const foundUserId = req.userInfo._id;
@@ -190,14 +191,22 @@ const postController = {
       lastUpdateAt: new Date(),
     });
 
+    const found = await Resources.find({
+      // userId: foundUserId,
+      _id: { $in: resources.map(item => new mongoose.Types.ObjectId(item)) },
+      ref: [],
+    });
+
     //Update ref of resources
-    await Resources.updateMany(
-      { userId: foundUserId, _id: { $in: resources }, ref: [] },
+    const result = await Resources.updateMany(
+      { userId: foundUserId, _id: { $in: resources.map(item => new mongoose.Types.ObjectId(item)) }, ref: [] },
       { ref: [{ model: 'posts', _id: newPost._id }] }
     );
 
     //Send to front
-    return res.status(201).json({ data: newPost, message: 'post created successfully' });
+    return res
+      .status(201)
+      .json({ data: newPost, meta: { totalFiles: result.modifiedCount }, message: 'post created successfully' });
   }),
 
   update: asyncWrapper(async (req, res) => {
