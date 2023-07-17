@@ -52,7 +52,7 @@ const resourceController = {
         type: mimetype,
         size: size,
         path: url,
-        userId: isAvatar ? req.userInfo._id : req.doc.userId,
+        userId: req.userInfo._id,
         ref: isPost
           ? []
           : isAvatar
