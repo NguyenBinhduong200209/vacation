@@ -36,20 +36,16 @@ const notiController = {
         message: 'page query must be a positive number',
       });
 
-    let resultQuery;
+    let queryCondition;
     //If page is first page
     if (page === 1) {
       // Query the first page of docs
-      const first = query(
+      queryCondition = query(
         notiRef,
         where('receiverId', '==', userId.toString()),
         orderBy('lastUpdateAt', 'desc'),
         limit(itemPerPage)
       );
-
-      //Send to front code 204 if result is empty array
-      resultQuery = (await getDocs(first)).docs;
-      if (resultQuery.length === 0) return res.sendStatus(204);
     }
 
     //If page is not first page
@@ -70,24 +66,26 @@ const notiController = {
       const lastVisible = foundNoti[foundNoti.length - 1];
 
       // Construct a new query starting at this document,
-      const next = query(
+      queryCondition = query(
         notiRef,
         where('receiverId', '==', userId.toString()),
         orderBy('lastUpdateAt', 'desc'),
         startAfter(lastVisible),
         limit(itemPerPage)
       );
-
-      //Send to front code 204 if result is empty array
-      const resultQuery = (await getDocs(next)).docs;
-      if (resultQuery.length === 0) return res.sendStatus(204);
     }
+
+    //Send to front code 204 if result is empty array
+    const resultQuery = (await getDocs(queryCondition)).docs;
+    if (resultQuery.length === 0) return res.sendStatus(204);
 
     //Restructure Object to send to front
     let result = [],
       totalUnseen = 0;
-    for (const item of resultQuery) {
-      const { senderId, isSeen, modelType, modelId, action, isFirst } = item.data();
+    const list = resultQuery.map(item => Object.assign({ id: item.id }, item.data()));
+
+    for (const item of list) {
+      const { senderId, isSeen, modelType, modelId, action, isFirst, lastUpdateAt } = item;
       let modelInfo = {};
       const userInfo = await mongoose
         .model('users')
@@ -109,6 +107,7 @@ const notiController = {
         action,
         isFirst,
         isSeen,
+        lastUpdateAt,
       });
     }
 
