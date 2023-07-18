@@ -5,12 +5,12 @@ import notiController from '#root/controller/interaction/notification';
 const friendSchema = new mongoose.Schema({
   userId1: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Users',
+    ref: 'users',
     required: 'UserId required',
   },
   userId2: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Users',
+    ref: 'users',
     required: 'UserId required',
   },
   status: {

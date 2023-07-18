@@ -1,6 +1,6 @@
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import Friends from '#root/model/user/friend';
-import Users from '#root/model//user/users';
+import Users from '#root/model/user/users';
 import _throw from '#root/utils/_throw';
 import { addTotalPageFields, getUserInfo, getCountInfo, facet } from '#root/config/pipeline';
 
