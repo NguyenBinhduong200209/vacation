@@ -26,6 +26,8 @@ const statusController = {
           isFriend: req.userInfo._id,
         }),
 
+        checkFriend({ userId: req.userInfo._id, localField: '_id' }),
+
         //Destructure listType field
         {
           $project: {
@@ -91,7 +93,7 @@ const statusController = {
         addTotalPageFields({ page }),
 
         //Check whether isFriend of user login or not
-        checkFriend({ userId: req.userInfo._id }),
+        checkFriend({ userId: req.userInfo._id, localField: '_id' }),
 
         //Get avatar of each user
         getResourcePath({ localField: '_id', as: 'avatar' }),
@@ -100,7 +102,7 @@ const statusController = {
         facet({ meta: ['page', 'pages', 'total'], data: ['firstname', 'lastname', 'username', 'avatar', 'isFriend'] })
       )
     );
-    return res.json(result);
+    return res.json(result[0]);
   }),
 };
 
