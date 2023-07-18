@@ -113,7 +113,7 @@ const vacationController = {
 
   addNew: asyncWrapper(async (req, res) => {
     //Get vital information from req.body
-    const { title, description, memberList, shareStatus, shareList, startingTime, endingTime, cover } = req.body;
+    const { title, description, memberList, shareStatus, shareList, startingTime, endingTime } = req.body;
     //Get userId from verifyJWT middleware
     const userId = req.userInfo._id.toString();
 
@@ -141,12 +141,6 @@ const vacationController = {
       createdAt: new Date(),
       lastUpdateAt: new Date(),
     });
-
-    //Update ref of resources
-    await Resources.updateOne(
-      { userId: foundUserId, _id: cover, ref: [] },
-      { ref: [{ model: 'vacations', field: 'cover', _id: newVacation._id }] }
-    );
 
     //Send to front
     return res.status(201).json({ data: newVacation, message: 'vacation created' });
