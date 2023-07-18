@@ -13,7 +13,7 @@ const searchController = {
   searchOne: asyncWrapper(async (req, res) => {
     const { type } = req.params,
       { value, page } = req.query;
-    const result = await searchOne({ model: type, value: value, page });
+    const result = await searchOne({ model: type, value: value, page, userId: req.userInfo._id });
 
     return result.length === 0 ? res.sendStatus(204) : res.status(200).json(result[0]);
   }),

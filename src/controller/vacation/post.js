@@ -28,7 +28,9 @@ const postController = {
         {
           $match: Object.assign(
             { vacationId: new mongoose.Types.ObjectId(id) },
-            timeline ? { createdAt: { $gte: new Date(timeline) } } : {}
+            timeline
+              ? { createdAt: { $gte: new Date(timeline), $lte: new Date(Date.parse(timeline) + 24 * 60 * 60 * 1000) } }
+              : {}
           ),
         },
 
@@ -36,7 +38,7 @@ const postController = {
         { $sort: { lastUpdateAt: -1, createdAt: -1 } },
 
         // Add 3 new fields (total, page, pages) and then Get username, location by looking up to other model
-        timeline ? [{ $skip: (page || 1) * process.env.ITEM_OF_PAGE }] : addTotalPageFields({ page }),
+        addTotalPageFields({ page }),
         getUserInfo({ field: ['username', 'avatar'] }),
         getCountInfo({ field: ['like', 'comment'] }),
         getLocation({ localField: 'locationId' }),
@@ -63,7 +65,7 @@ const postController = {
     );
 
     // Get timeline
-    if (result.length === 0) return res.sendStatus(204);
+    if (result[0].data.length === 0) return res.sendStatus(204);
     else {
       if (!timeline) {
         const timeline = (await Posts.find({ vacationId: id }).sort({ createdAt: -1 }))

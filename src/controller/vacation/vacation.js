@@ -80,6 +80,7 @@ const vacationController = {
             'startingTime',
             'endingTime',
             'lastUpdateAt',
+            'isFriend',
           ],
         })
       )

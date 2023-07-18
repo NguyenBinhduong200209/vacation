@@ -99,12 +99,13 @@ export function isLiked({ userId }) {
   ];
 }
 
-export function checkFriend({ userId }) {
+export function checkFriend({ userId, localField }) {
+  const localValue = localField || 'userId';
   return [
     {
       $lookup: {
         from: 'friends',
-        let: { userId: { $toObjectId: userId }, authorId: { $toObjectId: '$userId' } },
+        let: { userId: { $toObjectId: userId }, authorId: { $toObjectId: `$${localValue}` } },
         pipeline: [
           {
             $match: {
@@ -287,7 +288,7 @@ export function facet({ meta, data }) {
   );
 }
 
-export async function searchOne({ model, value, page }) {
+export async function searchOne({ model, value, page, userId }) {
   let newItem = [];
   switch (model) {
     case 'vacation':
@@ -332,11 +333,12 @@ export async function searchOne({ model, value, page }) {
         //Lookup to user model to get info
         getUserInfo({ localField: '_id', field: ['avatar'], as: 'avatar' }),
         { $addFields: { avatar: '$avatar.avatar.path' } },
+        checkFriend({ userId: userId, localField: '_id' }),
 
         //If page exists, meangin search for one, then restructure result by facet and limit fields could pass, otherwise, just limit fields could pass
         facet({
           meta: ['total', 'page', 'pages'],
-          data: ['firstname', 'lastname', 'username', 'email', 'avatar'],
+          data: ['firstname', 'lastname', 'username', 'email', 'avatar', 'isFriend'],
         })
       );
       return mongoose.model('users').aggregate(newItem);
