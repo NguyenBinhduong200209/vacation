@@ -20,7 +20,7 @@ const vacationController = {
             $or: [
               type === 'newFeed' ? { shareStatus: 'public' } : { shareStatus: 'public', memberList: { $in: [userId] } },
               { shareStatus: 'protected', shareList: { $in: [userId] } },
-              { shareStatus: 'onlyme', userId: userId },
+              { shareStatus: 'onlyme', userId: new mongoose.Types.ObjectId(userId) },
             ],
           },
         },

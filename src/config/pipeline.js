@@ -1,9 +1,49 @@
 import mongoose from 'mongoose';
 import _throw from '#root/utils/_throw';
 
-export function getCountInfo({ field }) {
+export function getCountInfo({ field, countLikePost }) {
   return field.reduce((arr, item) => {
     switch (item) {
+      case 'vacation':
+        return arr.concat(
+          {
+            $lookup: {
+              from: 'vacations',
+              localField: '_id',
+              foreignField: 'memberList',
+              as: 'vacations',
+            },
+          },
+          { $addFields: { vacations: { $size: '$vacations' } } }
+        );
+
+      case 'post':
+        return arr.concat(
+          {
+            $lookup: {
+              from: 'posts',
+              localField: '_id',
+              foreignField: 'userId',
+              pipeline: countLikePost
+                ? [].concat(
+                    {
+                      $lookup: {
+                        from: 'likes',
+                        localField: '_id',
+                        foreignField: 'modelId',
+                        as: 'likesPost',
+                      },
+                    },
+                    { $addFields: { likesPost: { $size: '$likesPost' } } }
+                  )
+                : [],
+              as: 'posts',
+            },
+          },
+          countLikePost ? { $addFields: { likesPost: { $size: '$posts.likesPost' } } } : [],
+          { $addFields: { posts: { $size: '$posts' } } }
+        );
+
       case 'like':
         return arr.concat(
           {
