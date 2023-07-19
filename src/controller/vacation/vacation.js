@@ -3,7 +3,6 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Vacations from '#root/model/vacation/vacations';
 import { addTotalPageFields, getUserInfo, getCountInfo, facet, checkFriend, getResourcePath } from '#root/config/pipeline';
 import mongoose from 'mongoose';
-import Resources from '#root/model/resource/resource';
 
 const vacationController = {
   getMany: asyncWrapper(async (req, res) => {

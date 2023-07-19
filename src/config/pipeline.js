@@ -302,6 +302,9 @@ export async function searchOne({ model, value, page, userId }) {
         //If page exists, meaning search for one, then add 3 fields: total, page and pages, otherwise, limit the document pass this stage
         addTotalPageFields({ page }),
 
+        //Get cover vacation
+        getResourcePath({ localField: '_id', as: 'cover' }),
+
         //Lookup to user model to get info
         getUserInfo({ field: ['username', 'avatar'] }),
 
