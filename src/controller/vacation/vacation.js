@@ -3,7 +3,6 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Vacations from '#root/model/vacation/vacations';
 import { addTotalPageFields, getUserInfo, getCountInfo, facet, checkFriend, getResourcePath } from '#root/config/pipeline';
 import mongoose from 'mongoose';
-import Resources from '#root/model/resource/resource';
 
 const vacationController = {
   getMany: asyncWrapper(async (req, res) => {
@@ -21,7 +20,7 @@ const vacationController = {
             $or: [
               type === 'newFeed' ? { shareStatus: 'public' } : { shareStatus: 'public', memberList: { $in: [userId] } },
               { shareStatus: 'protected', shareList: { $in: [userId] } },
-              { shareStatus: 'onlyme', userId: userId },
+              { shareStatus: 'onlyme', userId: new mongoose.Types.ObjectId(userId) },
             ],
           },
         },
@@ -80,6 +79,7 @@ const vacationController = {
             'startingTime',
             'endingTime',
             'lastUpdateAt',
+            'isFriend',
           ],
         })
       )
@@ -98,6 +98,7 @@ const vacationController = {
 
         //Get userInfo by looking up to model
         getUserInfo({ field: ['username', 'avatar', 'firstname', 'lastname'], countFriend: true }),
+        getResourcePath({ localField: '_id', as: 'cover' }),
 
         { $addFields: { isMember: { $in: [req.userInfo._id, '$memberList'] } } },
 
@@ -112,7 +113,7 @@ const vacationController = {
 
   addNew: asyncWrapper(async (req, res) => {
     //Get vital information from req.body
-    const { title, description, memberList, shareStatus, shareList, startingTime, endingTime, cover } = req.body;
+    const { title, description, memberList, shareStatus, shareList, startingTime, endingTime } = req.body;
     //Get userId from verifyJWT middleware
     const userId = req.userInfo._id.toString();
 
@@ -141,12 +142,6 @@ const vacationController = {
       lastUpdateAt: new Date(),
     });
 
-    //Update ref of resources
-    await Resources.updateOne(
-      { userId: foundUserId, _id: cover, ref: [] },
-      { ref: [{ model: 'vacations', field: 'cover', _id: newVacation._id }] }
-    );
-
     //Send to front
     return res.status(201).json({ data: newVacation, message: 'vacation created' });
   }),
@@ -158,14 +153,14 @@ const vacationController = {
     //Save new info to foundVacation
     const { memberList, shareStatus, shareList } = req.body;
 
-    //Update other fields
+    // Update other fields
     const updateKeys = ['title', 'description', 'memberList', 'shareStatus', 'shareList', 'startingTime', 'endingTime'];
     updateKeys.forEach(key => {
       switch (key) {
         case 'memberList':
           //if memberList receive is not an array, then return memberlist contain only userId, otherwises, combine memberList and userId
           const newMemberList = Array.isArray(memberList)
-            ? [...new Set(memberList.concat(req.userInfo._id))]
+            ? [...new Set(memberList.concat(req.userInfo._id.toString()))]
             : [req.userInfo._id];
           foundVacation.memberList = newMemberList;
           break;
@@ -174,9 +169,13 @@ const vacationController = {
           //If shareStatus is protected, and shareList is an array, then return combination of newMemberList and shareList, otherwise, return newMemberList, if shareStatus is not protected, then return null
           const newShareList =
             shareStatus === 'protected'
-              ? Array.isArray(shareList)
-                ? [...new Set(newMemberList.concat(shareList))]
-                : newMemberList
+              ? [
+                  ...new Set(
+                    newMemberList.concat(
+                      Array.isArray(shareList) ? shareList : foundVacation.shareList ? [] : foundVacation.shareList
+                    )
+                  ),
+                ]
               : null;
           foundVacation.shareList = newShareList;
           break;
@@ -192,7 +191,7 @@ const vacationController = {
           break;
 
         default:
-          foundVacation[key] = req.body[key];
+          req.body[key] && (foundVacation[key] = req.body[key]);
           break;
       }
     });

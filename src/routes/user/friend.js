@@ -4,11 +4,13 @@ import verifyJWT from '#root/middleware/verifyJWT';
 
 const router = express.Router();
 
+router.use(verifyJWT);
+router.route('/').get(friendsController.getFriendList);
+router.get('/requestList', friendsController.getResquestList);
 router
-  .post('/', verifyJWT, friendsController.addFriend)
-  .put('/', verifyJWT, friendsController.acceptFriend)
-  .get('/', verifyJWT, friendsController.getFriendList)
-  .get('/resfriend', verifyJWT, friendsController.getResquestFriendList)
-  .delete('/:id', verifyJWT, friendsController.removeFriend);
+  .route('/:id')
+  .post(friendsController.addFriend)
+  .put(friendsController.acceptFriend)
+  .delete(friendsController.removeFriend);
 
 export default router;

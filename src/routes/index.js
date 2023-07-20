@@ -1,7 +1,4 @@
-import express from 'express';
-import verifyJWT from '#root/middleware/verifyJWT';
 import authRoute from '#root/routes/user/auth';
-import userinforRoute from '#root/routes/user/userinfor';
 import friendRoute from '#root/routes/user/friend';
 import locationRoute from '#root/routes/vacation/location';
 import vacationRoute from '#root/routes/vacation/vacation';
@@ -19,7 +16,6 @@ import statusRoute from '#root/routes/statusList';
 const pathArr = [
   //Path related to user
   { path: '/auth', route: authRoute },
-  { path: '/userinfor', route: userinforRoute },
   { path: '/friend', route: friendRoute },
 
   //Path related to vacation

@@ -1,9 +1,49 @@
 import mongoose from 'mongoose';
 import _throw from '#root/utils/_throw';
 
-export function getCountInfo({ field }) {
+export function getCountInfo({ field, countLikePost }) {
   return field.reduce((arr, item) => {
     switch (item) {
+      case 'vacation':
+        return arr.concat(
+          {
+            $lookup: {
+              from: 'vacations',
+              localField: '_id',
+              foreignField: 'memberList',
+              as: 'vacations',
+            },
+          },
+          { $addFields: { vacations: { $size: '$vacations' } } }
+        );
+
+      case 'post':
+        return arr.concat(
+          {
+            $lookup: {
+              from: 'posts',
+              localField: '_id',
+              foreignField: 'userId',
+              pipeline: countLikePost
+                ? [].concat(
+                    {
+                      $lookup: {
+                        from: 'likes',
+                        localField: '_id',
+                        foreignField: 'modelId',
+                        as: 'likesPost',
+                      },
+                    },
+                    { $addFields: { likesPost: { $size: '$likesPost' } } }
+                  )
+                : [],
+              as: 'posts',
+            },
+          },
+          countLikePost ? { $addFields: { likesPost: { $size: '$posts.likesPost' } } } : [],
+          { $addFields: { posts: { $size: '$posts' } } }
+        );
+
       case 'like':
         return arr.concat(
           {
@@ -99,12 +139,13 @@ export function isLiked({ userId }) {
   ];
 }
 
-export function checkFriend({ userId }) {
+export function checkFriend({ userId, localField }) {
+  const localValue = localField || 'userId';
   return [
     {
       $lookup: {
         from: 'friends',
-        let: { userId: { $toObjectId: userId }, authorId: { $toObjectId: '$userId' } },
+        let: { userId: { $toObjectId: userId }, authorId: { $toObjectId: `$${localValue}` } },
         pipeline: [
           {
             $match: {
@@ -287,7 +328,7 @@ export function facet({ meta, data }) {
   );
 }
 
-export async function searchOne({ model, value, page }) {
+export async function searchOne({ model, value, page, userId }) {
   let newItem = [];
   switch (model) {
     case 'vacation':
@@ -300,6 +341,9 @@ export async function searchOne({ model, value, page }) {
 
         //If page exists, meaning search for one, then add 3 fields: total, page and pages, otherwise, limit the document pass this stage
         addTotalPageFields({ page }),
+
+        //Get cover vacation
+        getResourcePath({ localField: '_id', as: 'cover' }),
 
         //Lookup to user model to get info
         getUserInfo({ field: ['username', 'avatar'] }),
@@ -332,11 +376,12 @@ export async function searchOne({ model, value, page }) {
         //Lookup to user model to get info
         getUserInfo({ localField: '_id', field: ['avatar'], as: 'avatar' }),
         { $addFields: { avatar: '$avatar.avatar.path' } },
+        checkFriend({ userId: userId, localField: '_id' }),
 
         //If page exists, meangin search for one, then restructure result by facet and limit fields could pass, otherwise, just limit fields could pass
         facet({
           meta: ['total', 'page', 'pages'],
-          data: ['firstname', 'lastname', 'username', 'email', 'avatar'],
+          data: ['firstname', 'lastname', 'username', 'email', 'avatar', 'isFriend'],
         })
       );
       return mongoose.model('users').aggregate(newItem);

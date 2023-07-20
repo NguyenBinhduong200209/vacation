@@ -28,7 +28,9 @@ const postController = {
         {
           $match: Object.assign(
             { vacationId: new mongoose.Types.ObjectId(id) },
-            timeline ? { createdAt: { $gte: new Date(timeline) } } : {}
+            timeline
+              ? { createdAt: { $gte: new Date(timeline), $lte: new Date(Date.parse(timeline) + 24 * 60 * 60 * 1000) } }
+              : {}
           ),
         },
 
@@ -36,7 +38,7 @@ const postController = {
         { $sort: { lastUpdateAt: -1, createdAt: -1 } },
 
         // Add 3 new fields (total, page, pages) and then Get username, location by looking up to other model
-        timeline ? [{ $skip: (page || 1) * process.env.ITEM_OF_PAGE }] : addTotalPageFields({ page }),
+        addTotalPageFields({ page }),
         getUserInfo({ field: ['username', 'avatar'] }),
         getCountInfo({ field: ['like', 'comment'] }),
         getLocation({ localField: 'locationId' }),
@@ -63,7 +65,7 @@ const postController = {
     );
 
     // Get timeline
-    if (result.length === 0) return res.sendStatus(204);
+    if (result[0].data.length === 0) return res.sendStatus(204);
     else {
       if (!timeline) {
         const timeline = (await Posts.find({ vacationId: id }).sort({ createdAt: -1 }))
@@ -161,7 +163,8 @@ const postController = {
 
   addNew: asyncWrapper(async (req, res) => {
     //Get infor from req.body
-    const { vacationId, locationId, content, resources } = req.body;
+    const { vacationId, locationId, content } = req.body;
+    const resources = req.body.resources || [];
 
     //Get userInfo from verifyJWT middleware
     const foundUserId = req.userInfo._id;
@@ -190,14 +193,22 @@ const postController = {
       lastUpdateAt: new Date(),
     });
 
+    const found = await Resources.find({
+      // userId: foundUserId,
+      _id: { $in: resources.map(item => new mongoose.Types.ObjectId(item)) },
+      ref: [],
+    });
+
     //Update ref of resources
-    await Resources.updateMany(
-      { userId: foundUserId, _id: { $in: resources }, ref: [] },
+    const result = await Resources.updateMany(
+      { userId: foundUserId, _id: { $in: resources.map(item => new mongoose.Types.ObjectId(item)) }, ref: [] },
       { ref: [{ model: 'posts', _id: newPost._id }] }
     );
 
     //Send to front
-    return res.status(201).json({ data: newPost, message: 'post created successfully' });
+    return res
+      .status(201)
+      .json({ data: newPost, meta: { totalFiles: result.modifiedCount }, message: 'post created successfully' });
   }),
 
   update: asyncWrapper(async (req, res) => {
