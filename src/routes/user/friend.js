@@ -5,8 +5,8 @@ import verifyJWT from '#root/middleware/verifyJWT';
 const router = express.Router();
 
 router.use(verifyJWT);
-router.get('/requestList', friendsController.getResquestList);
 router.route('/').get(friendsController.getFriendList);
+router.get('/requestList', friendsController.getResquestList);
 router
   .route('/:id')
   .post(friendsController.addFriend)
