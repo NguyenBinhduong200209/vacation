@@ -6,77 +6,45 @@ import { addTotalPageFields, getUserInfo, facet } from '#root/config/pipeline';
 
 const friendsController = {
   addFriend: asyncWrapper(async (req, res) => {
-    const { userId2 } = req.body;
     const userId1 = req.userInfo._id;
+    const userId2 = req.params.id;
 
     // Kiểm tra xem cả hai người dùng tồn tại trong hệ thống
     const foundUser2 = await Users.findById(userId2);
-
-    if (!foundUser2) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    !foundUser2 && _throw({ code: 404, message: 'user not found' });
 
     // Kiểm tra xem đã kết bạn trước đó chưa
     const existingFriendship = await Friends.findOne({
       $or: [
-        { userId1, userId2 },
+        { userId1: userId1, userId2: userId2 },
         { userId1: userId2, userId2: userId1 },
       ],
     });
-
-    if (existingFriendship) {
-      return res.status(400).json({ message: 'Friend request already sent' });
-    }
+    existingFriendship && _throw({ code: 400, message: 'Friend request already sent' });
 
     // Tạo yêu cầu kết bạn mới
-    const newFriendRequest = await Friends.create({
-      userId1,
-      userId2,
-    });
+    const newFriendRequest = await Friends.create({ userId1, userId2 });
 
     return res.status(201).json({
+      data: newFriendRequest,
       message: 'Friend request sent',
-      friendRequest: newFriendRequest,
     });
   }),
 
   acceptFriend: asyncWrapper(async (req, res) => {
-    const { friendRequestId, status } = req.body;
-    const userId2 = req.userInfo._id;
-    console.log(userId2);
+    const { id } = req.params;
+    const userId = req.userInfo._id;
 
-    // Kiểm tra xem yêu cầu kết bạn tồn tại
-    const friendRequest = await Friends.findById(friendRequestId);
+    const result = await Friends.findOneAndUpdate({ _id: id, userId2: userId }, { status: 'accepted' });
+    !result && _throw({ code: 404, message: 'not found' });
 
-    if (!friendRequest) {
-      return res.status(404).json({ message: 'Friend request not found' });
-    }
-
-    // Kiểm tra xem người dùng hiện tại có quyền chấp nhận hoặc từ chối yêu cầu này
-
-    if (!friendRequest.userId2.equals(userId2)) {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
-
-    // Cập nhật trạng thái của yêu cầu kết bạn
-    switch (status) {
-      case 'accepted': {
-        // Chấp nhận yêu cầu kết bạn
-        await Friends.findOneAndUpdate({ _id: friendRequestId }, { $set: { status: 'accepted' } });
-        return res.status(200).json({
-          message: 'Friend request accepted',
-        });
-      }
-      case 'rejected':
-        // Từ chối yêu cầu kết bạn và xóa bản ghi
-        await Friends.findOneAndDelete({ _id: friendRequestId });
-        return res.status(200).json({
-          message: 'Friend request rejected and deleted',
-        });
-    }
+    return res.status(200).json({
+      data: result,
+      message: 'Friend request accepted',
+    });
   }),
 
-  getResquestFriendList: asyncWrapper(async (req, res) => {
+  getResquestList: asyncWrapper(async (req, res) => {
     const { page } = req.query;
     const userId = req.userInfo._id;
 
@@ -128,25 +96,17 @@ const friendsController = {
   }),
 
   removeFriend: asyncWrapper(async (req, res) => {
-    const { friendId } = req.params;
+    const { id } = req.params;
 
     // Lấy ID của người dùng đăng nhập từ đối tượng req.userInfo
     const userId = req.userInfo._id;
 
-    // Kiểm tra xem bạn bè tồn tại trong danh sách bạn bè của người dùng
-    const existingFriendship = await Friends.findOne({
-      $or: [
-        { userId1: userId, userId2: friendId },
-        { userId1: friendId, userId2: userId },
-      ],
-    });
-
-    if (!existingFriendship) {
-      return res.status(404).json({ message: 'Friend not found' });
-    }
-
     // Xóa bạn bè khỏi danh sách bạn bè của người dùng
-    const result = await Friends.findByIdAndDelete(existingFriendship._id);
+    const result = await Friends.findOneAndDelete({
+      _id: id,
+      $or: [{ userId1: userId }, { userId2: userId }],
+    });
+    !result && _throw({ code: 404, message: 'not found' });
 
     return res.status(200).json({ data: result, message: 'Friend removed' });
   }),
