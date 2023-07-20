@@ -2,7 +2,7 @@ import _throw from '#root/utils/_throw';
 import mongoose from 'mongoose';
 import asyncWrapper from '#root/middleware/asyncWrapper';
 import { firestore } from '#root/app';
-import { collection, Timestamp, doc, getDoc, query, where, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 function checkAuthor({ modelType, field }) {
   return asyncWrapper(async (req, res, next) => {
@@ -23,13 +23,12 @@ function checkAuthor({ modelType, field }) {
         : req.query?.type || req.params?.type);
 
     //Throw an error if value of modelType did not meed the condition
-    (!modelType || !/(vacations|posts|users|resources|likes|comments|notifications)/.test(modelType)) &&
+    (!modelType || !/(vacations|posts|users|resources|likes|comments|notifications|albums)/.test(modelType)) &&
       _throw({ code: 400, errors: [{ field: 'type', message: 'invalid' }], message: 'invalid type' });
 
     //Only check Author for other model except User model
     if (modelType !== 'users') {
       let foundDoc;
-      //Throw an error if cannot find post based on id params
       if (modelType === 'notifications') {
         const result = await getDoc(doc(firestore, 'notifications', id));
         result.data() && (foundDoc = Object.assign({ id: result.id }, result.data()));
@@ -37,6 +36,7 @@ function checkAuthor({ modelType, field }) {
         foundDoc = await mongoose.model(modelType).findById(id);
       }
 
+      //Throw an error if cannot find post based on id params
       !foundDoc &&
         _throw({
           code: 404,

@@ -4,7 +4,7 @@ import verifyJWT from '#root/middleware/verifyJWT';
 import checkAuthor from '#root/middleware/checkForbidden/checkAuthor';
 import checkPermission from '#root/middleware/checkForbidden/checkPermission';
 import viewController from '#root/controller/interaction/views';
-import albumspagesController from '#root/controller/albumspages';
+import albumspagesController from '#root/controller/album/albumspages';
 const router = express.Router();
 
 router.use(verifyJWT);
