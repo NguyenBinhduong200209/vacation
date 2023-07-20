@@ -153,14 +153,14 @@ const vacationController = {
     //Save new info to foundVacation
     const { memberList, shareStatus, shareList } = req.body;
 
-    //Update other fields
+    // Update other fields
     const updateKeys = ['title', 'description', 'memberList', 'shareStatus', 'shareList', 'startingTime', 'endingTime'];
     updateKeys.forEach(key => {
       switch (key) {
         case 'memberList':
           //if memberList receive is not an array, then return memberlist contain only userId, otherwises, combine memberList and userId
           const newMemberList = Array.isArray(memberList)
-            ? [...new Set(memberList.concat(req.userInfo._id))]
+            ? [...new Set(memberList.concat(req.userInfo._id.toString()))]
             : [req.userInfo._id];
           foundVacation.memberList = newMemberList;
           break;
@@ -169,9 +169,13 @@ const vacationController = {
           //If shareStatus is protected, and shareList is an array, then return combination of newMemberList and shareList, otherwise, return newMemberList, if shareStatus is not protected, then return null
           const newShareList =
             shareStatus === 'protected'
-              ? Array.isArray(shareList)
-                ? [...new Set(newMemberList.concat(shareList))]
-                : newMemberList
+              ? [
+                  ...new Set(
+                    newMemberList.concat(
+                      Array.isArray(shareList) ? shareList : foundVacation.shareList ? [] : foundVacation.shareList
+                    )
+                  ),
+                ]
               : null;
           foundVacation.shareList = newShareList;
           break;
@@ -187,7 +191,7 @@ const vacationController = {
           break;
 
         default:
-          foundVacation[key] = req.body[key];
+          req.body[key] && (foundVacation[key] = req.body[key]);
           break;
       }
     });
