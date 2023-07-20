@@ -22,6 +22,11 @@ const friendSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+
+  lastUpdateAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 friendSchema.post('save', async function () {
