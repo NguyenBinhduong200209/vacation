@@ -418,6 +418,57 @@ export async function searchOne({ model, value, page, userId }) {
       );
       return mongoose.model('albums').aggregate(newItem);
 
+    case 'friend':
+      newItem = [].concat(
+        {
+          $match: {
+            $or: [
+              { userId1: userId, status: 'accepted' },
+              { userId2: userId, status: 'accepted' },
+            ],
+          },
+        },
+        { $addFields: { userInfo: { $cond: { if: { $eq: ['$userId1', userId] }, then: '$userId2', else: '$userId1' } } } },
+        {
+          $lookup: {
+            from: 'users',
+            let: { user_id: '$userInfo' },
+            pipeline: [].concat(
+              {
+                $match: {
+                  $or: [
+                    { username: { $regex: value, $options: 'i' } },
+                    { firstname: { $regex: value, $options: 'i' } },
+                    { lastname: { $regex: value, $options: 'i' } },
+                  ],
+                  $expr: { $eq: ['$_id', '$$user_id'] },
+                },
+              },
+              getResourcePath({ localField: '_id', as: 'avatar' }),
+              { $project: { username: 1, firstname: 1, lastname: 1, avatar: 1 } }
+            ),
+
+            as: 'friends',
+          },
+        },
+        { $unwind: '$friends' },
+
+        //If page exists, meaning search for one, then add 3 fields: total, page and pages, otherwise, limit the document pass this stage
+        addTotalPageFields({ page }),
+        {
+          $addFields: {
+            _id: '$friends._id',
+            firstname: '$friends.firstname',
+            lastname: '$friends.lastname',
+            username: '$friends.username',
+            avatar: '$friends.avatar',
+          },
+        },
+
+        facet({ meta: ['page', 'pages', 'total'], data: ['firstname', 'lastname', 'username', 'avatar'] })
+      );
+      return mongoose.model('friends').aggregate(newItem);
+
     default:
       _throw({
         code: 400,
