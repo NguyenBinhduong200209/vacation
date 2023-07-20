@@ -6,11 +6,12 @@ import mongoose from 'mongoose';
 
 const vacationController = {
   getMany: asyncWrapper(async (req, res) => {
-    const { page } = req.query,
-      userId = req.userInfo._id;
+    const { page } = req.query;
+    const userId = new mongoose.Types.ObjectId(req.query.userId ? req.query.userId : req.userInfo._id);
 
     //Set type default value is newFeed
     const type = /(newFeed|userProfile)/.test(req.query.type) ? req.query.type : 'newFeed';
+    const isMyNewFeed = !req.query.userId && type === 'newFeed';
 
     const result = await Vacations.aggregate(
       [].concat(
@@ -18,9 +19,9 @@ const vacationController = {
         {
           $match: {
             $or: [
-              type === 'newFeed' ? { shareStatus: 'public' } : { shareStatus: 'public', memberList: { $in: [userId] } },
+              isMyNewFeed ? { shareStatus: 'public' } : { shareStatus: 'public', memberList: { $in: [userId] } },
               { shareStatus: 'protected', shareList: { $in: [userId] } },
-              { shareStatus: 'onlyme', userId: new mongoose.Types.ObjectId(userId) },
+              { shareStatus: 'onlyme', userId: userId },
             ],
           },
         },
@@ -52,7 +53,7 @@ const vacationController = {
         getResourcePath({ localField: '_id', as: 'cover' }),
 
         //Get username of author by lookup to users model by userId
-        type === 'newFeed' ? getUserInfo({ field: ['username', 'avatar'] }) : [],
+        isMyNewFeed ? getUserInfo({ field: ['username', 'avatar'] }) : [],
 
         //Replace field post with total posts, add new field likes and comments with value is total
         {
@@ -68,7 +69,7 @@ const vacationController = {
         facet({
           meta: ['total', 'page', 'pages'],
           data: [
-            type === 'newFeed' && 'authorInfo',
+            isMyNewFeed && 'authorInfo',
             'title',
             'cover',
             'shareStatus',
