@@ -2,16 +2,20 @@ import asyncWrapper from '#root/middleware/asyncWrapper';
 import Friends from '#root/model/user/friend';
 import Users from '#root/model/user/users';
 import _throw from '#root/utils/_throw';
-import { addTotalPageFields, getUserInfo, getCountInfo, facet } from '#root/config/pipeline';
+import { addTotalPageFields } from '#root/config/pipeline';
+import Resources from '#root/model/resource/resource';
 
 const friendsController = {
   addFriend: asyncWrapper(async (req, res) => {
     const { userId2 } = req.body;
+
     const userId1 = req.userInfo._id;
 
     // Kiểm tra xem cả hai người dùng tồn tại trong hệ thống
     const foundUser2 = await Users.findById(userId2);
-
+    if (userId1.toString() === userId2.toString()) {
+      return res.status(403).json({ message: "You can't make friends with yourself" });
+    }
     if (!foundUser2) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -79,24 +83,19 @@ const friendsController = {
   getResquestFriendList: asyncWrapper(async (req, res) => {
     const userId = req.userInfo._id;
     const foundUser = await Users.findById(userId);
-    console.log(userId);
-    // Tìm các yêu cầu kết bạn đối với người dùng hiện tại
-    const friendRequests = await Friends.find({ userId2: userId, status: 'pending' })
-      .populate('userId1', 'avatar firstname lastname dateOfBirth')
-      .populate('userId2', 'avatar firstname lastname dateOfBirth')
-      .exec();
-    const filteredFriendRequests = friendRequests.map(friend => {
-      if (friend.userId2._id.toString() === foundUser._id.toString()) {
-        return friend.userId1;
-      }
-    });
 
     const page = req.query.page ? parseInt(req.query.page) : 1; // Trang hiện tại từ yêu cầu
     const itemOfPage = Number(process.env.ITEM_OF_PAGE);
-    const pipeline = addTotalPageFields({ page });
-    const aggregateResult = await Friends.aggregate(pipeline);
 
-    const total = aggregateResult.length > 0 ? aggregateResult[0].total : 0;
+    // Pipeline để tính tổng số yêu cầu kết bạn
+    const pipelineTotal = [
+      { $match: { userId2: userId, status: 'pending' } },
+      { $group: { _id: null, total: { $sum: 1 } } },
+      { $project: { _id: 0, total: 1 } },
+    ];
+
+    const aggregateResultTotal = await Friends.aggregate(pipelineTotal);
+    const total = aggregateResultTotal.length > 0 ? aggregateResultTotal[0].total : 0;
     const totalPages = Math.ceil(total / itemOfPage);
 
     if (page > totalPages) {
@@ -104,17 +103,50 @@ const friendsController = {
     }
 
     const startIndex = (page - 1) * itemOfPage;
-    const endIndex = startIndex + itemOfPage;
 
-    const paginatedFriendRequests = filteredFriendRequests.slice(startIndex, endIndex);
-    const friendRequestsCount = friendRequests.length;
+    // Pipeline để lấy danh sách bạn bè kết bạn và thông tin avatar, firstname và lastname
+    const pipelineFriends = [
+      { $match: { userId2: userId, status: 'pending' } },
+      {
+        $lookup: {
+          from: 'resources',
+          localField: 'userId1',
+          foreignField: 'userId',
+          as: 'avatar',
+        },
+      },
+      { $unwind: '$avatar' },
+      { $match: { 'avatar.ref.model': 'users' } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId1',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          _id: 1, // Loại bỏ trường _id
+          userId1: 1, // Bao gồm trường userId1 (đổi tên thành userId)
+          firstname: '$user.firstname', // Lấy giá trị firstname từ trường user.firstname
+          lastname: '$user.lastname', // Lấy giá trị lastname từ trường user.lastname
+          avatar: '$avatar.path', // Đổi tên trường avatar thành path
+        },
+      },
+      { $skip: startIndex },
+      { $limit: itemOfPage },
+    ];
+
+    const paginatedFriendRequests = await Friends.aggregate(pipelineFriends);
 
     return res.status(200).json({
       message: 'Friend Request list retrieved',
       meta: {
         page: page,
         pages: totalPages,
-        total: friendRequestsCount,
+        total: total,
       },
       data: paginatedFriendRequests,
     });
@@ -122,38 +154,25 @@ const friendsController = {
 
   getFriendList: asyncWrapper(async (req, res) => {
     const userId = req.userInfo._id;
-
-    // Kiểm tra xem người dùng tồn tại trong hệ thống
     const foundUser = await Users.findById(userId);
 
-    if (!foundUser) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Tìm danh sách bạn bè của người dùng
-    const friendList = await Friends.find({
-      $or: [
-        { userId1: foundUser._id, status: 'accepted' },
-        { userId2: foundUser._id, status: 'accepted' },
-      ],
-    })
-      .populate('userId1', 'firstname lastname avatar dateOfBirth gender description')
-      .populate('userId2', 'firstname lastname avatar dateOfBirth gender description')
-      .exec();
-
-    const filteredFriendList = friendList.map(friend => {
-      if (friend.userId1._id.toString() === foundUser._id.toString()) {
-        return friend.userId2;
-      } else {
-        return friend.userId1;
-      }
-    });
     const page = req.query.page ? parseInt(req.query.page) : 1; // Trang hiện tại từ yêu cầu
     const itemOfPage = Number(process.env.ITEM_OF_PAGE);
-    const pipeline = addTotalPageFields({ page });
-    const aggregateResult = await Friends.aggregate(pipeline);
 
-    const total = aggregateResult.length > 0 ? aggregateResult[0].total : 0;
+    // Pipeline để tính tổng số yêu cầu kết bạn
+    const pipelineTotal = [
+      {
+        $match: {
+          $or: [{ userId2: userId }, { userId1: userId }],
+          status: 'accepted',
+        },
+      },
+      { $group: { _id: null, total: { $sum: 1 } } },
+      { $project: { _id: 0, total: 1 } },
+    ];
+
+    const aggregateResultTotal = await Friends.aggregate(pipelineTotal);
+    const total = aggregateResultTotal.length > 0 ? aggregateResultTotal[0].total : 0;
     const totalPages = Math.ceil(total / itemOfPage);
 
     if (page > totalPages) {
@@ -161,19 +180,57 @@ const friendsController = {
     }
 
     const startIndex = (page - 1) * itemOfPage;
-    const endIndex = startIndex + itemOfPage;
 
-    const paginatedFriendList = filteredFriendList.slice(startIndex, endIndex);
-    const friendListcount = friendList.length;
+    // Pipeline để lấy danh sách bạn bè kết bạn và thông tin avatar, firstname và lastname
+    const pipelineFriends = [
+      {
+        $match: {
+          $or: [{ userId2: userId }, { userId1: userId }],
+          status: 'accepted',
+        },
+      },
+      {
+        $lookup: {
+          from: 'resources',
+          localField: 'userId1',
+          foreignField: 'userId',
+          as: 'avatar',
+        },
+      },
+      { $unwind: '$avatar' },
+      { $match: { 'avatar.ref.model': 'users' } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId1',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          _id: 1, // Loại bỏ trường _id
+          userId1: 1, // Bao gồm trường userId1 (đổi tên thành userId)
+          firstname: '$user.firstname', // Lấy giá trị firstname từ trường user.firstname
+          lastname: '$user.lastname', // Lấy giá trị lastname từ trường user.lastname
+          avatar: '$avatar.path', // Đổi tên trường avatar thành path
+        },
+      },
+      { $skip: startIndex },
+      { $limit: itemOfPage },
+    ];
+
+    const paginatedFriendRequests = await Friends.aggregate(pipelineFriends);
 
     return res.status(200).json({
-      message: 'Friend list retrieved',
+      message: 'Friend Request list retrieved',
       meta: {
         page: page,
         pages: totalPages,
-        total: friendListcount,
+        total: total,
       },
-      data: paginatedFriendList,
+      data: paginatedFriendRequests,
     });
   }),
 
