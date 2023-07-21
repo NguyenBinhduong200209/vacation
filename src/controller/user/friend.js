@@ -25,25 +25,29 @@ const friendsController = {
       )
     );
 
-    return res.json(result[0]);
+    return result.length === 0 ? res.sendStatus(204) : res.status(200).json(result[0]);
   }),
 
   getFriendList: asyncWrapper(async (req, res) => {
-    const { page } = req.query;
-    const userId = req.userInfo._id;
+    const { page, userId } = req.query;
+    const userSearchId = new mongoose.Types.ObjectId(userId ? userId : req.userInfo._id);
 
     const result = await Friends.aggregate(
       [].concat(
         {
           $match: {
             $or: [
-              { userId1: userId, status: 'accepted' },
-              { userId2: userId, status: 'accepted' },
+              { userId1: userSearchId, status: 'accepted' },
+              { userId2: userSearchId, status: 'accepted' },
             ],
           },
         },
         addTotalPageFields({ page }),
-        { $addFields: { userInfo: { $cond: { if: { $eq: ['$userId1', userId] }, then: '$userId2', else: '$userId1' } } } },
+        {
+          $addFields: {
+            userInfo: { $cond: { if: { $eq: ['$userId1', userSearchId] }, then: '$userId2', else: '$userId1' } },
+          },
+        },
         getUserInfo({
           localField: 'userInfo',
           field: ['avatar', 'username', 'firstname', 'lastname', 'username'],

@@ -6,13 +6,13 @@ import { addTotalPageFields, facet } from '#root/config/pipeline';
 
 const resourceController = {
   getMany: asyncWrapper(async (req, res) => {
-    const { vacationId, page, field } = req.query;
+    const { vacationId, page, field, userId } = req.query;
 
     let searchRef;
     switch (field) {
       case 'avatar':
-        const userId = req.userInfo._id;
-        searchRef = { model: 'users', field: 'avatar', _id: new mongoose.Types.ObjectId(userId) };
+        const searchUserId = userId ? userId : req.userInfo._id;
+        searchRef = { model: 'users', field: 'avatar', _id: new mongoose.Types.ObjectId(searchUserId) };
         break;
 
       case 'cover':
