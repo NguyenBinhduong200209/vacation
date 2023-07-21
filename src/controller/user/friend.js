@@ -3,6 +3,7 @@ import Friends from '#root/model/user/friend';
 import Users from '#root/model/user/users';
 import _throw from '#root/utils/_throw';
 import { addTotalPageFields, getUserInfo, facet } from '#root/config/pipeline';
+import mongoose from 'mongoose';
 
 const friendsController = {
   getResquestList: asyncWrapper(async (req, res) => {
@@ -61,7 +62,7 @@ const friendsController = {
     const userId2 = req.params.id;
 
     //Throw an error if user send request to his/her own user
-    userId1.toString() === userId2.toString() && _throw({ code: 400, message: 'cannot send to yourself' });
+    userId1.toString() === userId2.toString() && _throw({ code: 400, message: 'cannot make friends with yourself' });
 
     // Kiểm tra xem cả hai người dùng tồn tại trong hệ thống
     const foundUser2 = await Users.findById(userId2);
@@ -90,7 +91,7 @@ const friendsController = {
     const userId = req.userInfo._id;
 
     const result = await Friends.findOneAndUpdate(
-      { _id: id, userId2: userId },
+      { _id: new mongoose.Types.ObjectId(id), userId2: userId, status: 'pending' },
       { status: 'accepted', lastUpdateAt: Date.now() },
       { new: true }
     );
