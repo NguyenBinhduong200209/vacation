@@ -108,16 +108,19 @@ const friendsController = {
   }),
 
   removeFriend: asyncWrapper(async (req, res) => {
-    const { id } = req.params;
+    const userId = new mongoose.Types.ObjectId(req.params?.id);
 
     // Lấy ID của người dùng đăng nhập từ đối tượng req.userInfo
-    const userId = req.userInfo._id;
+    const requestUserId = req.userInfo._id;
 
     // Xóa bạn bè khỏi danh sách bạn bè của người dùng
     const result = await Friends.findOneAndDelete({
-      _id: id,
-      $or: [{ userId1: userId }, { userId2: userId }],
+      $or: [
+        { userId1: requestUserId, userId2: userId },
+        { userId2: requestUserId, userId1: userId },
+      ],
     });
+
     !result && _throw({ code: 404, message: 'not found' });
 
     return res.status(200).json({ data: result, message: 'Friend removed' });

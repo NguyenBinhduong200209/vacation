@@ -9,13 +9,14 @@ const usersinforController = {
     const { id } = req.params;
     const userId = new mongoose.Types.ObjectId(!id ? req.userInfo._id : id);
     const requestUserId = new mongoose.Types.ObjectId(req.userInfo._id);
+    const isValidUserId = id && userId.toString() !== requestUserId.toString();
 
     const result = await Users.aggregate(
       [].concat(
         { $match: { _id: userId } },
         getResourcePath({ localField: '_id', as: 'avatar' }),
         getCountInfo({ field: ['post', 'vacation', 'friend'], countLikePost: true }),
-        id
+        isValidUserId
           ? {
               $lookup: {
                 from: 'friends',
@@ -34,18 +35,30 @@ const usersinforController = {
             }
           : [],
         {
-          $project: {
-            firstname: 1,
-            lastname: 1,
-            username: 1,
-            description: 1,
-            avatar: 1,
-            posts: 1,
-            vacations: 1,
-            friends: 1,
-            likesPost: 1,
-            friendStatus: { $first: '$friendStatus.status' },
-          },
+          $project: Object.assign(
+            {
+              firstname: 1,
+              lastname: 1,
+              username: 1,
+              description: 1,
+              avatar: 1,
+              posts: 1,
+              vacations: 1,
+              friends: 1,
+              likesPost: 1,
+            },
+            isValidUserId
+              ? {
+                  friendStatus: {
+                    $cond: {
+                      if: { $anyElementTrue: ['$friendStatus'] },
+                      then: { $first: '$friendStatus.status' },
+                      else: null,
+                    },
+                  },
+                }
+              : {}
+          ),
         }
       )
     );
