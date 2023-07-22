@@ -76,6 +76,21 @@ const resourceController = {
     //Send to front
     return res.status(200).json({ data: deleteResource, message: 'delete successfully' });
   }),
+
+  deleteMany: asyncWrapper(async (req, res) => {
+    const { listId } = req.body;
+
+    //Throw an error if listId is not an array
+    !Array.isArray(listId) && _throw({ code: 400, message: 'listId should be an array' });
+
+    //Convert all item in list to ObjectId
+    const list = listId.map(item => new mongoose.Types.ObjectId(item));
+
+    //Delete in DB
+    const deleteResources = await Resources.deleteMany({ ref: [], _id: { $in: list } });
+
+    return res.status(200).json({ data: deleteResources, message: 'delete successfully' });
+  }),
 };
 
 export default resourceController;
