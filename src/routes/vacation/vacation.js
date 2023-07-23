@@ -8,11 +8,12 @@ import albumspagesController from '#root/controller/albumspages';
 const router = express.Router();
 
 router.use(verifyJWT);
-router
-  .route('/')
-  .get(checkPermission({ modelType: 'vacations', listType: 'shareList' }), vacationController.getMany)
-  .post(vacationController.addNew);
-router.get('/:id/images', albumspagesController.getalbumspagesvacations);
+router.route('/').get(vacationController.getMany).post(vacationController.addNew);
+router.get(
+  '/:id/images',
+  checkPermission({ modelType: 'vacations', listType: 'shareList' }),
+  albumspagesController.getalbumspagesvacations
+);
 
 router
   .route('/:id')
