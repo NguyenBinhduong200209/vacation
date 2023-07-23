@@ -70,7 +70,7 @@ const albumspagesController = {
 
     const vacation = await Vacations.findOne({
       _id: vacationId,
-      $or: [{ memberList: userId }, { shareList: userId }],
+      $or: [{ memberList: userId }, { shareList: userId }, { shareList: [] }],
     });
 
     if (!vacation) {
@@ -172,7 +172,10 @@ const albumspagesController = {
     const page = req.query.page;
     const userId = req.userInfo._id;
     if (albumId && page) {
-      const albums = await Albums.find({ _id: albumId, $or: [{ userId: userId }, { shareList: userId }] });
+      const albums = await Albums.find({
+        _id: albumId,
+        $or: [{ userId: userId }, { shareList: userId }, { shareList: [] }],
+      });
       // console.log(albums);
 
       if (!albums) {
