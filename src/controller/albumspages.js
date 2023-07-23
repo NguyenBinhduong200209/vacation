@@ -5,7 +5,7 @@ import Albums from '#root/model/albums';
 import Vacations from '#root/model/vacation/vacations';
 import Posts from '#root/model/vacation/posts';
 import mongoose from 'mongoose';
-import { addTotalPageFields, facet } from '#root/config/pipeline';
+import { addTotalPageFields, facet, getResourcePath } from '#root/config/pipeline';
 import Resources from '#root/model/resource/resource';
 
 const albumspagesController = {
@@ -109,61 +109,35 @@ const albumspagesController = {
   }),
 
   getalbumspagesvacations: asyncWrapper(async (req, res) => {
+    const { page } = req.query;
     // Lấy user ID từ request
     const userId = req.userInfo._id;
+    const vacationId = new mongoose.Types.ObjectId(req.params.id);
 
-    const vacationId = req.params.id;
-
-    const vacation = await Vacations.findOne({
-      _id: vacationId,
-      $or: [{ memberList: userId }, { shareList: userId }],
-    });
-
-    if (!vacation) {
-      // Người dùng không có quyền truy cập vào vacation
-      return res.status(403).json({ message: 'Access denied' });
-    }
-    const page = req.query.page ? parseInt(req.query.page) : 1;
-    const itemPerPage = Number(process.env.ITEM_OF_PAGE); // Number of items per page
-    const skip = (page - 1) * itemPerPage;
-
-    const albumspage = await Posts.aggregate([
-      { $match: { vacationId: new mongoose.Types.ObjectId(vacationId) } },
-      {
-        $lookup: {
-          from: 'resources',
-          let: { id: { $toObjectId: '$_id' } },
-          pipeline: [
-            {
-              $match: {
-                $expr: { $in: ['$$id', '$ref._id'] },
-              },
-            },
-            { $project: { _id: 1, path: 1 } },
-          ],
-          as: 'resources',
+    const albumspage = await Posts.aggregate(
+      [].concat(
+        { $match: { vacationId: vacationId } },
+        getResourcePath({ localField: '_id', as: 'resources', returnAsArray: true }),
+        {
+          $group: {
+            _id: null,
+            resources: { $push: '$resources' },
+          },
         },
-      },
-
-      {
-        $group: {
-          _id: null,
-          resources: { $push: '$resources' },
+        {
+          $project: {
+            _id: 0,
+            resources: { $reduce: { input: '$resources', initialValue: [], in: { $concatArrays: ['$$value', '$$this'] } } },
+          },
         },
-      },
-      {
-        $project: {
-          _id: 0,
-          resources: { $reduce: { input: '$resources', initialValue: [], in: { $concatArrays: ['$$value', '$$this'] } } },
-        },
-      },
-      { $unwind: '$resources' },
-      { $addFields: { _id: '$resources._id', path: '$resources.path' } },
-      ...addTotalPageFields({ page: req.query }),
-      ...facet({ meta: ['page', 'pages', 'total'], data: ['_id', 'path'] }),
-    ]);
+        { $unwind: '$resources' },
+        addTotalPageFields({ page }),
+        { $addFields: { _id: '$resources._id', path: '$resources.path' } },
+        facet({ meta: ['page', 'pages', 'total'], data: ['_id', 'path'] })
+      )
+    );
 
-    res.json(albumspage[0]);
+    res.status(200).json(albumspage[0]);
   }),
 
   getmanyAlbumPage: asyncWrapper(async (req, res) => {
