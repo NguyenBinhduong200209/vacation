@@ -38,7 +38,7 @@ const albumSchema = new mongoose.Schema(
       type: String,
       trim: true,
       required: 'Title required',
-      maxlength: 100,
+      maxlength: 1000,
       validate: value => {
         !validator.isAlpha(value, 'vi-VN', { ignore: ' -_' }) &&
           _throw({

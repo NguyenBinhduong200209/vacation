@@ -15,7 +15,7 @@ const albumsController = {
     const vacation = await Vacations.findById(vacationId);
     const foundAlbums = await Albums.findOne({ vacationId: vacationId });
     if (foundAlbums) {
-      return res.status(403).json({ message: 'Albums Already' });
+      return res.status(400).json({ message: 'Albums Already' });
     }
     console.log(foundAlbums);
     // Check if the foundUser is in the memberList or is the creator of the vacation
