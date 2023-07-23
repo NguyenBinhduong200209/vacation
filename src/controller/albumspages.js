@@ -27,16 +27,6 @@ const albumspagesController = {
     //   return res.status(400).json({ message: 'You can only create one album in this vacation' });
     // }
 
-    const vacation = await Vacations.findOne({
-      _id: vacationId,
-      $or: [{ memberList: userId }, { shareList: userId }],
-    });
-
-    if (!vacation) {
-      // Người dùng không có quyền truy cập vào albums
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
     const newAlbumPage = await AlbumsPage.create({
       albumId: albumId,
       userId: userId,
@@ -66,15 +56,6 @@ const albumspagesController = {
 
     if (!existingAlbumPage) {
       return res.status(404).json({ message: 'Album page not found' });
-    }
-
-    const vacation = await Vacations.findOne({
-      _id: vacationId,
-      $or: [{ memberList: userId }, { shareList: userId }, { shareList: [] }],
-    });
-
-    if (!vacation) {
-      return res.status(403).json({ message: 'Access denied' });
     }
 
     existingAlbumPage.albumId = albumId;
