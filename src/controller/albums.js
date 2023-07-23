@@ -8,7 +8,7 @@ import AlbumsPage from '#root/model/albumspage';
 const albumsController = {
   addNew: asyncWrapper(async (req, res) => {
     //Get vital information from req.body
-    const { vacationId, title, shareStatus, shareList, lastUpdateAt } = req.body;
+    const { vacationId, title, shareStatus } = req.body;
     //Get userId from verifyJWT middleware
     const foundUser = req.userInfo;
     // Get vacation information from vacationId
@@ -21,7 +21,7 @@ const albumsController = {
 
     //If shareStatus is protected, and shareList is an array, then return combination of newMemberList and shareList, otherwise, return newMemberList, if shareStatus is not protected, then return null
     let newShareList;
-
+    let shareList = [];
     switch (shareStatus) {
       case 'protected':
         // Get friend list of the user
@@ -97,7 +97,6 @@ const albumsController = {
       createdAt: new Date(),
       shareStatus,
       shareList: newShareList,
-      lastUpdateAt,
     });
 
     // Send response to the front-end
