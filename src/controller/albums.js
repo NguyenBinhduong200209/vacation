@@ -14,15 +14,15 @@ const albumsController = {
     // Get vacation information from vacationId
     const vacation = await Vacations.findById(vacationId);
     const foundAlbums = await Albums.findOne({ vacationId: vacationId });
-    // if (foundAlbums) {
-    //   return res.status(403).json({ message: 'Albums Already' });
-    // }
-    // console.log(foundAlbums);
-    // // Check if the foundUser is in the memberList or is the creator of the vacation
-    // const userIds = [...vacation.memberList, vacation.userId].map(value => value.toString());
-    // if (!userIds.includes(foundUser._id.toString())) {
-    //   return res.status(403).json({ message: 'You are not allowed to create an album for this vacation' });
-    // }
+    if (foundAlbums) {
+      return res.status(403).json({ message: 'Albums Already' });
+    }
+    console.log(foundAlbums);
+    // Check if the foundUser is in the memberList or is the creator of the vacation
+    const userIds = [...vacation.memberList, vacation.userId].map(value => value.toString());
+    if (!userIds.includes(foundUser._id.toString())) {
+      return res.status(403).json({ message: 'You are not allowed to create an album for this vacation' });
+    }
 
     //If shareStatus is protected, and shareList is an array, then return combination of newMemberList and shareList, otherwise, return newMemberList, if shareStatus is not protected, then return null
     let newShareList;
