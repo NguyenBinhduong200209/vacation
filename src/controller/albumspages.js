@@ -41,14 +41,10 @@ const albumspagesController = {
   updatealbumspage: asyncWrapper(async (req, res) => {
     //Get vital information from req.body
     const page = req.query.page;
-<<<<<<< HEAD
-    const albumPageId = req.params.id;
-=======
     // console.log(page);
     const albumPageId = req.params.albumpageId;
 
     console.log(albumPageId);
->>>>>>> f3b550d (UPDATE TIEP)
     const userId = req.userInfo._id;
     const { albumId, resource, vacationId } = req.body;
 
@@ -137,10 +133,7 @@ const albumspagesController = {
         _id: albumId,
         $or: [{ userId: userId }, { shareList: userId }, { shareList: [] }],
       });
-<<<<<<< HEAD
-=======
       console.log(albums);
->>>>>>> f3b550d (UPDATE TIEP)
 
       if (!albums) {
         // Albums not found
