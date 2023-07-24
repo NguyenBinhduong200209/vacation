@@ -17,7 +17,7 @@ const albumsController = {
     if (foundAlbums) {
       return res.status(400).json({ message: 'Albums Already' });
     }
-    console.log(foundAlbums);
+
     // Check if the foundUser is in the memberList or is the creator of the vacation
     const userIds = [...vacation.memberList, vacation.userId].map(value => value.toString());
     if (!userIds.includes(foundUser._id.toString())) {
@@ -110,7 +110,6 @@ const albumsController = {
   updateAlbum: asyncWrapper(async (req, res) => {
     const { title, description, shareStatus } = req.body;
     const { albumId } = req.params;
-    console.log(albumId);
     const foundUser = req.userInfo;
     let shareList = [];
 
@@ -212,12 +211,10 @@ const albumsController = {
 
   deleteAlbum: asyncWrapper(async (req, res) => {
     const albumId = req.params.id.trim();
-    console.log(albumId);
     const foundUser = req.userInfo;
 
     // Kiểm tra xem album có tồn tại trong database không
     const existingAlbum = await Albums.findOne({ _id: albumId });
-    console.log(existingAlbum);
 
     if (!existingAlbum) {
       return res.status(404).json({ message: 'Album not found' });
@@ -269,9 +266,9 @@ const albumsController = {
       res.json({
         message: 'get infor albums sucsses',
         meta: {
-          totalAlbums: totalAlbums,
-          Page: page,
-          Pages: Math.ceil(totalAlbums / itemPerPage),
+          total: totalAlbums,
+          page: page,
+          pages: Math.ceil(totalAlbums / itemPerPage),
         },
         data: albumList,
       });
@@ -281,11 +278,9 @@ const albumsController = {
     // Get the user ID from the request
     const vacationId = req.params.id;
     const userId = req.userInfo._id;
-    console.log(vacationId);
 
     // Retrieve the albums associated with the user ID
     const album = await Albums.findOne({ vacationId: vacationId });
-    console.log(album);
     if (!album.shareList.includes(userId) && album.userId.toString() !== userId) {
       return res.status(403).json({
         message: 'Người dùng không có quyền xem album',

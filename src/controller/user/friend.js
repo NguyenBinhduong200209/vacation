@@ -113,8 +113,6 @@ const friendsController = {
     // Lấy ID của người dùng đăng nhập từ đối tượng req.userInfo
     const requestUserId = req.userInfo._id;
 
-    console.log(userId, requestUserId);
-
     // Xóa bạn bè khỏi danh sách bạn bè của người dùng
     const result = await Friends.findOneAndDelete({
       $or: [
