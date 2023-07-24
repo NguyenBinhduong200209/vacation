@@ -15,7 +15,7 @@ router.post(
 );
 
 router.put(
-  '/:id',
+  '/:albumpageId',
   verifyJWT,
   checkPermission({ modelType: 'vacations', listType: 'memberList' }),
   albumspagesController.updatealbumspage
