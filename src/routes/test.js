@@ -1,12 +1,10 @@
 import express from 'express';
 const router = express.Router();
 import asyncWrapper from '#root/middleware/asyncWrapper';
-import Resources from '#root/model/resource/resource';
-import Friends from '#root/model/user/friend';
 import mongoose from 'mongoose';
 
 const updatePost = async (req, res) => {
-  const result = await mongoose.model('comments').distinct('modelType');
+  const result = await mongoose.model('vacations').findByIdAndDelete('64bd220c408ec132e3a67a76');
   return res.json(result);
 };
 

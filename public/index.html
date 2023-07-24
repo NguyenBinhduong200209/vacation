@@ -31,7 +31,6 @@
         const result = await fetch('http://localhost:3100/test/64900a40d5e81dd124f23c0b', {
           method: 'get',
         }).then(data => data.json());
-        console.log(result);
         image.src = result.resource;
         return result;
       };

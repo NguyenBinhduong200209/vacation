@@ -23,8 +23,6 @@ function checkPermission({ field, modelType, listType }) {
           : 'users'
         : req.query?.type || req.params?.type || req.body?.type);
 
-    console.log(id, modelType);
-
     if (/(vacations|albums|posts)/.test(modelType)) {
       //Find document based on params id
       let foundDocument;

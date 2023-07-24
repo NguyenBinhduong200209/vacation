@@ -12,9 +12,7 @@ const albumspagesController = {
   newalbums: asyncWrapper(async (req, res) => {
     //Get vital information from req.body
     const userId = req.userInfo._id;
-    console.log(userId);
     const { albumId, resource, vacationId, page } = req.body;
-    console.log(resource);
 
     const existingAlbum = await AlbumsPage.findOne({
       albumId: albumId,
@@ -53,16 +51,13 @@ const albumspagesController = {
   updatealbumspage: asyncWrapper(async (req, res) => {
     //Get vital information from req.body
     const page = req.query.page;
-    console.log(page);
     const albumPageId = req.params.id;
-    console.log(albumPageId);
     const userId = req.userInfo._id;
     const { albumId, resource, vacationId } = req.body;
 
     const existingAlbumPage = await AlbumsPage.findOne({
       _id: albumPageId,
     });
-    console.log(existingAlbumPage);
 
     if (!existingAlbumPage) {
       return res.status(404).json({ message: 'Album page not found' });
@@ -168,12 +163,10 @@ const albumspagesController = {
 
   getmanyAlbumPage: asyncWrapper(async (req, res) => {
     const albumId = req.params.id;
-    console.log(albumId);
     const page = req.query.page;
     const userId = req.userInfo._id;
     if (albumId && page) {
       const albums = await Albums.find({ _id: albumId, $or: [{ userId: userId }, { shareList: userId }] });
-      // console.log(albums);
 
       if (!albums) {
         // Albums not found
@@ -245,14 +238,12 @@ const albumspagesController = {
       });
     } else if (albumId) {
       const albums = await Albums.find({ _id: albumId, $or: [{ userId: userId }, { shareList: userId }] });
-      // console.log(albums);
 
       if (!albums) {
         // Albums not found
         return res.status(404).json({ message: 'Albums not found' });
       }
       // const albumsId = albums._id;
-      // console.log(albumsId);
 
       const albumPage = await AlbumsPage.aggregate([
         {
@@ -311,7 +302,6 @@ const albumspagesController = {
         resource: album.resource,
       }));
 
-      console.log(albumPages.page);
       if (!albumPage) {
         return res.status(404).json({ message: 'albumPages not found' });
       }

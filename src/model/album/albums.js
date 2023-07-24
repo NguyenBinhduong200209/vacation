@@ -40,7 +40,7 @@ const albumSchema = new mongoose.Schema(
       required: 'Title required',
       maxlength: 1000,
       validate: value => {
-        !validator.isAlpha(value, 'vi-VN', { ignore: ' -_' }) &&
+        !validator.isAlpha(value, 'vi-VN', { ignore: ' -_,()' }) &&
           _throw({
             code: 400,
             errors: [{ field: 'title', message: 'invalid title' }],
@@ -99,6 +99,6 @@ albumSchema.pre('remove', async function (next) {
   }
 });
 
-// const Albums = mongoose.model('albums', albumSchema);
+const Albums = mongoose.model('albums', albumSchema);
 
-export default albumSchema;
+export default Albums;
