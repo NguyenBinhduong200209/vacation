@@ -9,15 +9,15 @@ const albumspageSchema = new mongoose.Schema({
   albumId: {
     type: mongoose.ObjectId,
     required: 'albumId required',
-    validate: async value => {
-      const foundalbumspage = await Albums.findById(value);
-      !foundalbumspage &&
-        _throw({
-          code: 400,
-          errors: [{ field: 'albumId', message: 'invalid albumId' }],
-          message: 'invalid albumsID',
-        });
-    },
+    // validate: async value => {
+    //   const foundalbumspage = await Albums.findById(value);
+    //   !foundalbumspage &&
+    //     _throw({
+    //       code: 400,
+    //       errors: [{ field: 'albumId', message: 'invalid albumId' }],
+    //       message: 'invalid albumId',
+    //     });
+    // },
   },
   page: {
     type: Number,
