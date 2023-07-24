@@ -43,8 +43,9 @@ const albumspagesController = {
   updatealbumspage: asyncWrapper(async (req, res) => {
     //Get vital information from req.body
     const page = req.query.page;
-    console.log(page);
-    const albumPageId = req.params.id;
+    // console.log(page);
+    const albumPageId = req.params.albumpageId;
+
     console.log(albumPageId);
     const userId = req.userInfo._id;
     const { albumId, resource, vacationId } = req.body;
@@ -73,6 +74,10 @@ const albumspagesController = {
   deletealbumspage: asyncWrapper(async (req, res) => {
     const albumPageId = req.params.id;
     const userId = req.userInfo._id;
+    const albumPages = await AlbumsPage.findOne({ userId: userId });
+    if (!albumPages) {
+      return res.status(401).json({ message: 'Access denied' });
+    }
 
     const existingAlbumPage = await AlbumsPage.findOneAndDelete({
       _id: albumPageId,
@@ -125,13 +130,14 @@ const albumspagesController = {
     const albumId = req.params.id;
     console.log(albumId);
     const page = req.query.page;
+    console.log(page);
     const userId = req.userInfo._id;
     if (albumId && page) {
       const albums = await Albums.find({
         _id: albumId,
         $or: [{ userId: userId }, { shareList: userId }, { shareList: [] }],
       });
-      // console.log(albums);
+      console.log(albums);
 
       if (!albums) {
         // Albums not found
@@ -170,6 +176,7 @@ const albumspagesController = {
           },
         },
       ]);
+      console.log(albumPage);
       let totalResources = 0;
       if (albumPage.length > 0) {
         albumPage.forEach(album => {
