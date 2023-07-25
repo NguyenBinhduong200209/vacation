@@ -32,7 +32,14 @@ const commentController = {
       userId = req.userInfo._id;
 
     //Create new comment
-    const newComment = await Comments.create({ modelType: type, modelId: id, userId, content, createdAt: new Date() });
+    const newComment = await Comments.create({
+      modelType: type,
+      modelId: id,
+      userId,
+      content,
+      createdAt: new Date(),
+      lastUpdateAt: new Date(),
+    });
 
     //Send to front
     return res.status(201).json({ data: newComment, message: `add comment successfully` });
