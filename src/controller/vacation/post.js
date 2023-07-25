@@ -193,12 +193,6 @@ const postController = {
       lastUpdateAt: new Date(),
     });
 
-    const found = await Resources.find({
-      // userId: foundUserId,
-      _id: { $in: resources.map(item => new mongoose.Types.ObjectId(item)) },
-      ref: [],
-    });
-
     //Update ref of resources
     const result = await Resources.updateMany(
       { userId: foundUserId, _id: { $in: resources.map(item => new mongoose.Types.ObjectId(item)) }, ref: [] },
