@@ -20,7 +20,7 @@ const commentController = {
         getUserInfo({ field: ['username', 'avatar'] }),
 
         //Restructure query
-        facet({ meta: ['total', 'page', 'pages'], data: ['authorInfo', 'content'] })
+        facet({ meta: ['total', 'page', 'pages'], data: ['authorInfo', 'content', 'lastUpdateAt'] })
       )
     );
     return result.length === 0 ? res.sendStatus(204) : res.status(200).json(result[0]);
