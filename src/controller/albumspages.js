@@ -41,10 +41,8 @@ const albumspagesController = {
   updatealbumspage: asyncWrapper(async (req, res) => {
     //Get vital information from req.body
     const page = req.query.page;
-    // console.log(page);
     const albumPageId = req.params.albumpageId;
 
-    console.log(albumPageId);
     const userId = req.userInfo._id;
     const { albumId, resource, vacationId } = req.body;
 
@@ -126,14 +124,12 @@ const albumspagesController = {
   getmanyAlbumPage: asyncWrapper(async (req, res) => {
     const albumId = req.params.id;
     const page = req.query.page;
-    console.log(page);
     const userId = req.userInfo._id;
     if (albumId && page) {
       const albums = await Albums.find({
         _id: albumId,
         $or: [{ userId: userId }, { shareList: userId }, { shareList: [] }],
       });
-      console.log(albums);
 
       if (!albums) {
         // Albums not found
@@ -172,7 +168,7 @@ const albumspagesController = {
           },
         },
       ]);
-      console.log(albumPage);
+
       let totalResources = 0;
       if (albumPage.length > 0) {
         albumPage.forEach(album => {
