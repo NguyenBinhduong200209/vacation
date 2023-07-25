@@ -14,7 +14,7 @@ const albumspagesController = {
     const userId = req.userInfo._id;
     const { albumId, resource, vacationId, page } = req.body;
     if (!resource || resource.length === 0) {
-      return res.status(400).json({ message: 'Bạn phải thêm ảnh' });
+      return res.status(400).json({ message: 'Please add pictures !' });
     }
 
     const existingAlbum = await AlbumsPage.findOne({
@@ -50,7 +50,7 @@ const albumspagesController = {
     const { albumId, resource, vacationId } = req.body;
 
     if (!resource || resource.length === 0) {
-      return res.status(400).json({ message: 'Bạn phải thêm ảnh' });
+      return res.status(400).json({ message: 'Please add pictures !' });
     }
     const existingAlbumPage = await AlbumsPage.findOne({
       _id: albumPageId,
