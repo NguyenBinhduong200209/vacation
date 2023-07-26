@@ -4,6 +4,7 @@ import Users from '#root/model/user/users';
 import _throw from '#root/utils/_throw';
 import Albums from '#root/model/albums';
 import Resource from '#root/model/resource/resource';
+import Users from '#root/model/user/users';
 
 const albumspageSchema = new mongoose.Schema({
   albumId: {
@@ -18,6 +19,19 @@ const albumspageSchema = new mongoose.Schema({
     //       message: 'invalid albumId',
     //     });
     // },
+  },
+  userId: {
+    type: mongoose.ObjectId,
+    required: 'UserId required',
+    validate: async value => {
+      const foundUser = await Users.findById(value);
+      !foundUser &&
+        _throw({
+          code: 400,
+          errors: [{ field: 'userId', message: 'invalid userId' }],
+          message: 'invalid userId',
+        });
+    },
   },
   page: {
     type: Number,
