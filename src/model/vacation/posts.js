@@ -7,6 +7,8 @@ import Locations from '#root/model/vacation/locations';
 import Likes from '#root/model/interaction/likes';
 import Comments from '#root/model/interaction/comments';
 import Resources from '#root/model/resource/resource';
+import { getDocs, collection, query, where, deleteDoc, doc } from 'firebase/firestore';
+import { firestore } from '#root/app';
 
 const postSchema = new mongoose.Schema(
   {
@@ -83,7 +85,11 @@ postSchema.post('findOneAndDelete', async function () {
   const deleteLike = Likes.deleteMany({ modelType: 'post', modelId: _id });
   const deleteComment = Comments.deleteMany({ modelType: 'post', modelId: _id });
   const deleteResource = Resources.deleteMany({ ref: { $elemMatch: { model: 'posts', _id: _id } } });
-  const result = await Promise.all([deleteLike, deleteComment, deleteResource]);
+  const notiRef = collection(firestore, 'notifications');
+  const queryCondition = query(notiRef, where('modelType', '==', 'posts'), where('modelId', '==', _id.toString()));
+  const foundNoti = (await getDocs(queryCondition)).docs;
+  const deleteNoti = foundNoti.map(async item => await deleteDoc(doc(notiRef, item.id)));
+  const result = await Promise.all([deleteLike, deleteComment, deleteResource, deleteNoti]);
   console.log('deletePost', result);
 });
 
