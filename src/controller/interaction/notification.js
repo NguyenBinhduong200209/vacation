@@ -99,8 +99,6 @@ const notiController = {
       modelType === 'posts' &&
         (modelInfo = (await mongoose.model('posts').findById(modelId).select({ vacationId: 1, content: 1 }).lean()) || {});
 
-      console.log(modelInfo, item);
-
       !isSeen && (totalUnseen += 1);
       result.push({
         id: item.id,
