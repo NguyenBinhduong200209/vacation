@@ -65,7 +65,7 @@ const postController = {
     );
 
     // Get timeline
-    if (result[0].data.length === 0) return res.sendStatus(204);
+    if (result[0]?.data.length === 0 || result.length == 0) return res.sendStatus(204);
     else {
       if (!timeline) {
         const timeline = (await Posts.find({ vacationId: id }).sort({ createdAt: -1 }))

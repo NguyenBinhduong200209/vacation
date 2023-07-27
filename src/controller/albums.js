@@ -4,6 +4,8 @@ import Friends from '#root/model/user/friend';
 import Albums from '#root/model/albums';
 import Vacations from '#root/model/vacation/vacations';
 import AlbumsPage from '#root/model/albumspage';
+import { facet, addTotalPageFields } from '#root/config/pipeline';
+import mongoose from 'mongoose';
 
 const albumsController = {
   addNew: asyncWrapper(async (req, res) => {
@@ -233,46 +235,69 @@ const albumsController = {
       message: 'Albums deleted',
     });
   }),
+
   getAlbumsUser: asyncWrapper(async (req, res) => {
     // Get the user ID from the request
-    const userId = req.userInfo._id;
-    const userIds = req.params.id;
-    const page = req.query.page ? parseInt(req.query.page) : 1; // Current page from the request
-    const itemPerPage = 10; // Number of items per page
-    const skip = (page - 1) * itemPerPage;
-    // Retrieve the albums associated with the user ID
-    if (userIds && userId) {
-      const albums = await Albums.find({ userId: userIds }).skip(skip).limit(itemPerPage);
+    const { page, userId } = req.query;
+    const searchUserId = new mongoose.Types.ObjectId(userId || req.userInfo._id);
 
-      const albumList = albums.map(album => album.toObject()); // Convert each album to a plain JavaScript object
-      // Count the total number of albums
-      const totalAlbums = await Albums.countDocuments({ userId: userIds });
-      // Return the list of albums
-      res.json({
-        message: 'get infor albums sucsses',
-        meta: {
-          totalAlbums: totalAlbums,
-          Page: page,
-          Pages: Math.ceil(totalAlbums / itemPerPage),
+    const result = await Albums.aggregate(
+      [].concat(
+        { $match: { userId: searchUserId } },
+        { $sort: { lastUpdateAt: -1, createdAt: -1 } },
+        addTotalPageFields({ page }),
+        {
+          $lookup: { from: 'albumspages', localField: '_id', foreignField: 'albumId', as: 'cover' },
         },
-        data: albumList,
-      });
-    } else if (userId) {
-      const albums = await Albums.find({ userId }).skip(skip).limit(itemPerPage);
-      const albumList = albums.map(album => album.toObject()); // Convert each album to a plain JavaScript object
-      // Count the total number of albums
-      const totalAlbums = await Albums.countDocuments({ userId });
-      // Return the list of albums
-      res.json({
-        message: 'get infor albums sucsses',
-        meta: {
-          total: totalAlbums,
-          page: page,
-          pages: Math.ceil(totalAlbums / itemPerPage),
-        },
-        data: albumList,
-      });
-    } else _throw({ code: 400, message: 'UserID not provided' });
+        { $addFields: { cover: { $first: '$cover.resource.resourceId' } } },
+        { $lookup: { from: 'resources', localField: 'cover', foreignField: '_id', as: 'cover' } },
+        { $addFields: { cover: { $first: '$cover.path' } } },
+        facet({ meta: ['total', 'page', 'pages'], data: ['title', 'createdAt', 'lastUpdateAt', 'cover', 'vacationId'] })
+      )
+    );
+
+    return res.length == 0 ? res.sendStatus(204) : res.status(200).json(result[0]);
+
+    // // const page = req.query.page ? parseInt(req.query.page) : 1; // Current page from the request
+    // const itemPerPage = 10; // Number of items per page
+    // const skip = (page - 1) * itemPerPage;
+    // // Retrieve the albums associated with the user ID
+    // if (userIds && userId) {
+    //   const albums = await Albums.find({ userId: userIds })
+    //     .skip(skip)
+    //     .limit(itemPerPage)
+    //     .lookup({ from: 'albumspages', localField: '_id', foreignField: 'albumId', as: 'image' });
+
+    //   const albumList = albums.map(album => album.toObject()); // Convert each album to a plain JavaScript object
+    //   // Count the total number of albums
+    //   const totalAlbums = await Albums.countDocuments({ userId: userIds });
+    //   // Return the list of albums
+    //   res.json({
+    //     message: 'get infor albums sucsses',
+    //     meta: {
+    //       total: totalAlbums,
+    //       page: page,
+    //       pages: Math.ceil(totalAlbums / itemPerPage),
+    //     },
+    //     data: albumList,
+    //   });
+    // } else if (userId) {
+    //   const albums = await Albums.find({ userId }).skip(skip).limit(itemPerPage);
+
+    //   const albumList = albums.map(album => album.toObject()); // Convert each album to a plain JavaScript object
+    //   // Count the total number of albums
+    //   const totalAlbums = await Albums.countDocuments({ userId });
+    //   // Return the list of albums
+    //   res.json({
+    //     message: 'get infor albums sucsses',
+    //     meta: {
+    //       total: totalAlbums,
+    //       page: page,
+    //       pages: Math.ceil(totalAlbums / itemPerPage),
+    //     },
+    //     data: albumList,
+    //   });
+    // } else _throw({ code: 400, message: 'UserID not provided' });
   }),
   getablumsvacations: asyncWrapper(async (req, res) => {
     // Get the user ID from the request
