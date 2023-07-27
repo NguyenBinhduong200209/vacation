@@ -156,11 +156,12 @@ const vacationController = {
 
     // Update other fields
     const updateKeys = ['title', 'description', 'memberList', 'shareStatus', 'shareList', 'startingTime', 'endingTime'];
+    let newMemberList;
     updateKeys.forEach(key => {
       switch (key) {
         case 'memberList':
           //if memberList receive is not an array, then return memberlist contain only userId, otherwises, combine memberList and userId
-          const newMemberList = Array.isArray(memberList)
+          newMemberList = Array.isArray(memberList)
             ? [...new Set(memberList.concat(req.userInfo._id.toString()))]
             : [req.userInfo._id];
           foundVacation.memberList = newMemberList;
