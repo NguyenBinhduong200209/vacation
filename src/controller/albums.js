@@ -343,6 +343,7 @@ const albumsController = {
       data: albums,
     });
   }),
+
   addNewAlbumPage: asyncWrapper(async (req, res) => {
     // Get vital information from req.body
     const { albumId, imageId, ref, vacationId } = req.body;

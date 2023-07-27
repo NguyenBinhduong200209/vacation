@@ -5,7 +5,7 @@ import Albums from '#root/model/albums';
 import Vacations from '#root/model/vacation/vacations';
 import Posts from '#root/model/vacation/posts';
 import mongoose from 'mongoose';
-import { addTotalPageFields, facet, getResourcePath } from '#root/config/pipeline';
+import { addTotalPageFields, facet, getResourcePath, getUserInfo } from '#root/config/pipeline';
 import Resources from '#root/model/resource/resource';
 
 const albumspagesController = {
@@ -142,38 +142,29 @@ const albumspagesController = {
         return res.status(404).json({ message: 'Albums not found' });
       }
 
-      const albumPage = await AlbumsPage.aggregate([
-        { $match: { albumId: new mongoose.Types.ObjectId(albumId), page: Number(page) } },
-        {
-          $lookup: {
-            from: 'resources',
-            let: { resourceId: '$resource.resourceId' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: { $in: ['$_id', '$$resourceId'] },
-                },
-              },
-              {
-                $project: {
-                  path: 1,
-                },
-              },
-            ],
-            as: 'resources',
+      const albumPage = await AlbumsPage.aggregate(
+        [].concat(
+          { $match: { albumId: new mongoose.Types.ObjectId(albumId), page: Number(page) } },
+          {
+            $lookup: {
+              from: 'resources',
+              let: { resourceId: '$resource.resourceId' },
+              pipeline: [{ $match: { $expr: { $in: ['$_id', '$$resourceId'] } } }, { $project: { path: 1 } }],
+              as: 'resources',
+            },
           },
-        },
-        {
-          $project: {
-            _id: 1,
-            albumId: 1,
-            page: 1,
-            userId: 1,
-            resource: 1,
-            resources: 1,
-          },
-        },
-      ]);
+          getUserInfo({ field: ['username'], as: 'userInfo' }),
+          {
+            $project: {
+              albumId: 1,
+              page: 1,
+              userInfo: 1,
+              resource: 1,
+              resources: 1,
+            },
+          }
+        )
+      );
 
       let totalResources = 0;
       if (albumPage.length > 0) {
@@ -194,7 +185,7 @@ const albumspagesController = {
       const data = {
         _id: albumPages._id,
         albumId: albumPages.albumId,
-        userId: albumPages.userId,
+        userInfo: albumPages.userInfo,
         resource: albumPages.resource,
       };
 
@@ -215,42 +206,30 @@ const albumspagesController = {
       }
       // const albumsId = albums._id;
 
-      const albumPage = await AlbumsPage.aggregate([
-        {
-          $match: {
-            albumId: new mongoose.Types.ObjectId(albumId),
+      const albumPage = await AlbumsPage.aggregate(
+        [].concat(
+          { $match: { albumId: new mongoose.Types.ObjectId(albumId) } },
+          {
+            $lookup: {
+              from: 'resources',
+              let: { resourceId: '$resource.resourceId' },
+              pipeline: [{ $match: { $expr: { $in: ['$_id', '$$resourceId'] } } }, { $project: { path: 1 } }],
+              as: 'resources',
+            },
           },
-        },
-        {
-          $lookup: {
-            from: 'resources',
-            let: { resourceId: '$resource.resourceId' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: { $in: ['$_id', '$$resourceId'] },
-                },
-              },
-              {
-                $project: {
-                  path: 1,
-                },
-              },
-            ],
-            as: 'resources',
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-            albumId: 1,
-            page: 1,
-            userId: 1,
-            resource: 1,
-            resources: 1,
-          },
-        },
-      ]);
+          getUserInfo({ field: ['username'], as: 'userInfo' }),
+          {
+            $project: {
+              _id: 1,
+              albumId: 1,
+              page: 1,
+              userInfo: 1,
+              resource: 1,
+              resources: 1,
+            },
+          }
+        )
+      );
       let totalResources = 0;
       if (albumPage.length > 0) {
         albumPage.forEach(album => {
@@ -268,7 +247,7 @@ const albumspagesController = {
         _id: album._id,
         albumId: album.albumId,
         page: album.page,
-        userId: album.userId,
+        userInfo: album.userInfo,
         resource: album.resource,
       }));
 
