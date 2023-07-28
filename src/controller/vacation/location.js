@@ -83,8 +83,8 @@ const locationController = {
                   $match: {
                     $expr: {
                       $and: [
-                        { $lte: ['$createdAt', Date.now()] },
-                        { $gte: ['$createdAt', Date.now() - 7 * 24 * 60 * 60 * 1000] },
+                        { $lte: ['$createdAt', new Date()] },
+                        { $gte: ['$createdAt', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)] },
                       ],
                     },
                   },
