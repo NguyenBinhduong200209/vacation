@@ -412,6 +412,7 @@ export async function searchOne({ model, value, page, userId }) {
 
         //If page exists, meaning search for one, then add 3 fields: total, page and pages, otherwise, limit the document pass this stage
         addTotalPageFields({ page }),
+        getUserInfo({ field: ['username', 'firstname', 'lastname', 'avatar'] }),
 
         {
           $lookup: {
@@ -427,7 +428,7 @@ export async function searchOne({ model, value, page, userId }) {
         { $addFields: { cover: { $first: '$cover.path' } } },
 
         //If page exists, meangin search for one, then restructure result by facet and limit fields could pass, otherwise, just limit fields could pass
-        facet({ meta: ['total', 'page', 'pages'], data: ['title', 'createdAt', 'lastUpdateAt', 'cover'] })
+        facet({ meta: ['total', 'page', 'pages'], data: ['title', 'createdAt', 'lastUpdateAt', 'cover', 'authorInfo'] })
       );
       return mongoose.model('albums').aggregate(newItem);
 
