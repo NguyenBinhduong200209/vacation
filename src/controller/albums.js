@@ -325,22 +325,23 @@ const albumsController = {
   getalbumdetail: asyncWrapper(async (req, res) => {
     // Get the user ID from the request
     const albumId = req.params.id;
-    const userId = req.userInfo._id;
-    const album = await Albums.findOne({ albumId: albumId });
-    if (!album.shareList.includes(userId) && album.userId.toString() !== userId) {
-      return res.status(403).json({
-        message: 'Người dùng không có quyền xem album',
-      });
-    } else if (album.shareList.includes(userId) || album.userId.toString() == userId) {
-    }
+    // const userId = req.userInfo._id;
+    const album = await Albums.findById(albumId);
 
-    // Retrieve the albums associated with the user ID
-    const albums = await Albums.findById(id);
+    // if (!album.shareList.includes(userId) && album.userId.toString() !== userId) {
+    //   return res.status(403).json({
+    //     message: 'Người dùng không có quyền xem album',
+    //   });
+    // } else if (album.shareList.includes(userId) || album.userId.toString() == userId) {
+    // }
+
+    // // Retrieve the albums associated with the user ID
+    // const albums = await Albums.findById(id);
 
     // Return the list of albums
     res.json({
       message: 'get infor albums sucsses',
-      data: albums,
+      data: album,
     });
   }),
 
