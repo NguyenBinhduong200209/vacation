@@ -92,7 +92,7 @@ const postController = {
               from: 'vacations',
               localField: 'vacationId',
               foreignField: '_id',
-              pipeline: [{ $project: { shareStatus: 1, shareList: 1, userId: 1, _id: 0 } }],
+              pipeline: [{ $project: { shareStatus: 1, shareList: 1, userId: 1 } }],
               as: 'vacation',
             },
           },
@@ -117,11 +117,13 @@ const postController = {
         getUserInfo({ field: ['username', 'avatar'] }),
         getCountInfo({ field: ['like', 'comment'] }),
         isLiked({ userId: req.userInfo._id }),
+        getLocation({ localField: 'locationId' }),
 
         //Set up new array with total field is length of array and list field is array without __v field
         facet({
           meta: ['total', 'page', 'pages'],
           data: [
+            'vacation',
             'content',
             'lastUpdateAt',
             'resource',
@@ -131,6 +133,7 @@ const postController = {
             'likes',
             'comments',
             'isLiked',
+            'location',
           ],
         })
       )
