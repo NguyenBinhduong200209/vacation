@@ -86,28 +86,27 @@ const postController = {
     const result = await Posts.aggregate(
       [].concat(
         //Get all posts belong to vacationId
-        [
-          {
-            $lookup: {
-              from: 'vacations',
-              localField: 'vacationId',
-              foreignField: '_id',
-              pipeline: [{ $project: { shareStatus: 1, shareList: 1, userId: 1 } }],
-              as: 'vacation',
-            },
+
+        {
+          $lookup: {
+            from: 'vacations',
+            localField: 'vacationId',
+            foreignField: '_id',
+            pipeline: [{ $project: { shareStatus: 1, shareList: 1, userId: 1 } }],
+            as: 'vacation',
           },
-          { $unwind: '$vacation' },
-          {
-            $match: {
-              locationId: new mongoose.Types.ObjectId(id),
-              $or: [
-                { 'vacation.shareStatus': 'public' },
-                { 'vacation.shareStatus': 'protected', 'vacation.shareList': { $in: [userId] } },
-                { 'vacation.shareStatus': 'onlyme', 'vacation.userId': userId },
-              ],
-            },
+        },
+        { $unwind: '$vacation' },
+        {
+          $match: {
+            locationId: new mongoose.Types.ObjectId(id),
+            $or: [
+              { 'vacation.shareStatus': 'public' },
+              { 'vacation.shareStatus': 'protected', 'vacation.shareList': { $in: [userId] } },
+              { 'vacation.shareStatus': 'onlyme', 'vacation.userId': userId },
+            ],
           },
-        ],
+        },
 
         //Sort in order to push the newest updated post to top
         { $sort: { lastUpdateAt: -1, createdAt: -1 } },
