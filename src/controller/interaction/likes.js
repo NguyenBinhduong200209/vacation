@@ -37,7 +37,7 @@ const likeController = {
     //
     else {
       //Create new document
-      const newLike = await Likes.create({ modelType: type, modelId: id, userId: userId });
+      const newLike = await Likes.create({ modelType: type, modelId: id, userId: userId, lastUpdateAt: new Date() });
 
       //Send to front
       return res.status(201).json({ data: newLike, message: `user has liked this ${type}` });

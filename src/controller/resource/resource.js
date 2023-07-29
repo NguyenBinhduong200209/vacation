@@ -58,6 +58,7 @@ const resourceController = {
           : isAvatar
           ? [{ model: 'users', field: field, _id: req.userInfo._id }]
           : [{ model: 'vacations', field: field, _id: vacationId }],
+        createdAt: new Date(),
       });
 
       result.push(newResource);
