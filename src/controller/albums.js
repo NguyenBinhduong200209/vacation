@@ -4,7 +4,7 @@ import Friends from '#root/model/user/friend';
 import Albums from '#root/model/albums';
 import Vacations from '#root/model/vacation/vacations';
 import AlbumsPage from '#root/model/albumspage';
-import { facet, addTotalPageFields } from '#root/config/pipeline';
+import { facet, addTotalPageFields, getUserInfo } from '#root/config/pipeline';
 import mongoose from 'mongoose';
 
 const albumsController = {
@@ -324,9 +324,9 @@ const albumsController = {
 
   getalbumdetail: asyncWrapper(async (req, res) => {
     // Get the user ID from the request
-    const albumId = req.params.id;
+    const albumId = new mongoose.Types.ObjectId(req.params.id);
     // const userId = req.userInfo._id;
-    const album = await Albums.findById(albumId);
+    const album = await Albums.aggregate([].concat({ $match: { _id: albumId } }, getUserInfo({ field: ['username'] })));
 
     // if (!album.shareList.includes(userId) && album.userId.toString() !== userId) {
     //   return res.status(403).json({

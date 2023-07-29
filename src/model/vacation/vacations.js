@@ -28,14 +28,14 @@ const vacationSchema = new mongoose.Schema(
       trim: true,
       required: 'Title required',
       maxlength: 1000,
-      validate: value => {
-        !validator.isAlpha(value, 'vi-VN', { ignore: " -_',()" }) &&
-          _throw({
-            code: 400,
-            errors: [{ field: 'title', message: 'invalid title' }],
-            message: 'invalid title',
-          });
-      },
+      // validate: value => {
+      //   !validator.isAlpha(value, 'vi-VN', { ignore: " -_',()" }) &&
+      //     _throw({
+      //       code: 400,
+      //       errors: [{ field: 'title', message: 'invalid title' }],
+      //       message: 'invalid title',
+      //     });
+      // },
     },
 
     description: {
