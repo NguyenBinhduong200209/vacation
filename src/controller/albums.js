@@ -341,7 +341,7 @@ const albumsController = {
     // Return the list of albums
     res.json({
       message: 'get infor albums sucsses',
-      data: album,
+      data: album[0],
     });
   }),
 
