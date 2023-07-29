@@ -109,7 +109,7 @@ const usersController = {
     await sendMail({
       type: 'verify',
       email,
-      url: `https://vacation-backend.onrender.com/auth/verify?email=${email}&token=${verifyToken}`,
+      url: `${process.env.URL}/auth/verify?email=${email}&token=${verifyToken}`,
     });
 
     //Send to front
