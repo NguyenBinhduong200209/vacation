@@ -15,7 +15,7 @@ const albumsController = {
     const foundUser = req.userInfo;
     // Get vacation information from vacationId
     const vacation = await Vacations.findById(vacationId);
-    const foundAlbums = await Albums.findOne({ vacationId: vacationId });
+    const foundAlbums = await Albums.findOne({ vacationId: vacationId, userId: new mongoose.Types.ObjectId(foundUser._id) });
     if (foundAlbums) {
       return res.status(400).json({ message: 'Albums Already' });
     }
@@ -241,22 +241,24 @@ const albumsController = {
     const { page, userId } = req.query;
     const searchUserId = new mongoose.Types.ObjectId(userId || req.userInfo._id);
 
+    console.log(searchUserId);
+
     const result = await Albums.aggregate(
       [].concat(
-        { $match: { userId: searchUserId } },
-        { $sort: { lastUpdateAt: -1, createdAt: -1 } },
-        addTotalPageFields({ page }),
-        {
-          $lookup: { from: 'albumspages', localField: '_id', foreignField: 'albumId', as: 'cover' },
-        },
-        { $addFields: { cover: { $first: '$cover.resource.resourceId' } } },
-        { $lookup: { from: 'resources', localField: 'cover', foreignField: '_id', as: 'cover' } },
-        { $addFields: { cover: { $first: '$cover.path' } } },
-        facet({ meta: ['total', 'page', 'pages'], data: ['title', 'createdAt', 'lastUpdateAt', 'cover', 'vacationId'] })
+        { $match: { userId: searchUserId } }
+        // { $sort: { lastUpdateAt: -1, createdAt: -1 } },
+        // addTotalPageFields({ page })
+        // {
+        //   $lookup: { from: 'albumspages', localField: '_id', foreignField: 'albumId', as: 'cover' },
+        // }
+        // { $addFields: { cover: { $first: '$cover.resource.resourceId' } } },
+        // { $lookup: { from: 'resources', localField: 'cover', foreignField: '_id', as: 'cover' } },
+        // { $addFields: { cover: { $first: '$cover.path' } } },
+        // facet({ meta: ['total', 'page', 'pages'], data: ['title', 'createdAt', 'lastUpdateAt', 'cover', 'vacationId'] })
       )
     );
 
-    return res.length == 0 ? res.sendStatus(204) : res.status(200).json(result[0]);
+    return res.length == 0 ? res.sendStatus(204) : res.status(200).json(result);
 
     // // const page = req.query.page ? parseInt(req.query.page) : 1; // Current page from the request
     // const itemPerPage = 10; // Number of items per page
