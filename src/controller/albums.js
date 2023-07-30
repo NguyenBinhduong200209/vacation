@@ -258,7 +258,7 @@ const albumsController = {
       )
     );
 
-    return res.length == 0 ? res.sendStatus(204) : res.status(200).json(result);
+    return res.length == 0 ? res.sendStatus(204) : res.status(200).json(result[0]);
 
     // // const page = req.query.page ? parseInt(req.query.page) : 1; // Current page from the request
     // const itemPerPage = 10; // Number of items per page
