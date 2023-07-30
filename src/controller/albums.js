@@ -241,20 +241,18 @@ const albumsController = {
     const { page, userId } = req.query;
     const searchUserId = new mongoose.Types.ObjectId(userId || req.userInfo._id);
 
-    console.log(searchUserId);
-
     const result = await Albums.aggregate(
       [].concat(
-        { $match: { userId: searchUserId } }
-        // { $sort: { lastUpdateAt: -1, createdAt: -1 } },
-        // addTotalPageFields({ page })
-        // {
-        //   $lookup: { from: 'albumspages', localField: '_id', foreignField: 'albumId', as: 'cover' },
-        // }
-        // { $addFields: { cover: { $first: '$cover.resource.resourceId' } } },
-        // { $lookup: { from: 'resources', localField: 'cover', foreignField: '_id', as: 'cover' } },
-        // { $addFields: { cover: { $first: '$cover.path' } } },
-        // facet({ meta: ['total', 'page', 'pages'], data: ['title', 'createdAt', 'lastUpdateAt', 'cover', 'vacationId'] })
+        { $match: { userId: searchUserId } },
+        { $sort: { lastUpdateAt: -1, createdAt: -1 } },
+        addTotalPageFields({ page }),
+        {
+          $lookup: { from: 'albumspages', localField: '_id', foreignField: 'albumId', as: 'cover' },
+        },
+        { $addFields: { cover: { $first: '$cover.resource.resourceId' } } },
+        { $lookup: { from: 'resources', localField: 'cover', foreignField: '_id', as: 'cover' } },
+        { $addFields: { cover: { $first: '$cover.path' } } },
+        facet({ meta: ['total', 'page', 'pages'], data: ['title', 'createdAt', 'lastUpdateAt', 'cover', 'vacationId'] })
       )
     );
 
