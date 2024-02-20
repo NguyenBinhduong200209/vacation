@@ -19,7 +19,7 @@ const usersController = {
       const foundUser = await Users.findOne(value);
       !foundUser && _throw({ code: 404, message: 'user not found' });
 
-      !foundUser.emailVerified && _throw({ code: 401, message: 'account has not been verified by email yet' });
+
 
       // Evaluate password
       const match = await bcrypt.compare(password, foundUser.password);
@@ -82,55 +82,54 @@ const usersController = {
   }),
 
   register: asyncWrapper(async (req, res) => {
-    //Get username and password from req.body
+    // Get username and password from req.body
     const { email, username, password } = req.body;
 
-    //Check for duplicate username in database
+    // Check for duplicate username in the database
     const duplicate = await Users.findOne({ $or: [{ username }, { email }] }).lean();
     duplicate && _throw({ code: 400, message: 'username or email has already been existed' });
 
-    //Create new user and validate infor
+    // Create a new user and validate information
     const newUser = new Users(req.body);
     await newUser.validate();
 
-    //Save hashedPwd
+    // Save hashed password
     const hashedPwd = await bcrypt.hash(password, 10);
     newUser.password = hashedPwd;
 
-    //Get new passwordToken and save to foundUser
-    const verifyToken = new mongoose.Types.ObjectId();
-    newUser.verifyToken = verifyToken;
-
-    //Save to database
+    // Save to database
     newUser.createdAt = new Date();
     await newUser.save();
 
-    //Send email
-    await sendMail({
-      type: 'verify',
-      email,
-      url: `${process.env.URL}/auth/verify?email=${email}&token=${verifyToken}`,
-    });
-
-    //Send to front
-    return res.status(200).json({ message: `an email has been send to ${email} account. Please check your email account` });
+    // Send a response to the frontend
+    return res.status(200).json({ message: 'User registered successfully.' });
   }),
 
+
+  // verify: asyncWrapper(async (req, res) => {
+  //   //Get username and password from req.body
+  //   const { email, token } = req.query;
+
+  //   const foundUser = await Users.findOne({ email, verifyToken: token });
+  //   if (foundUser) {
+  //     //Save token to database to prevent previousToken still take effect
+  //     foundUser.emailVerified = true;
+  //     foundUser.lastUpdateAt = new Date();
+  //     await foundUser.save();
+
+  //     //Send result to frontend
+  //     return res.sendFile(path.join(publicPath, 'verify', 'success.html'));
+  //   } else return res.sendFile(path.join(publicPath, 'verify', 'fail.html'));
+  // }),
+  // Comment or remove the entire verify function if not needed
   verify: asyncWrapper(async (req, res) => {
-    //Get username and password from req.body
+    // Get username and password from req.body
     const { email, token } = req.query;
 
-    const foundUser = await Users.findOne({ email, verifyToken: token });
-    if (foundUser) {
-      //Save token to database to prevent previousToken still take effect
-      foundUser.emailVerified = true;
-      foundUser.lastUpdateAt = new Date();
-      await foundUser.save();
-
-      //Send result to frontend
-      return res.sendFile(path.join(publicPath, 'verify', 'success.html'));
-    } else return res.sendFile(path.join(publicPath, 'verify', 'fail.html'));
+    // Remove the entire content of this function or customize it as needed
+    return res.status(200).json({ message: 'Email verification skipped for now.' });
   }),
+
 
   update: asyncWrapper(async (req, res) => {
     //Find User by username get from accessToken
