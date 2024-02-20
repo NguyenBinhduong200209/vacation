@@ -41,7 +41,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Enable Cross-Origin Resource Sharing
-app.use(cors());
+// Enable Cross-Origin Resource Sharing with specified options
+app.use(cors(corsOptions));
+
 
 // use router for handling requests
 pathArr.forEach(({ path, route }) => app.use(path, route));
