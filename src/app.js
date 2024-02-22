@@ -42,7 +42,7 @@ app.use(express.json());
 
 // Enable Cross-Origin Resource Sharing
 // Enable Cross-Origin Resource Sharing with specified options
-app.use(cors(corsOptions));
+app.use(cors());
 
 
 // use router for handling requests
